@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { getEffectiveCode, getPendingRemote, normalizeCodeForAck, shouldAutoApplyPreset, resolvePreviewHydraState } from './orchestratorViewHelpers'
+import {
+  getEffectiveCode,
+  getPendingRemote,
+  normalizeCodeForAck,
+  shouldAutoApplyPreset,
+  resolvePreviewHydraState,
+  isSendAckSatisfied,
+} from './orchestratorViewHelpers'
 import { getPresetByIndex } from '../components/hydraPresets'
 
 describe('orchestratorViewHelpers', () => {
@@ -79,6 +86,22 @@ describe('orchestratorViewHelpers', () => {
       ].join('\r\n')
 
       expect(normalizeCodeForAck(code)).toBe('osc(10)\n  .out()')
+    })
+  })
+
+  describe('isSendAckSatisfied', () => {
+    it('returns true when sent and remote normalize to same code', () => {
+      const sent = 'osc(10).out()  \n'
+      const remote = 'osc(10).out()'
+      expect(isSendAckSatisfied(sent, remote)).toBe(true)
+    })
+
+    it('returns false when remote is missing', () => {
+      expect(isSendAckSatisfied('osc(10).out()', null)).toBe(false)
+    })
+
+    it('returns false when codes differ after normalization', () => {
+      expect(isSendAckSatisfied('osc(10).out()', 'noise(5).out()')).toBe(false)
     })
   })
 

@@ -5,7 +5,7 @@ import { VISUALIZER_HYDRA_CODE_REQ } from 'shared/actionTypes'
 import playerVisualizerReducer from 'routes/Player/modules/playerVisualizer'
 import { sliceInjectNoOp } from 'routes/Player/modules/player'
 import { DEFAULT_SKETCH, getRandomSketch } from '../components/hydraSketchBook'
-import { getEffectiveCode, getPendingRemote, normalizeCodeForAck, resolvePreviewHydraState, shouldAutoApplyPreset } from './orchestratorViewHelpers'
+import { getEffectiveCode, getPendingRemote, isSendAckSatisfied, normalizeCodeForAck, resolvePreviewHydraState, shouldAutoApplyPreset } from './orchestratorViewHelpers'
 import ApiReference from '../components/ApiReference'
 import PresetBrowser from '../components/PresetBrowser'
 import CodeEditor from '../components/CodeEditor'
@@ -200,9 +200,8 @@ function OrchestratorView () {
 
   // Mark send status as synced when remote matches last sent code
   useEffect(() => {
-    if (!lastSentRef.current || !remoteHydraCode) return
-    const normalizedRemote = normalizeCodeForAck(remoteHydraCode)
-    if (!normalizedRemote || normalizedRemote !== lastSentRef.current) return
+    if (sendStatus !== 'sending') return
+    if (!isSendAckSatisfied(lastSentRef.current, remoteHydraCode)) return
     let timeoutId: number | null = null
     const rafId = requestAnimationFrame(() => {
       setSendStatus('synced')
@@ -213,7 +212,7 @@ function OrchestratorView () {
       cancelAnimationFrame(rafId)
       if (timeoutId) window.clearTimeout(timeoutId)
     }
-  }, [remoteHydraCode])
+  }, [remoteHydraCode, sendStatus])
 
   // If no ack arrives, show error
   useEffect(() => {

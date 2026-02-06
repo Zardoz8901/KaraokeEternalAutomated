@@ -119,6 +119,19 @@ export function normalizeCodeForAck (code: string | null | undefined): string | 
   if (!code) return null
   return stripInjectedLines(code).trimEnd().replace(/\r\n/g, '\n')
 }
+/**
+ * Returns true when the latest remote code can be treated as an ack for
+ * the most recent send attempt.
+ */
+export function isSendAckSatisfied (
+  lastSentCode: string | null | undefined,
+  remoteCode: string | null | undefined,
+): boolean {
+  const normalizedSent = normalizeCodeForAck(lastSentCode)
+  const normalizedRemote = normalizeCodeForAck(remoteCode)
+  if (!normalizedSent || !normalizedRemote) return false
+  return normalizedRemote === normalizedSent
+}
 
 /**
  * Determines whether a remote preset change should auto-apply in the Orchestrator.
