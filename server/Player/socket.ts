@@ -1,5 +1,6 @@
 import Rooms from '../Rooms/Rooms.js'
 import { resolveRoomAccessPrefs } from '../../shared/roomAccess.js'
+import getLogger from '../lib/Log.js'
 
 import {
   PLAYER_CMD_NEXT,
@@ -34,17 +35,15 @@ import {
   CAMERA_STOP,
 } from '../../shared/actionTypes.js'
 
+const log = getLogger('PlayerSocket')
+
 interface RoomControlSocket {
   id?: string
-  _lastPlayerStatus?: unknown
   user?: {
     userId?: number
     roomId?: number
     isAdmin?: boolean
-  }
-  server?: {
-    to: (...args: unknown[]) => { emit: (...args: unknown[]) => void }
-    in?: (...args: unknown[]) => { fetchSockets?: () => Promise<RoomControlSocket[]> }
+    name?: string
   }
 }
 
@@ -52,59 +51,6 @@ interface RoomControlAccess {
   hasRoom: boolean
   canManage: boolean
   accessPrefs: ReturnType<typeof resolveRoomAccessPrefs>
-}
-
-interface CameraRoute {
-  publisherSocketId: string
-  subscriberSocketId: string | null
-}
-
-const cameraRoutesByRoom = new Map<number, CameraRoute>()
-
-function getRoomId (sock: RoomControlSocket): number | null {
-  return typeof sock.user?.roomId === 'number' ? sock.user.roomId : null
-}
-
-function emitToRoom (sock: RoomControlSocket, type: string, payload: unknown): void {
-  const roomId = getRoomId(sock)
-  if (roomId === null) return
-
-  sock.server?.to(Rooms.prefix(roomId)).emit('action', {
-    type,
-    payload,
-  })
-}
-
-function emitToSocket (sock: RoomControlSocket, socketId: string, type: string, payload: unknown): void {
-  sock.server?.to(socketId).emit('action', {
-    type,
-    payload,
-  })
-}
-
-function registerCameraOfferRoute (sock: RoomControlSocket): CameraRoute | null {
-  const roomId = getRoomId(sock)
-  if (roomId === null || typeof sock.id !== 'string') return null
-
-  const route: CameraRoute = {
-    publisherSocketId: sock.id,
-    subscriberSocketId: null,
-  }
-
-  cameraRoutesByRoom.set(roomId, route)
-  return route
-}
-
-function getCameraRoute (sock: RoomControlSocket): CameraRoute | null {
-  const roomId = getRoomId(sock)
-  if (roomId === null) return null
-  return cameraRoutesByRoom.get(roomId) ?? null
-}
-
-function clearCameraRoute (sock: RoomControlSocket): void {
-  const roomId = getRoomId(sock)
-  if (roomId === null) return
-  cameraRoutesByRoom.delete(roomId)
 }
 
 async function getRoomControlAccess (sock: RoomControlSocket): Promise<RoomControlAccess> {
@@ -194,6 +140,29 @@ async function canRelayCamera (sock: RoomControlSocket): Promise<boolean> {
   return access.hasRoom && (access.canManage || access.accessPrefs.allowGuestCameraRelay)
 }
 
+function emitCameraRelay (sock: RoomControlSocket, type: string, payload: unknown): void {
+  const roomId = sock.user?.roomId
+  if (typeof roomId !== 'number') return
+
+  const relaySock = sock as RoomControlSocket & {
+    to?: (room: string) => { emit: (event: string, payload: unknown) => void }
+    server?: { to: (room: string) => { emit: (event: string, payload: unknown) => void } }
+  }
+
+  const roomPrefix = Rooms.prefix(roomId)
+  const userName = sock.user?.name ?? 'unknown'
+  log.verbose('camera relay %s room=%s sender=%s socket=%s', type, roomId, userName, sock.id)
+
+  // Keep signaling directional: do not echo back to sender.
+  if (typeof relaySock.to === 'function') {
+    relaySock.to(roomPrefix).emit('action', { type, payload })
+    return
+  }
+
+  // Fallback for tests/mocks that do not expose sock.to
+  relaySock.server?.to(roomPrefix).emit('action', { type, payload })
+}
+
 // ------------------------------------
 // Action Handlers
 // ------------------------------------
@@ -202,151 +171,127 @@ const ACTION_HANDLERS = {
     if (!(await canManageRoom(sock))) return
 
     // @todo: emit to players only
-    emitToRoom(sock, PLAYER_CMD_OPTIONS, payload)
+    sock.server.to(Rooms.prefix(sock.user.roomId)).emit('action', {
+      type: PLAYER_CMD_OPTIONS,
+      payload,
+    })
   },
   [PLAYER_REQ_NEXT]: async (sock) => {
     if (!(await canManageRoom(sock))) return
 
     // @todo: emit to players only
-    emitToRoom(sock, PLAYER_CMD_NEXT, undefined)
+    sock.server.to(Rooms.prefix(sock.user.roomId)).emit('action', {
+      type: PLAYER_CMD_NEXT,
+    })
   },
   [PLAYER_REQ_PAUSE]: async (sock) => {
     if (!(await canManageRoom(sock))) return
 
     // @todo: emit to players only
-    emitToRoom(sock, PLAYER_CMD_PAUSE, undefined)
+    sock.server.to(Rooms.prefix(sock.user.roomId)).emit('action', {
+      type: PLAYER_CMD_PAUSE,
+    })
   },
   [PLAYER_REQ_PLAY]: async (sock) => {
     if (!(await canManageRoom(sock))) return
 
     // @todo: emit to players only
-    emitToRoom(sock, PLAYER_CMD_PLAY, undefined)
+    sock.server.to(Rooms.prefix(sock.user.roomId)).emit('action', {
+      type: PLAYER_CMD_PLAY,
+    })
   },
   [PLAYER_REQ_REPLAY]: async (sock, { payload }) => {
     if (!(await canManageRoom(sock))) return
 
     // @todo: emit to players only
-    emitToRoom(sock, PLAYER_CMD_REPLAY, payload)
+    sock.server.to(Rooms.prefix(sock.user.roomId)).emit('action', {
+      type: PLAYER_CMD_REPLAY,
+      payload,
+    })
   },
   [PLAYER_REQ_VOLUME]: async (sock, { payload }) => {
     if (!(await canManageRoom(sock))) return
 
     // @todo: emit to players only
-    emitToRoom(sock, PLAYER_CMD_VOLUME, payload)
+    sock.server.to(Rooms.prefix(sock.user.roomId)).emit('action', {
+      type: PLAYER_CMD_VOLUME,
+      payload,
+    })
   },
   [PLAYER_EMIT_FFT]: async (sock, { payload }) => {
-    emitToRoom(sock, PLAYER_FFT, payload)
+    sock.server.to(Rooms.prefix(sock.user.roomId)).emit('action', {
+      type: PLAYER_FFT,
+      payload,
+    })
   },
   [PLAYER_EMIT_STATUS]: async (sock, { payload }) => {
     // so we can tell the room when players leave and
     // relay last known player status on client join
     sock._lastPlayerStatus = payload
 
-    emitToRoom(sock, PLAYER_STATUS, payload)
+    sock.server.to(Rooms.prefix(sock.user.roomId)).emit('action', {
+      type: PLAYER_STATUS,
+      payload,
+    })
   },
   [VISUALIZER_HYDRA_CODE_REQ]: async (sock, { payload }) => {
     const payloadObject = payload && typeof payload === 'object' ? payload as Record<string, unknown> : undefined
     if (!(await canSendHydraCode(sock, payloadObject))) return
 
-    emitToRoom(sock, VISUALIZER_HYDRA_CODE, payload)
+    sock.server.to(Rooms.prefix(sock.user.roomId)).emit('action', {
+      type: VISUALIZER_HYDRA_CODE,
+      payload,
+    })
   },
   [VISUALIZER_STATE_SYNC_REQ]: async (sock, { payload }) => {
     if (!(await canSendVisualizer(sock))) return
 
-    emitToRoom(sock, VISUALIZER_STATE_SYNC, payload)
+    sock.server.to(Rooms.prefix(sock.user.roomId)).emit('action', {
+      type: VISUALIZER_STATE_SYNC,
+      payload,
+    })
   },
   [CAMERA_OFFER_REQ]: async (sock, { payload }) => {
-    if (!(await canRelayCamera(sock))) return
+    if (!(await canRelayCamera(sock))) {
+      log.verbose('camera relay denied %s room=%s socket=%s', CAMERA_OFFER_REQ, sock.user?.roomId, sock.id)
+      return
+    }
 
-    registerCameraOfferRoute(sock)
-    emitToRoom(sock, CAMERA_OFFER, payload)
+    emitCameraRelay(sock, CAMERA_OFFER, payload)
   },
   [CAMERA_ANSWER_REQ]: async (sock, { payload }) => {
-    if (!(await canRelayCamera(sock))) return
-
-    const route = getCameraRoute(sock)
-    const senderId = typeof sock.id === 'string' ? sock.id : null
-
-    if (route && senderId) {
-      if (senderId === route.publisherSocketId) {
-        if (route.subscriberSocketId) {
-          emitToSocket(sock, route.subscriberSocketId, CAMERA_ANSWER, payload)
-        }
-        return
-      }
-
-      if (route.subscriberSocketId === null) {
-        route.subscriberSocketId = senderId
-        emitToSocket(sock, route.publisherSocketId, CAMERA_ANSWER, payload)
-        return
-      }
-
-      if (senderId === route.subscriberSocketId) {
-        emitToSocket(sock, route.publisherSocketId, CAMERA_ANSWER, payload)
-      }
-
+    if (!(await canRelayCamera(sock))) {
+      log.verbose('camera relay denied %s room=%s socket=%s', CAMERA_ANSWER_REQ, sock.user?.roomId, sock.id)
       return
     }
 
-    emitToRoom(sock, CAMERA_ANSWER, payload)
+    emitCameraRelay(sock, CAMERA_ANSWER, payload)
   },
   [CAMERA_ICE_REQ]: async (sock, { payload }) => {
-    if (!(await canRelayCamera(sock))) return
-
-    const route = getCameraRoute(sock)
-    const senderId = typeof sock.id === 'string' ? sock.id : null
-
-    if (route && senderId) {
-      if (senderId === route.publisherSocketId) {
-        if (route.subscriberSocketId) {
-          emitToSocket(sock, route.subscriberSocketId, CAMERA_ICE, payload)
-        } else {
-          emitToRoom(sock, CAMERA_ICE, payload)
-        }
-        return
-      }
-
-      if (route.subscriberSocketId === null) {
-        route.subscriberSocketId = senderId
-        emitToSocket(sock, route.publisherSocketId, CAMERA_ICE, payload)
-        return
-      }
-
-      if (senderId === route.subscriberSocketId) {
-        emitToSocket(sock, route.publisherSocketId, CAMERA_ICE, payload)
-      }
-
+    if (!(await canRelayCamera(sock))) {
+      log.verbose('camera relay denied %s room=%s socket=%s', CAMERA_ICE_REQ, sock.user?.roomId, sock.id)
       return
     }
 
-    emitToRoom(sock, CAMERA_ICE, payload)
+    emitCameraRelay(sock, CAMERA_ICE, payload)
   },
   [CAMERA_STOP_REQ]: async (sock, { payload }) => {
-    if (!(await canRelayCamera(sock))) return
-
-    const route = getCameraRoute(sock)
-    if (route) {
-      const senderId = typeof sock.id === 'string' ? sock.id : null
-      if (senderId === route.publisherSocketId && route.subscriberSocketId) {
-        emitToSocket(sock, route.subscriberSocketId, CAMERA_STOP, payload)
-      } else if (senderId === route.subscriberSocketId) {
-        emitToSocket(sock, route.publisherSocketId, CAMERA_STOP, payload)
-      } else {
-        emitToRoom(sock, CAMERA_STOP, payload)
-      }
-
-      clearCameraRoute(sock)
+    if (!(await canRelayCamera(sock))) {
+      log.verbose('camera relay denied %s room=%s socket=%s', CAMERA_STOP_REQ, sock.user?.roomId, sock.id)
       return
     }
 
-    emitToRoom(sock, CAMERA_STOP, payload)
+    emitCameraRelay(sock, CAMERA_STOP, payload)
   },
   [PLAYER_EMIT_LEAVE]: async (sock) => {
     sock._lastPlayerStatus = null
 
     // any players left in room?
     if (!Rooms.isPlayerPresent(sock.server, sock.user.roomId)) {
-      emitToRoom(sock, PLAYER_LEAVE, { socketId: sock.id })
+      sock.server.to(Rooms.prefix(sock.user.roomId)).emit('action', {
+        type: PLAYER_LEAVE,
+        payload: { socketId: sock.id },
+      })
     }
   },
 }
