@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { Readable } from 'stream'
+import fs from 'fs/promises'
+import path from 'path'
+import os from 'os'
 
 // Mock the logger before importing router (logger not initialized in test env)
 vi.mock('../lib/Log.js', () => ({
@@ -7,6 +10,7 @@ vi.mock('../lib/Log.js', () => ({
 }))
 
 import { isUrlAllowed, isContentTypeAllowed, MAX_SIZE_BYTES } from './router.js'
+import { setVideoCacheDir, getCachePath, getCacheMetaPath } from './cache.js'
 
 /**
  * Helper to get the GET / handler from the router's internal stack.
@@ -291,6 +295,109 @@ describe('VideoProxy', () => {
       expect(ctx._responseHeaders['accept-ranges']).toBe('bytes')
       // Body should be a Node.js Readable stream
       expect(ctx.body).toBeInstanceOf(Readable)
+    })
+  })
+
+  describe('Cache integration', () => {
+    let originalFetch: typeof globalThis.fetch
+    let tmpDir: string
+
+    beforeEach(async () => {
+      originalFetch = globalThis.fetch
+      tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'videoproxy-router-test-'))
+      setVideoCacheDir(tmpDir)
+    })
+
+    afterEach(async () => {
+      globalThis.fetch = originalFetch
+      setVideoCacheDir('')
+      // Small delay to let tee-to-cache file operations complete before cleanup
+      await new Promise(r => setTimeout(r, 50))
+      await fs.rm(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 50 })
+    })
+
+    it('serves from cache on hit with correct content-type', async () => {
+      const url = 'https://example.com/cached-video.mp4'
+      const fileContent = 'cached-video-bytes'
+
+      // Pre-populate cache
+      const filePath = getCachePath(tmpDir, url)
+      await fs.writeFile(filePath, fileContent)
+      await fs.writeFile(getCacheMetaPath(filePath), 'video/webm')
+
+      // fetch should NOT be called
+      globalThis.fetch = vi.fn(async () => {
+        throw new Error('Should not reach upstream')
+      }) as typeof fetch
+
+      const handler = await getHandler()
+      const ctx = createCtx({ url })
+      await handler(ctx, async () => {})
+
+      expect(ctx.status).toBe(200)
+      expect(ctx._responseHeaders['content-type']).toBe('video/webm')
+      expect(ctx._responseHeaders['accept-ranges']).toBe('bytes')
+      expect(ctx._responseHeaders['content-length']).toBe(String(fileContent.length))
+      expect(globalThis.fetch).not.toHaveBeenCalled()
+    })
+
+    it('falls through to upstream on cache miss', async () => {
+      globalThis.fetch = vi.fn(async () =>
+        createUpstreamResponse({
+          status: 200,
+          ok: true,
+          headers: {
+            'content-type': 'video/mp4',
+            'content-length': '100',
+          },
+          body: 'upstream-data',
+        }),
+      ) as typeof fetch
+
+      const handler = await getHandler()
+      const ctx = createCtx({ url: 'https://example.com/uncached.mp4' })
+      await handler(ctx, async () => {})
+
+      expect(globalThis.fetch).toHaveBeenCalledTimes(1)
+      expect(ctx.body).toBeDefined()
+    })
+
+    it('handles Range requests on cached file with 206', async () => {
+      const url = 'https://example.com/ranged.mp4'
+      const fileContent = 'abcdefghijklmnopqrstuvwxyz' // 26 bytes
+
+      const filePath = getCachePath(tmpDir, url)
+      await fs.writeFile(filePath, fileContent)
+      await fs.writeFile(getCacheMetaPath(filePath), 'video/mp4')
+
+      globalThis.fetch = vi.fn(async () => {
+        throw new Error('Should not reach upstream')
+      }) as typeof fetch
+
+      const handler = await getHandler()
+      const ctx = createCtx({ url }, { range: 'bytes=5-14' })
+      await handler(ctx, async () => {})
+
+      expect(ctx.status).toBe(206)
+      expect(ctx._responseHeaders['content-range']).toBe('bytes 5-14/26')
+      expect(ctx._responseHeaders['content-length']).toBe('10')
+      expect(globalThis.fetch).not.toHaveBeenCalled()
+    })
+
+    it('returns 416 for out-of-range on cached file', async () => {
+      const url = 'https://example.com/small.mp4'
+      const filePath = getCachePath(tmpDir, url)
+      await fs.writeFile(filePath, 'short')
+      await fs.writeFile(getCacheMetaPath(filePath), 'video/mp4')
+
+      globalThis.fetch = vi.fn(async () => {
+        throw new Error('Should not reach upstream')
+      }) as typeof fetch
+
+      const handler = await getHandler()
+      const ctx = createCtx({ url }, { range: 'bytes=100-200' })
+
+      await expect(handler(ctx, async () => {})).rejects.toMatchObject({ status: 416 })
     })
   })
 })

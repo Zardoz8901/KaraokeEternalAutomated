@@ -35,6 +35,7 @@ const env = {
   KES_SERVER_CONSOLE_LEVEL: parseInt(process.env.KES_SERVER_CONSOLE_LEVEL, 10) || undefined,
   KES_SERVER_LOG_LEVEL: parseInt(process.env.KES_SERVER_LOG_LEVEL, 10) || undefined,
   KES_URL_PATH: process.env.KES_URL_PATH || '/',
+  KES_VIDEO_CACHE_PATH: process.env.KES_VIDEO_CACHE_PATH || '',
   // support PUID/PGID convention
   KES_PUID: parseInt(process.env.PUID, 10) || undefined,
   KES_PGID: parseInt(process.env.PGID, 10) || undefined,

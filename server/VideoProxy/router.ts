@@ -1,6 +1,7 @@
 import { Readable } from 'stream'
 import KoaRouter from '@koa/router'
 import getLogger from '../lib/Log.js'
+import { getVideoCacheDir, isCached, teeToCache, serveCachedFile } from './cache.js'
 
 const log = getLogger('VideoProxy')
 const router = new KoaRouter({ prefix: '/api/video-proxy' })
@@ -78,6 +79,16 @@ router.get('/', async (ctx) => {
   const requestedUrl = typeof ctx.query.url === 'string' ? ctx.query.url : ''
   if (!isUrlAllowed(requestedUrl)) {
     ctx.throw(400, 'Invalid or disallowed URL')
+  }
+
+  // Cache hit — serve from disk with range support
+  const cacheDir = getVideoCacheDir()
+  if (cacheDir) {
+    const cached = await isCached(cacheDir, requestedUrl)
+    if (cached) {
+      log.verbose('cache hit: %s', cached.filePath)
+      return serveCachedFile(ctx, cached.filePath, cached.contentType)
+    }
   }
 
   const fetchHeaders: Record<string, string> = {}
@@ -174,8 +185,12 @@ router.get('/', async (ctx) => {
 
   log.verbose('proxying %s (%sMB): %s', contentType, contentLength ? (parseInt(contentLength, 10) / 1_000_000).toFixed(2) : '?', currentUrl)
 
-  // Convert Web ReadableStream to Node.js Readable for Koa compatibility
-  ctx.body = Readable.fromWeb(res.body as import('stream/web').ReadableStream)
+  // Tee to cache on full (non-range) 200 responses
+  if (cacheDir && res.status === 200 && res.body) {
+    ctx.body = teeToCache(cacheDir, requestedUrl, res.body, contentType!)
+  } else {
+    ctx.body = Readable.fromWeb(res.body as import('stream/web').ReadableStream)
+  }
 })
 
 export default router

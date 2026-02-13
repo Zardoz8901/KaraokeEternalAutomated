@@ -36,6 +36,7 @@ import User from './User/User.js'
 import Rooms from './Rooms/Rooms.js'
 import { createProxyValidator } from './lib/proxyValidator.js'
 import { isPublicApiPath } from './lib/publicPaths.js'
+import { setVideoCacheDir } from './VideoProxy/cache.js'
 
 const log = getLogger('server')
 const { verify: jwtVerify } = jsonWebToken
@@ -49,6 +50,13 @@ async function serverWorker ({ env, startScanner, stopScanner, shutdownHandlers 
   const urlPath = env.KES_URL_PATH.replace(/\/?$/, '/') // force trailing slash
   const jwtKey = await Prefs.getJwtKey(env.KES_ROTATE_KEY)
   const validateProxySource = createProxyValidator(env)
+
+  // Initialize video cache directory
+  const videoCachePath = env.KES_VIDEO_CACHE_PATH || path.join(env.KES_PATH_DATA, 'video-cache')
+  fs.mkdirSync(videoCachePath, { recursive: true })
+  setVideoCacheDir(videoCachePath)
+  log.info('Video cache: %s', videoCachePath)
+
   const app = new Koa()
 
   // Trust proxy headers (X-Forwarded-Proto, etc.) when behind a reverse proxy
