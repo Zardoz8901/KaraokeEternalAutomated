@@ -95,8 +95,11 @@ export async function isCached (cacheDir: string, url: string): Promise<CacheHit
  * Enforces maxSize during streaming — aborts if the byte count exceeds the
  * limit (handles chunked transfers without content-length).
  *
+ * Enforces idle timeout — aborts if no bytes arrive for `idleMs` (default 30s).
+ *
  * @param upstreamBody - Web ReadableStream from fetch()
  * @param maxSize - maximum bytes to accept before aborting
+ * @param idleMs - abort if no bytes arrive for this many ms (0 = no idle timeout)
  * @returns PassThrough stream suitable for ctx.body
  */
 export function teeToCache (
@@ -105,6 +108,7 @@ export function teeToCache (
   upstreamBody: ReadableStream,
   contentType: string,
   maxSize: number,
+  idleMs = 30_000,
 ): PassThrough {
   const filePath = getCachePath(cacheDir, url)
   const tmpPath = filePath + '.tmp'
@@ -114,12 +118,24 @@ export function teeToCache (
   let bytesWritten = 0
   let aborted = false
   let upstreamDone = false
+  let idleTimer: ReturnType<typeof setTimeout> | null = null
 
   const cleanupTmp = () => { fs.unlink(tmpPath).catch(() => {}) }
+
+  const clearIdleTimer = () => {
+    if (idleTimer) { clearTimeout(idleTimer); idleTimer = null }
+  }
+
+  const resetIdleTimer = () => {
+    if (!idleMs || aborted) return
+    clearIdleTimer()
+    idleTimer = setTimeout(() => { abort('Upstream idle timeout') }, idleMs)
+  }
 
   const abort = (reason: string) => {
     if (aborted) return
     aborted = true
+    clearIdleTimer()
     log.error('cache tee aborted: %s', reason)
     nodeStream.destroy()
     fileStream.destroy()
@@ -129,12 +145,17 @@ export function teeToCache (
 
   const nodeStream = Readable.fromWeb(upstreamBody as import('stream/web').ReadableStream)
 
-  // Count bytes and enforce max size
+  // Start the idle timer
+  resetIdleTimer()
+
+  // Count bytes, enforce max size, and reset idle timer on each chunk
   nodeStream.on('data', (chunk: Buffer) => {
     bytesWritten += chunk.length
     if (bytesWritten > maxSize) {
       abort('Upstream resource too large')
+      return
     }
+    resetIdleTimer()
   })
 
   // Pipe upstream → client (returned to Koa)
@@ -143,7 +164,10 @@ export function teeToCache (
   // Also pipe upstream → disk
   nodeStream.pipe(fileStream)
 
-  nodeStream.on('end', () => { upstreamDone = true })
+  nodeStream.on('end', () => {
+    clearIdleTimer()
+    upstreamDone = true
+  })
 
   // On successful write, finalize with atomic rename
   fileStream.on('finish', () => {
@@ -166,12 +190,14 @@ export function teeToCache (
   // On upstream error, clean up .tmp
   nodeStream.on('error', () => {
     if (aborted) return
+    clearIdleTimer()
     cleanupTmp()
   })
 
   // On client disconnect before upstream finishes, clean up partial .tmp
   client.on('close', () => {
     if (aborted || upstreamDone) return
+    clearIdleTimer()
     fileStream.destroy()
     cleanupTmp()
   })

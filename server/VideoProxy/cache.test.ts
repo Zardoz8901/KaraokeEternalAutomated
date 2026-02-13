@@ -205,6 +205,40 @@ describe('teeToCache', () => {
     // Final file should not exist either
     await expect(fs.access(filePath)).rejects.toThrow()
   })
+
+  it('aborts and cleans up .tmp when upstream idles past idleTimeout', async () => {
+    const url = 'https://example.com/idle-timeout.mp4'
+
+    let pushChunk: ((chunk: string) => void) | undefined
+    const webStream = new ReadableStream({
+      start (controller) {
+        pushChunk = (chunk: string) => {
+          controller.enqueue(new TextEncoder().encode(chunk))
+        }
+      },
+    })
+
+    // Use a very short idle timeout (50ms) for testing
+    const clientStream = teeToCache(tmpDir, url, webStream, 'video/mp4', 1024 * 1024, 50)
+
+    // Send one chunk to start the stream
+    pushChunk!('first-chunk')
+    await new Promise(resolve => setTimeout(resolve, 20))
+
+    // Now wait without sending data — idle timeout should fire
+    await new Promise<void>((resolve) => {
+      clientStream.on('error', () => resolve())
+      clientStream.on('close', () => resolve())
+    })
+
+    await new Promise(resolve => setTimeout(resolve, 50))
+
+    const filePath = getCachePath(tmpDir, url)
+    // .tmp should be cleaned up
+    await expect(fs.access(filePath + '.tmp')).rejects.toThrow()
+    // Final file should not exist
+    await expect(fs.access(filePath)).rejects.toThrow()
+  })
 })
 
 describe('serveCachedFile', () => {

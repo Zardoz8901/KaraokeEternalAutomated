@@ -142,6 +142,15 @@ router.get('/', async (ctx) => {
     fetchHeaders.Range = clientRange
   }
 
+  // Use a connect-only timeout: abort if headers haven't arrived within
+  // CONNECT_TIMEOUT_MS. Cleared after headers arrive so body streaming
+  // isn't killed by a hard timeout (large files can take minutes).
+  const ac = new AbortController()
+  let connectTimer: ReturnType<typeof setTimeout> | null = setTimeout(
+    () => ac.abort(new Error('Connect timeout')),
+    CONNECT_TIMEOUT_MS,
+  )
+
   let currentUrl = requestedUrl
   let redirects = 0
   let res: Response | null = null
@@ -149,11 +158,12 @@ router.get('/', async (ctx) => {
   while (true) {
     try {
       res = await fetch(currentUrl, {
-        signal: AbortSignal.timeout(CONNECT_TIMEOUT_MS),
+        signal: ac.signal,
         redirect: 'manual',
         headers: fetchHeaders,
       })
     } catch (err) {
+      if (connectTimer) clearTimeout(connectTimer)
       ctx.throw(502, `Upstream fetch failed: ${(err as Error).message}`)
       return // unreachable but satisfies TS
     }
@@ -187,6 +197,9 @@ router.get('/', async (ctx) => {
 
     break
   }
+
+  // Headers received — clear connect timeout so body streaming isn't killed
+  if (connectTimer) { clearTimeout(connectTimer); connectTimer = null }
 
   if (!res) {
     ctx.throw(502, 'Upstream response missing')
