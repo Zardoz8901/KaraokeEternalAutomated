@@ -7,7 +7,8 @@ const log = getLogger('VideoProxy')
 const router = new KoaRouter({ prefix: '/api/video-proxy' })
 
 export const MAX_SIZE_BYTES = 500 * 1024 * 1024 // 500 MB
-const TIMEOUT_MS = 15_000
+const CONNECT_TIMEOUT_MS = 15_000 // timeout for initial connection + headers
+const IDLE_TIMEOUT_MS = 30_000 // abort if no bytes arrive for this long
 const MAX_REDIRECTS = 5
 
 const PRIVATE_IP_PATTERNS = [
@@ -70,6 +71,50 @@ export function isContentTypeAllowed (ct: string | null): boolean {
   return mime.startsWith('video/') || mime.startsWith('audio/')
 }
 
+/**
+ * Wraps a Web ReadableStream with an idle timeout — aborts if no bytes
+ * arrive for `idleMs`. Returns a Node.js Readable.
+ */
+function idleTimeoutStream (webStream: ReadableStream, idleMs: number): Readable {
+  const reader = (webStream as import('stream/web').ReadableStream).getReader()
+  let timer: ReturnType<typeof setTimeout> | null = null
+
+  const resetTimer = (controller: ReadableStreamDefaultController<Uint8Array>) => {
+    if (timer) clearTimeout(timer)
+    timer = setTimeout(() => {
+      reader.cancel('idle timeout').catch(() => {})
+      controller.error(new Error('Upstream idle timeout'))
+    }, idleMs)
+  }
+
+  const wrapped = new ReadableStream<Uint8Array>({
+    start (controller) {
+      resetTimer(controller)
+    },
+    async pull (controller) {
+      try {
+        const { done, value } = await reader.read()
+        if (done) {
+          if (timer) clearTimeout(timer)
+          controller.close()
+        } else {
+          controller.enqueue(value)
+          resetTimer(controller)
+        }
+      } catch (err) {
+        if (timer) clearTimeout(timer)
+        controller.error(err)
+      }
+    },
+    cancel () {
+      if (timer) clearTimeout(timer)
+      reader.cancel().catch(() => {})
+    },
+  })
+
+  return Readable.fromWeb(wrapped as import('stream/web').ReadableStream)
+}
+
 // GET /api/video-proxy?url=<encoded-url>
 router.get('/', async (ctx) => {
   if (!ctx.user?.userId) {
@@ -104,7 +149,7 @@ router.get('/', async (ctx) => {
   while (true) {
     try {
       res = await fetch(currentUrl, {
-        signal: AbortSignal.timeout(TIMEOUT_MS),
+        signal: AbortSignal.timeout(CONNECT_TIMEOUT_MS),
         redirect: 'manual',
         headers: fetchHeaders,
       })
@@ -185,11 +230,11 @@ router.get('/', async (ctx) => {
 
   log.verbose('proxying %s (%sMB): %s', contentType, contentLength ? (parseInt(contentLength, 10) / 1_000_000).toFixed(2) : '?', currentUrl)
 
-  // Tee to cache on full (non-range) 200 responses
-  if (cacheDir && res.status === 200 && res.body) {
-    ctx.body = teeToCache(cacheDir, requestedUrl, res.body, contentType!)
+  // Tee to cache on full 200 responses only (not Range/206 — those are partial)
+  if (cacheDir && res.status === 200 && !clientRange && res.body) {
+    ctx.body = teeToCache(cacheDir, requestedUrl, res.body, contentType!, MAX_SIZE_BYTES)
   } else {
-    ctx.body = Readable.fromWeb(res.body as import('stream/web').ReadableStream)
+    ctx.body = idleTimeoutStream(res.body!, IDLE_TIMEOUT_MS)
   }
 })
 

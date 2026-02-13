@@ -119,7 +119,7 @@ describe('teeToCache', () => {
       },
     })
 
-    const clientStream = teeToCache(tmpDir, url, webStream, contentType)
+    const clientStream = teeToCache(tmpDir, url, webStream, contentType, 1024 * 1024)
 
     // Consume the client stream
     const chunks: Buffer[] = []
@@ -145,6 +145,65 @@ describe('teeToCache', () => {
 
     // .tmp should not exist
     await expect(fs.access(filePath + '.tmp')).rejects.toThrow()
+  })
+
+  it('aborts and cleans up .tmp when stream exceeds maxSize', async () => {
+    const url = 'https://example.com/toobig.mp4'
+    const maxSize = 10 // 10 bytes max
+    const data = 'this-is-way-more-than-ten-bytes-of-data'
+
+    const webStream = new ReadableStream({
+      start (controller) {
+        controller.enqueue(new TextEncoder().encode(data))
+        controller.close()
+      },
+    })
+
+    const clientStream = teeToCache(tmpDir, url, webStream, 'video/mp4', maxSize)
+
+    // Client stream should error
+    await new Promise<void>((resolve) => {
+      clientStream.on('error', () => resolve())
+      clientStream.on('end', () => resolve())
+      clientStream.resume() // drain
+    })
+
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    const filePath = getCachePath(tmpDir, url)
+    // Neither final file nor .tmp should exist
+    await expect(fs.access(filePath)).rejects.toThrow()
+    await expect(fs.access(filePath + '.tmp')).rejects.toThrow()
+  })
+
+  it('cleans up .tmp when client disconnects mid-stream', async () => {
+    const url = 'https://example.com/disconnect.mp4'
+
+    let pushChunk: ((chunk: string) => void) | undefined
+    const webStream = new ReadableStream({
+      start (controller) {
+        pushChunk = (chunk: string) => {
+          controller.enqueue(new TextEncoder().encode(chunk))
+        }
+      },
+    })
+
+    const clientStream = teeToCache(tmpDir, url, webStream, 'video/mp4', 1024 * 1024)
+
+    // Read one chunk
+    pushChunk!('first-chunk')
+    await new Promise(resolve => setTimeout(resolve, 20))
+
+    // Simulate client disconnect
+    clientStream.destroy()
+
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    const filePath = getCachePath(tmpDir, url)
+    // .tmp should be cleaned up (no partial file left behind)
+    await expect(fs.access(filePath + '.tmp')).rejects.toThrow()
+    // Final file should not exist either
+    await expect(fs.access(filePath)).rejects.toThrow()
   })
 })
 
@@ -207,6 +266,26 @@ describe('serveCachedFile', () => {
   it('throws 416 for invalid range format', async () => {
     const ctx = createCtx({ range: 'bytes=abc' })
     await expect(serveCachedFile(ctx, filePath, contentType)).rejects.toMatchObject({ status: 416 })
+  })
+
+  it('serves 206 with suffix range bytes=-N (last N bytes)', async () => {
+    const ctx = createCtx({ range: 'bytes=-6' })
+    await serveCachedFile(ctx, filePath, contentType)
+
+    expect(ctx.status).toBe(206)
+    // Last 6 bytes of 26-byte file → bytes 20-25
+    expect(ctx._responseHeaders['content-range']).toBe('bytes 20-25/26')
+    expect(ctx._responseHeaders['content-length']).toBe('6')
+  })
+
+  it('clamps suffix range to file size when larger', async () => {
+    const ctx = createCtx({ range: 'bytes=-100' })
+    await serveCachedFile(ctx, filePath, contentType)
+
+    expect(ctx.status).toBe(206)
+    // Suffix exceeds file size → serve whole file as 206
+    expect(ctx._responseHeaders['content-range']).toBe('bytes 0-25/26')
+    expect(ctx._responseHeaders['content-length']).toBe('26')
   })
 })
 

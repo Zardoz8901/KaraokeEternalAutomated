@@ -90,9 +90,13 @@ export async function isCached (cacheDir: string, url: string): Promise<CacheHit
 /**
  * Tees an upstream response body to both the returned PassThrough (for the
  * client) AND a temporary file on disk. On complete: writes .meta, does
- * atomic rename. On error: cleans up the .tmp file.
+ * atomic rename. On error/abort/client disconnect: cleans up the .tmp file.
+ *
+ * Enforces maxSize during streaming — aborts if the byte count exceeds the
+ * limit (handles chunked transfers without content-length).
  *
  * @param upstreamBody - Web ReadableStream from fetch()
+ * @param maxSize - maximum bytes to accept before aborting
  * @returns PassThrough stream suitable for ctx.body
  */
 export function teeToCache (
@@ -100,14 +104,38 @@ export function teeToCache (
   url: string,
   upstreamBody: ReadableStream,
   contentType: string,
+  maxSize: number,
 ): PassThrough {
   const filePath = getCachePath(cacheDir, url)
   const tmpPath = filePath + '.tmp'
   const metaPath = getCacheMetaPath(filePath)
   const client = new PassThrough()
   const fileStream = createWriteStream(tmpPath)
+  let bytesWritten = 0
+  let aborted = false
+  let upstreamDone = false
+
+  const cleanupTmp = () => { fs.unlink(tmpPath).catch(() => {}) }
+
+  const abort = (reason: string) => {
+    if (aborted) return
+    aborted = true
+    log.error('cache tee aborted: %s', reason)
+    nodeStream.destroy()
+    fileStream.destroy()
+    client.destroy(new Error(reason))
+    cleanupTmp()
+  }
 
   const nodeStream = Readable.fromWeb(upstreamBody as import('stream/web').ReadableStream)
+
+  // Count bytes and enforce max size
+  nodeStream.on('data', (chunk: Buffer) => {
+    bytesWritten += chunk.length
+    if (bytesWritten > maxSize) {
+      abort('Upstream resource too large')
+    }
+  })
 
   // Pipe upstream → client (returned to Koa)
   nodeStream.pipe(client)
@@ -115,26 +143,38 @@ export function teeToCache (
   // Also pipe upstream → disk
   nodeStream.pipe(fileStream)
 
-  // On successful write, finalize
+  nodeStream.on('end', () => { upstreamDone = true })
+
+  // On successful write, finalize with atomic rename
   fileStream.on('finish', () => {
-    // Write meta then atomic rename
+    if (aborted) return
     fs.writeFile(metaPath, contentType, 'utf-8')
       .then(() => fs.rename(tmpPath, filePath))
       .then(() => log.verbose('cached: %s', filePath))
       .catch(err => {
         log.error('cache finalize error: %s', err.message)
-        fs.unlink(tmpPath).catch(() => {})
+        cleanupTmp()
       })
   })
 
-  // On write error, clean up .tmp
-  fileStream.on('error', (err) => {
-    log.error('cache write error: %s', err.message)
-    fs.unlink(tmpPath).catch(() => {})
+  // On file write error, clean up .tmp
+  fileStream.on('error', () => {
+    if (aborted) return
+    cleanupTmp()
   })
 
-  // If the client disconnects, the upstream pipe handles its own lifecycle
-  // but we let the file write continue to completion.
+  // On upstream error, clean up .tmp
+  nodeStream.on('error', () => {
+    if (aborted) return
+    cleanupTmp()
+  })
+
+  // On client disconnect before upstream finishes, clean up partial .tmp
+  client.on('close', () => {
+    if (aborted || upstreamDone) return
+    fileStream.destroy()
+    cleanupTmp()
+  })
 
   return client
 }
@@ -162,14 +202,26 @@ export async function serveCachedFile (
 
   const rangeHeader = ctx.get('Range')
   if (rangeHeader) {
-    const match = /^bytes=(\d+)-(\d*)$/.exec(rangeHeader)
-    if (!match) {
-      ctx.set('Content-Range', `bytes */${totalSize}`)
-      ctx.throw(416, 'Invalid range')
-    }
+    let start: number
+    let end: number
 
-    const start = parseInt(match[1], 10)
-    const end = match[2] ? parseInt(match[2], 10) : totalSize - 1
+    // bytes=-suffix (last N bytes)
+    const suffixMatch = /^bytes=-(\d+)$/.exec(rangeHeader)
+    if (suffixMatch) {
+      const suffix = parseInt(suffixMatch[1], 10)
+      start = Math.max(0, totalSize - suffix)
+      end = totalSize - 1
+    } else {
+      // bytes=start-end or bytes=start-
+      const match = /^bytes=(\d+)-(\d*)$/.exec(rangeHeader)
+      if (!match) {
+        ctx.set('Content-Range', `bytes */${totalSize}`)
+        ctx.throw(416, 'Invalid range')
+      }
+
+      start = parseInt(match[1], 10)
+      end = match[2] ? parseInt(match[2], 10) : totalSize - 1
+    }
 
     if (start >= totalSize || end >= totalSize || start > end) {
       ctx.set('Content-Range', `bytes */${totalSize}`)
