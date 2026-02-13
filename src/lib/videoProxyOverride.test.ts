@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
-import { applyVideoProxyOverride, restoreVideoProxyOverride, HYDRA_VIDEO_READY_EVENT } from './videoProxyOverride'
+import { applyVideoProxyOverride, restoreVideoProxyOverride, HYDRA_VIDEO_READY_EVENT, protectVideoElement, isProtectedVideoElement } from './videoProxyOverride'
 
 type MockSource = {
   initVideo: (url?: string, params?: Record<string, unknown>) => void
@@ -400,14 +400,17 @@ describe('videoProxyOverride', () => {
       expect(source.regl.texture).toHaveBeenCalledWith({ shape: [1, 1] })
     })
 
-    it('does not cleanup MediaStream srcObject', () => {
+    it('stops tracks and clears srcObject when prevSrc is an unprotected MediaStream video', () => {
       spyOnCreateElement()
       const source = makeSource()
-      // Simulate a source with a MediaStream (WebRTC camera)
+      // Simulate a source with a local camera MediaStream (getUserMedia)
       const streamVideo = document.createElement('video')
+      const stopSpy = vi.fn()
+      const mockStream = { getTracks: () => [{ stop: stopSpy }, { stop: stopSpy }] }
       Object.defineProperty(streamVideo, 'srcObject', {
-        value: {}, // truthy srcObject simulates a MediaStream
+        value: mockStream,
         writable: true,
+        configurable: true,
       })
       source.src = streamVideo
       const pauseSpy = vi.spyOn(streamVideo, 'pause')
@@ -418,7 +421,37 @@ describe('videoProxyOverride', () => {
       applyVideoProxyOverride(['s0'], globals, overrides)
       source.initVideo('https://example.com/video.mp4')
 
-      // MediaStream video should NOT be cleaned up (pause/removeAttribute/load)
+      // Unprotected MediaStream video MUST have tracks stopped
+      expect(stopSpy).toHaveBeenCalledTimes(2)
+      expect(streamVideo.srcObject).toBeNull()
+      expect(pauseSpy).toHaveBeenCalled()
+    })
+
+    it('does NOT stop tracks when prevSrc is a protected relay element', () => {
+      spyOnCreateElement()
+      const source = makeSource()
+      // Simulate a source with a relay (WebRTC) MediaStream
+      const streamVideo = document.createElement('video')
+      const stopSpy = vi.fn()
+      const mockStream = { getTracks: () => [{ stop: stopSpy }] }
+      Object.defineProperty(streamVideo, 'srcObject', {
+        value: mockStream,
+        writable: true,
+        configurable: true,
+      })
+      // Mark as protected relay element
+      protectVideoElement(streamVideo)
+      source.src = streamVideo
+      const pauseSpy = vi.spyOn(streamVideo, 'pause')
+
+      const globals: Record<string, unknown> = { s0: source }
+      const overrides = new Map<string, unknown>()
+
+      applyVideoProxyOverride(['s0'], globals, overrides)
+      source.initVideo('https://example.com/video.mp4')
+
+      // Protected relay element MUST NOT have tracks stopped
+      expect(stopSpy).not.toHaveBeenCalled()
       expect(pauseSpy).not.toHaveBeenCalled()
     })
   })
@@ -486,6 +519,22 @@ describe('videoProxyOverride', () => {
       // Fire loadeddata on second (current) video
       fireLoadedData(videos[1])
       expect(fireCount).toBe(1)
+    })
+  })
+
+  describe('protectVideoElement / isProtectedVideoElement helpers', () => {
+    it('marks an element as protected', () => {
+      const el = document.createElement('video')
+      expect(isProtectedVideoElement(el)).toBe(false)
+      protectVideoElement(el)
+      expect(isProtectedVideoElement(el)).toBe(true)
+    })
+
+    it('is idempotent (protect twice does not throw)', () => {
+      const el = document.createElement('video')
+      protectVideoElement(el)
+      protectVideoElement(el)
+      expect(isProtectedVideoElement(el)).toBe(true)
     })
   })
 

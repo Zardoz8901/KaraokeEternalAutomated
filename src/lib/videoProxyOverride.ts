@@ -8,6 +8,22 @@ type HydraExternalSource = {
 
 export const HYDRA_VIDEO_READY_EVENT = 'hydra:video-ready'
 
+/**
+ * Protected video elements are relay (WebRTC) streams that must NOT have
+ * their tracks stopped during soft-clear. Local camera streams from
+ * getUserMedia() are NOT protected and will have tracks stopped to free
+ * decoder resources.
+ */
+const protectedElements = new WeakSet<HTMLVideoElement>()
+
+export function protectVideoElement (el: HTMLVideoElement): void {
+  protectedElements.add(el)
+}
+
+export function isProtectedVideoElement (el: HTMLVideoElement): boolean {
+  return protectedElements.has(el)
+}
+
 const PROXY_PATH = 'api/video-proxy'
 const SEEK_TIMEOUT_MS = 300
 
@@ -68,10 +84,27 @@ export function applyVideoProxyOverride (
       }
 
       // Soft-clear: blank the source immediately so stale camera/video frames
-      // don't render during the async load gap. Skip MediaStream sources (srcObject).
+      // don't render during the async load gap.
       const prevSrc = this.src as HTMLVideoElement | null
-      if (prevSrc instanceof HTMLVideoElement && !prevSrc.srcObject) {
-        cleanupVideo(prevSrc)
+      if (prevSrc instanceof HTMLVideoElement) {
+        if (prevSrc.srcObject) {
+          if (!protectedElements.has(prevSrc)) {
+            // Local camera (getUserMedia) — stop tracks to free decoder resources
+            try {
+              const stream = prevSrc.srcObject as unknown
+              if (stream && typeof (stream as { getTracks?: unknown }).getTracks === 'function') {
+                (stream as MediaStream).getTracks().forEach(t => t.stop())
+              }
+            } catch {
+              // Non-MediaStream srcObject or already stopped — safe to ignore
+            }
+            prevSrc.srcObject = null
+            prevSrc.pause()
+          }
+          // Protected relay elements — don't touch
+        } else {
+          cleanupVideo(prevSrc)
+        }
       }
       this.src = null
       if (this.regl) {

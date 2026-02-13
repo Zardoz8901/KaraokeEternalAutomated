@@ -8,7 +8,7 @@ import { useHydraAudio } from './hooks/useHydraAudio'
 import { getHydraEvalCode, DEFAULT_PATCH } from './hydraEvalCode'
 import { detectCameraUsage } from 'lib/detectCameraUsage'
 import { applyRemoteCameraOverride, restoreRemoteCameraOverride } from 'lib/remoteCameraOverride'
-import { applyVideoProxyOverride, restoreVideoProxyOverride, HYDRA_VIDEO_READY_EVENT } from 'lib/videoProxyOverride'
+import { applyVideoProxyOverride, restoreVideoProxyOverride, HYDRA_VIDEO_READY_EVENT, protectVideoElement } from 'lib/videoProxyOverride'
 import { shouldEmitFft } from './hooks/emitFftPolicy'
 import type { HydraAudioCompat } from './hooks/hydraAudioCompat'
 import styles from './HydraVisualizer.css'
@@ -213,6 +213,7 @@ function HydraVisualizer ({
     }
 
     if (nextRemote) {
+      protectVideoElement(nextRemote)
       cameraDiag('applyRemoteCameraOverride', snapshotVideoElement(nextRemote))
       applyRemoteCameraOverride(sources, nextRemote, w, cameraOverrideRef.current)
     } else {
