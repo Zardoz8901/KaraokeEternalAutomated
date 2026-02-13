@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
-import { applyVideoProxyOverride, restoreVideoProxyOverride } from './videoProxyOverride'
+import { applyVideoProxyOverride, restoreVideoProxyOverride, HYDRA_VIDEO_READY_EVENT } from './videoProxyOverride'
 
 type MockSource = {
   initVideo: (url?: string, params?: Record<string, unknown>) => void
@@ -420,6 +420,72 @@ describe('videoProxyOverride', () => {
 
       // MediaStream video should NOT be cleaned up (pause/removeAttribute/load)
       expect(pauseSpy).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('hydra:video-ready event', () => {
+    it('dispatches on globals when video binds (loadeddata path)', () => {
+      const videos = spyOnCreateElement()
+      const source = makeSource()
+      const target = new EventTarget()
+      const globals = Object.assign(target, { s0: source }) as unknown as Record<string, unknown>
+      const overrides = new Map<string, unknown>()
+
+      let fired = false
+      target.addEventListener(HYDRA_VIDEO_READY_EVENT, () => { fired = true })
+
+      applyVideoProxyOverride(['s0'], globals, overrides)
+      source.initVideo('https://example.com/video.mp4')
+      fireLoadedData(videos[0])
+
+      expect(fired).toBe(true)
+    })
+
+    it('dispatches on globals when video binds (seeked path with startTime)', () => {
+      const videos = spyOnCreateElement()
+      const source = makeSource()
+      const target = new EventTarget()
+      const globals = Object.assign(target, { s0: source }) as unknown as Record<string, unknown>
+      const overrides = new Map<string, unknown>()
+
+      let fired = false
+      target.addEventListener(HYDRA_VIDEO_READY_EVENT, () => { fired = true })
+
+      applyVideoProxyOverride(['s0'], globals, overrides)
+      source.initVideo('https://example.com/video.mp4', { startTime: 42 })
+
+      const vid = videos[0]
+      Object.defineProperty(vid, 'duration', { value: 120, writable: true })
+      fireLoadedData(vid)
+
+      // Not yet — waiting for seeked
+      expect(fired).toBe(false)
+
+      fireSeeked(vid)
+      expect(fired).toBe(true)
+    })
+
+    it('does not dispatch on stale bind (epoch guard)', () => {
+      const videos = spyOnCreateElement()
+      const source = makeSource()
+      const target = new EventTarget()
+      const globals = Object.assign(target, { s0: source }) as unknown as Record<string, unknown>
+      const overrides = new Map<string, unknown>()
+
+      let fireCount = 0
+      target.addEventListener(HYDRA_VIDEO_READY_EVENT, () => { fireCount++ })
+
+      applyVideoProxyOverride(['s0'], globals, overrides)
+      source.initVideo('https://example.com/video1.mp4')
+      source.initVideo('https://example.com/video2.mp4')
+
+      // Fire loadeddata on first (stale) video
+      fireLoadedData(videos[0])
+      expect(fireCount).toBe(0)
+
+      // Fire loadeddata on second (current) video
+      fireLoadedData(videos[1])
+      expect(fireCount).toBe(1)
     })
   })
 

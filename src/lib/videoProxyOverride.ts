@@ -6,6 +6,8 @@ type HydraExternalSource = {
   dynamic?: boolean
 }
 
+export const HYDRA_VIDEO_READY_EVENT = 'hydra:video-ready'
+
 const PROXY_PATH = 'api/video-proxy'
 const SEEK_TIMEOUT_MS = 300
 
@@ -127,6 +129,13 @@ export function applyVideoProxyOverride (
           this.tex = this.regl.texture({ data: vid, ...reglParams })
         }
         this.dynamic = true
+
+        // Signal that a video source is ready — HydraVisualizer listens to
+        // fire a single tick so the new frame renders even when paused.
+        const target = globals as unknown as EventTarget
+        if (typeof target.dispatchEvent === 'function') {
+          target.dispatchEvent(new Event(HYDRA_VIDEO_READY_EVENT))
+        }
       }
 
       if (startTime !== undefined) {

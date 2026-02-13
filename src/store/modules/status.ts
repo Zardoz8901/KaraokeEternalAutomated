@@ -12,6 +12,7 @@ import {
   PLAYER_STATUS,
   PLAYER_FFT,
   PLAYER_LEAVE,
+  VISUALIZER_HYDRA_CODE,
 } from 'shared/actionTypes'
 import { MediaType, PlaybackOptions } from 'shared/types'
 
@@ -61,6 +62,14 @@ const playerLeaveInternal = createAction(PLAYER_LEAVE)
 const playerStatusInternal = createAction<Partial<StatusState>>(PLAYER_STATUS)
 const playerFftInternal = createAction<FftPayload>(PLAYER_FFT)
 const playerCmdOptionsInternal = createAction<{ visualizer?: Partial<PlayerVisualizerState> }>(PLAYER_CMD_OPTIONS)
+const hydraCodeInternal = createAction<{
+  code: string
+  hydraPresetIndex?: number
+  hydraPresetName?: string
+  hydraPresetId?: number | null
+  hydraPresetFolderId?: number | null
+  hydraPresetSource?: 'gallery' | 'folder'
+}>(VISUALIZER_HYDRA_CODE)
 
 const statusSlice = createSlice({
   name: 'status',
@@ -89,6 +98,32 @@ const statusSlice = createSlice({
           }
         },
       )
+      .addCase(hydraCodeInternal, (state, { payload }) => {
+        // Merge display-relevant metadata immediately so DisplayCtrl doesn't
+        // wait for the next PLAYER_STATUS throttle (~1s).
+        // Deliberately omit hydraCode (large, only needed by player).
+        const viz: Partial<PlayerVisualizerState> = {}
+
+        // Only update index+name together to prevent mismatch
+        if (typeof payload.hydraPresetName === 'string' && payload.hydraPresetName.trim()) {
+          viz.hydraPresetName = payload.hydraPresetName
+          if (typeof payload.hydraPresetIndex === 'number') {
+            viz.hydraPresetIndex = payload.hydraPresetIndex
+          }
+        }
+        if ('hydraPresetId' in payload) {
+          viz.hydraPresetId = typeof payload.hydraPresetId === 'number' ? payload.hydraPresetId : null
+        }
+        if ('hydraPresetFolderId' in payload) {
+          viz.hydraPresetFolderId = typeof payload.hydraPresetFolderId === 'number' ? payload.hydraPresetFolderId : null
+        }
+        if (payload.hydraPresetSource === 'gallery' || payload.hydraPresetSource === 'folder') {
+          viz.hydraPresetSource = payload.hydraPresetSource
+        }
+        if (Object.keys(viz).length > 0) {
+          state.visualizer = { ...state.visualizer, ...viz }
+        }
+      })
   },
 })
 

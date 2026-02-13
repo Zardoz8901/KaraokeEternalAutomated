@@ -8,7 +8,7 @@ import { useHydraAudio } from './hooks/useHydraAudio'
 import { getHydraEvalCode, DEFAULT_PATCH } from './hydraEvalCode'
 import { detectCameraUsage } from 'lib/detectCameraUsage'
 import { applyRemoteCameraOverride, restoreRemoteCameraOverride } from 'lib/remoteCameraOverride'
-import { applyVideoProxyOverride, restoreVideoProxyOverride } from 'lib/videoProxyOverride'
+import { applyVideoProxyOverride, restoreVideoProxyOverride, HYDRA_VIDEO_READY_EVENT } from 'lib/videoProxyOverride'
 import { shouldEmitFft } from './hooks/emitFftPolicy'
 import type { HydraAudioCompat } from './hooks/hydraAudioCompat'
 import styles from './HydraVisualizer.css'
@@ -314,6 +314,30 @@ function HydraVisualizer ({
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // mount-only — resize handled separately; remoteVideoElement deliberately omitted
+
+  // Tick once when a video source finishes loading so the frame renders even
+  // when paused (isPlaying=false).  Uses rAF to coalesce rapid events.
+  useEffect(() => {
+    let rafId = 0
+    const onVideoReady = () => {
+      if (rafId) return // already scheduled
+      rafId = requestAnimationFrame(() => {
+        rafId = 0
+        const hydra = hydraRef.current
+        if (!hydra) return
+        try {
+          hydra.tick(16.67)
+        } catch {
+          // Bad user code — swallow so it doesn't cascade
+        }
+      })
+    }
+    window.addEventListener(HYDRA_VIDEO_READY_EVENT, onVideoReady)
+    return () => {
+      window.removeEventListener(HYDRA_VIDEO_READY_EVENT, onVideoReady)
+      cancelAnimationFrame(rafId)
+    }
+  }, [])
 
   // Resize without recreating WebGL context
   useEffect(() => {

@@ -1,14 +1,16 @@
 // @vitest-environment jsdom
 import React, { act } from 'react'
 import { describe, it, expect, vi, afterEach } from 'vitest'
+import { HYDRA_VIDEO_READY_EVENT } from 'lib/videoProxyOverride'
 import { createRoot } from 'react-dom/client'
 import HydraVisualizer from './HydraVisualizer'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const { evalSpy, hushSpy } = vi.hoisted(() => ({
+const { evalSpy, hushSpy, tickSpy } = vi.hoisted(() => ({
   evalSpy: vi.fn(),
   hushSpy: vi.fn(),
+  tickSpy: vi.fn(),
 }))
 
 vi.mock('react-redux', () => ({
@@ -27,7 +29,7 @@ vi.mock('hydra-synth', () => {
 
     hush () { hushSpy() }
 
-    tick () {}
+    tick (...args: unknown[]) { tickSpy(...args) }
 
     setResolution () {}
   }
@@ -56,6 +58,7 @@ vi.mock('./hooks/useHydraAudio', () => ({
 afterEach(() => {
   evalSpy.mockClear()
   hushSpy.mockClear()
+  tickSpy.mockClear()
 })
 
 function markVideoRenderable (video: HTMLVideoElement, width = 640, height = 360, readyState = 4) {
@@ -392,6 +395,45 @@ describe('HydraVisualizer audio globals', () => {
     const a = w.a as { fft?: unknown } | undefined
     expect(a).toBeDefined()
     expect(a!.fft).toBeDefined()
+
+    await act(async () => {
+      root.unmount()
+    })
+  })
+})
+
+describe('HydraVisualizer video-ready tick', () => {
+  it('ticks hydra when hydra:video-ready fires and isPlaying=false', async () => {
+    const container = document.createElement('div')
+    const root = createRoot(container)
+
+    await act(async () => {
+      root.render(
+        <HydraVisualizer
+          audioSourceNode={null}
+          isPlaying={false}
+          sensitivity={1}
+          width={320}
+          height={180}
+          code='osc(10).out(o0)'
+        />,
+      )
+    })
+
+    // Mount fires initial ticks — clear the spy to isolate the event-driven tick
+    tickSpy.mockClear()
+
+    // Dispatch event and flush rAF (jsdom backs rAF with setTimeout)
+    vi.useFakeTimers()
+    await act(async () => {
+      window.dispatchEvent(new Event(HYDRA_VIDEO_READY_EVENT))
+    })
+    await act(async () => {
+      vi.runAllTimers()
+    })
+    vi.useRealTimers()
+
+    expect(tickSpy).toHaveBeenCalledWith(16.67)
 
     await act(async () => {
       root.unmount()
