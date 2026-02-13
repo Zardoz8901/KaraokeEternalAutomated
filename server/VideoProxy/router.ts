@@ -237,10 +237,24 @@ router.get('/', async (ctx) => {
   ctx.set('Accept-Ranges', 'bytes')
 
   if (res.status === 206) {
-    ctx.status = 206
     const contentRange = res.headers.get('content-range')
-    if (contentRange) {
-      ctx.set('Content-Range', contentRange)
+    if (!contentRange) {
+      await res.body?.cancel()
+      ctx.throw(502, 'Upstream 206 missing Content-Range')
+      return
+    }
+
+    ctx.status = 206
+    ctx.set('Content-Range', contentRange)
+
+    // If upstream omitted Content-Length, compute it from Content-Range
+    if (!contentLength) {
+      const rangeMatch = /^bytes (\d+)-(\d+)\//.exec(contentRange)
+      if (rangeMatch) {
+        const start = parseInt(rangeMatch[1], 10)
+        const end = parseInt(rangeMatch[2], 10)
+        ctx.set('Content-Length', String(end - start + 1))
+      }
     }
   }
 

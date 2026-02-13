@@ -272,6 +272,51 @@ describe('VideoProxy', () => {
       expect(ctx._responseHeaders['accept-ranges']).toBe('bytes')
     })
 
+    it('computes Content-Length from Content-Range when upstream 206 omits Content-Length', async () => {
+      globalThis.fetch = vi.fn(async () =>
+        createUpstreamResponse({
+          status: 206,
+          headers: {
+            'content-type': 'video/mp4',
+            'content-range': 'bytes 0-999/5000',
+            // No content-length header
+          },
+        }),
+      ) as typeof fetch
+
+      const handler = await getHandler()
+      const ctx = createCtx(
+        { url: 'https://example.com/video.mp4' },
+        { range: 'bytes=0-999' },
+      )
+      await handler(ctx, async () => {})
+
+      expect(ctx.status).toBe(206)
+      expect(ctx._responseHeaders['content-range']).toBe('bytes 0-999/5000')
+      // Content-Length must be computed as end - start + 1 = 1000
+      expect(ctx._responseHeaders['content-length']).toBe('1000')
+    })
+
+    it('throws 502 when upstream returns 206 without Content-Range', async () => {
+      globalThis.fetch = vi.fn(async () =>
+        createUpstreamResponse({
+          status: 206,
+          headers: {
+            'content-type': 'video/mp4',
+            // No content-range header — malformed 206
+          },
+        }),
+      ) as typeof fetch
+
+      const handler = await getHandler()
+      const ctx = createCtx(
+        { url: 'https://example.com/video.mp4' },
+        { range: 'bytes=0-999' },
+      )
+
+      await expect(handler(ctx, async () => {})).rejects.toMatchObject({ status: 502 })
+    })
+
     it('streams full body for non-Range requests', async () => {
       globalThis.fetch = vi.fn(async () =>
         createUpstreamResponse({
