@@ -328,13 +328,14 @@ function HydraVisualizer ({
     }
 
     const currentCode = getHydraEvalCode(codeRef.current)
-    const { sources } = detectCameraUsage(currentCode)
+    const { sources, sourceInitMap } = detectCameraUsage(currentCode)
     const w = window as unknown as Record<string, unknown>
     const remoteVideoReady = isRemoteVideoRenderable(remoteVideoElement ?? null)
 
     cameraDiag('camera auto-init pass', {
       sourceCount: sources.length,
       sources,
+      sourceInitMap,
       allowCamera: Boolean(allowCamera),
       hasRemoteVideo: Boolean(remoteVideoElement),
       remoteVideoReady,
@@ -346,6 +347,12 @@ function HydraVisualizer ({
     for (const src of sources) {
       if (cameraInitRef.current.has(src)) {
         cameraDiag('camera source already initialized; skipping', { src })
+        continue
+      }
+
+      // Skip sources that manage their own video/image/screen init
+      if (sourceInitMap[src]?.hasExplicitInit) {
+        cameraDiag('source has explicit init (initVideo/initImage/initScreen); skipping camera auto-bind', { src })
         continue
       }
 
@@ -403,13 +410,14 @@ function HydraVisualizer ({
 
     // Re-check camera init when code changes with camera enabled
     if (allowCamera || remoteVideoElement) {
-      const { sources } = detectCameraUsage(getHydraEvalCode(code))
+      const { sources, sourceInitMap } = detectCameraUsage(getHydraEvalCode(code))
       const w = window as unknown as Record<string, unknown>
       const remoteVideoReady = isRemoteVideoRenderable(remoteVideoElement ?? null)
 
       cameraDiag('camera rebind on code change', {
         sourceCount: sources.length,
         sources,
+        sourceInitMap,
         allowCamera: Boolean(allowCamera),
         hasRemoteVideo: Boolean(remoteVideoElement),
         remoteVideoReady,
@@ -421,6 +429,12 @@ function HydraVisualizer ({
       for (const src of sources) {
         if (cameraInitRef.current.has(src)) {
           cameraDiag('camera source already initialized on code change; skipping', { src })
+          continue
+        }
+
+        // Skip sources that manage their own video/image/screen init
+        if (sourceInitMap[src]?.hasExplicitInit) {
+          cameraDiag('source has explicit init on code change; skipping camera auto-bind', { src })
           continue
         }
 

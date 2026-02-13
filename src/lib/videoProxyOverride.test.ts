@@ -166,7 +166,7 @@ describe('videoProxyOverride', () => {
 
       const vid = videos[0]
       Object.defineProperty(vid, 'duration', { value: 120, writable: true })
-      fireLoadedMetadata(vid)
+      fireLoadedData(vid)
       fireSeeked(vid)
 
       expect(source.regl.texture).toHaveBeenCalledWith({
@@ -177,7 +177,7 @@ describe('videoProxyOverride', () => {
   })
 
   describe('startTime param', () => {
-    it('seeks on loadedmetadata, binds on seeked', () => {
+    it('seeks on loadeddata, binds on seeked', () => {
       const videos = spyOnCreateElement()
       const source = makeSource()
       const globals: Record<string, unknown> = { s0: source }
@@ -188,9 +188,9 @@ describe('videoProxyOverride', () => {
 
       const vid = videos[0]
       Object.defineProperty(vid, 'duration', { value: 120, writable: true })
-      fireLoadedMetadata(vid)
+      fireLoadedData(vid)
 
-      // After loadedmetadata: currentTime set but source not yet bound
+      // After loadeddata: currentTime set but source not yet bound
       expect(vid.currentTime).toBe(42)
       expect(source.src).toBeNull()
 
@@ -200,7 +200,7 @@ describe('videoProxyOverride', () => {
       expect(source.dynamic).toBe(true)
     })
 
-    it('seeks to random position on loadedmetadata, binds on seeked', () => {
+    it('seeks to random position on loadeddata, binds on seeked', () => {
       const videos = spyOnCreateElement()
       const source = makeSource()
       const globals: Record<string, unknown> = { s0: source }
@@ -211,7 +211,7 @@ describe('videoProxyOverride', () => {
 
       const vid = videos[0]
       Object.defineProperty(vid, 'duration', { value: 100, writable: true })
-      fireLoadedMetadata(vid)
+      fireLoadedData(vid)
 
       expect(vid.currentTime).toBeGreaterThanOrEqual(0)
       expect(vid.currentTime).toBeLessThan(100)
@@ -233,11 +233,11 @@ describe('videoProxyOverride', () => {
 
       const vid = videos[0]
       Object.defineProperty(vid, 'duration', { value: 120, writable: true })
-      fireLoadedMetadata(vid)
+      fireLoadedData(vid)
 
       expect(source.src).toBeNull()
 
-      vi.advanceTimersByTime(2000)
+      vi.advanceTimersByTime(300)
       expect(source.src).toBe(vid)
       expect(source.dynamic).toBe(true)
       vi.useRealTimers()
@@ -255,10 +255,10 @@ describe('videoProxyOverride', () => {
 
       const vid = videos[0]
       Object.defineProperty(vid, 'duration', { value: 120, writable: true })
-      fireLoadedMetadata(vid)
+      fireLoadedData(vid)
 
       // Timeout fires first
-      vi.advanceTimersByTime(2000)
+      vi.advanceTimersByTime(300)
       expect(source.src).toBe(vid)
       expect(source.regl.texture).toHaveBeenCalledTimes(1)
 
@@ -268,7 +268,7 @@ describe('videoProxyOverride', () => {
       vi.useRealTimers()
     })
 
-    it('stale between loadedmetadata and seeked does not bind', () => {
+    it('stale between loadeddata and seeked does not bind', () => {
       const videos = spyOnCreateElement()
       const source = makeSource()
       const globals: Record<string, unknown> = { s0: source }
@@ -279,7 +279,7 @@ describe('videoProxyOverride', () => {
 
       const vid1 = videos[0]
       Object.defineProperty(vid1, 'duration', { value: 60, writable: true })
-      fireLoadedMetadata(vid1)
+      fireLoadedData(vid1)
 
       // Second call before seeked fires on vid1
       source.initVideo('https://example.com/video2.mp4', { startTime: 20 })

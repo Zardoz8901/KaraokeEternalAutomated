@@ -7,6 +7,7 @@ type HydraExternalSource = {
 }
 
 const PROXY_PATH = 'api/video-proxy'
+const SEEK_TIMEOUT_MS = 300
 
 interface SourceState {
   epoch: number
@@ -116,7 +117,7 @@ export function applyVideoProxyOverride (
 
       if (startTime !== undefined) {
         // startTime path: seek first, bind after seek completes (or timeout)
-        vid.addEventListener('loadedmetadata', () => {
+        vid.addEventListener('loadeddata', () => {
           if (state.epoch !== epoch) {
             cleanupVideo(vid)
             return
@@ -129,7 +130,7 @@ export function applyVideoProxyOverride (
           }
 
           vid.addEventListener('seeked', () => bindSource(), { once: true })
-          state.seekTimer = setTimeout(() => bindSource(), 2000)
+          state.seekTimer = setTimeout(() => bindSource(), SEEK_TIMEOUT_MS)
         })
       } else {
         // No startTime: bind immediately on loadeddata (matches upstream)
