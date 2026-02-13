@@ -395,16 +395,11 @@ function HydraVisualizer ({
     if (!hydra) return
 
     // Clear previous render graph to prevent oscillator bleed between presets.
-    // Skip hush entirely when relay is active — hush() calls source.clear() which
-    // kills WebRTC tracks. The new code eval follows immediately and sets up a
-    // fresh render graph, so at most one frame of the old graph shows (~16ms).
-    if (remoteVideoElement) {
-      softHush(hydra)
-    } else if (typeof (hydra as unknown as { hush?: () => void }).hush === 'function') {
-      hydra.hush()
-    } else {
-      cameraDiag('hydra.hush unavailable; skipping graph clear for this runtime')
-    }
+    // Always use softHush — hydra.hush() calls source.clear() which destroys
+    // WebRTC tracks AND in-flight video elements (initVideo sets s0.src async
+    // on loadeddata; hush nulls it before the video loads, causing 10 tick
+    // errors and fallback to DEFAULT_PATCH).
+    softHush(hydra)
 
     // Re-check camera init when code changes with camera enabled
     if (allowCamera || remoteVideoElement) {
