@@ -11,6 +11,7 @@ const PROXY_PATH = 'api/video-proxy'
 interface SourceState {
   epoch: number
   pendingVideo: HTMLVideoElement | null
+  seekTimer: ReturnType<typeof setTimeout> | null
 }
 
 /** Per-source-instance state, scoped to the hydra external source object. */
@@ -19,7 +20,7 @@ const stateBySource = new WeakMap<object, SourceState>()
 function getState (ext: object): SourceState {
   let s = stateBySource.get(ext)
   if (!s) {
-    s = { epoch: 0, pendingVideo: null }
+    s = { epoch: 0, pendingVideo: null, seekTimer: null }
     stateBySource.set(ext, s)
   }
   return s
@@ -58,8 +59,12 @@ export function applyVideoProxyOverride (
       if (state.pendingVideo) {
         cleanupVideo(state.pendingVideo)
       }
+      if (state.seekTimer !== null) {
+        clearTimeout(state.seekTimer)
+        state.seekTimer = null
+      }
 
-      // Bump epoch — any pending loadeddata from a previous call becomes stale
+      // Bump epoch — any pending callbacks from a previous call become stale
       const epoch = ++state.epoch
 
       // Extract custom params before spreading into regl.texture
@@ -82,20 +87,23 @@ export function applyVideoProxyOverride (
 
       state.pendingVideo = vid
 
-      vid.addEventListener('loadeddata', () => {
-        // Stale guard: if another initVideo was called since, bail out
+      // Bind source at most once — shared by seeked listener and timeout fallback
+      let bound = false
+      const bindSource = (): void => {
+        if (bound) return
         if (state.epoch !== epoch) {
           cleanupVideo(vid)
+          if (state.seekTimer !== null) {
+            clearTimeout(state.seekTimer)
+            state.seekTimer = null
+          }
           return
         }
-
+        bound = true
         state.pendingVideo = null
-
-        // Seek before binding — with cached video this is effectively instant
-        if (startTime === 'random' && vid.duration > 0) {
-          vid.currentTime = Math.random() * vid.duration
-        } else if (typeof startTime === 'number') {
-          vid.currentTime = startTime
+        if (state.seekTimer !== null) {
+          clearTimeout(state.seekTimer)
+          state.seekTimer = null
         }
 
         this.src = vid
@@ -104,7 +112,35 @@ export function applyVideoProxyOverride (
           this.tex = this.regl.texture({ data: vid, ...reglParams })
         }
         this.dynamic = true
-      })
+      }
+
+      if (startTime !== undefined) {
+        // startTime path: seek first, bind after seek completes (or timeout)
+        vid.addEventListener('loadedmetadata', () => {
+          if (state.epoch !== epoch) {
+            cleanupVideo(vid)
+            return
+          }
+
+          if (startTime === 'random' && vid.duration > 0) {
+            vid.currentTime = Math.random() * vid.duration
+          } else if (typeof startTime === 'number') {
+            vid.currentTime = startTime
+          }
+
+          vid.addEventListener('seeked', () => bindSource(), { once: true })
+          state.seekTimer = setTimeout(() => bindSource(), 2000)
+        })
+      } else {
+        // No startTime: bind immediately on loadeddata (matches upstream)
+        vid.addEventListener('loadeddata', () => {
+          if (state.epoch !== epoch) {
+            cleanupVideo(vid)
+            return
+          }
+          bindSource()
+        })
+      }
 
       vid.src = finalUrl
     }
@@ -121,9 +157,15 @@ export function restoreVideoProxyOverride (
 
     // Clean up any in-flight video before restoring
     const state = stateBySource.get(ext)
-    if (state?.pendingVideo) {
-      cleanupVideo(state.pendingVideo)
-      state.pendingVideo = null
+    if (state) {
+      if (state.pendingVideo) {
+        cleanupVideo(state.pendingVideo)
+        state.pendingVideo = null
+      }
+      if (state.seekTimer !== null) {
+        clearTimeout(state.seekTimer)
+        state.seekTimer = null
+      }
     }
 
     ext.initVideo = original as HydraExternalSource['initVideo']
