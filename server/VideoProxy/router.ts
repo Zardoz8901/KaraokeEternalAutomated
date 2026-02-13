@@ -1,7 +1,7 @@
 import { Readable } from 'stream'
 import KoaRouter from '@koa/router'
 import getLogger from '../lib/Log.js'
-import { getVideoCacheDir, isCached, teeToCache, serveCachedFile } from './cache.js'
+import { getVideoCacheDir, isCached, teeToCache, serveCachedFile, startBackgroundDownload } from './cache.js'
 
 const log = getLogger('VideoProxy')
 const router = new KoaRouter({ prefix: '/api/video-proxy' })
@@ -246,6 +246,12 @@ router.get('/', async (ctx) => {
   // Tee to cache on full 200 responses only (not Range/206 — those are partial)
   if (cacheDir && res.status === 200 && !clientRange && res.body) {
     ctx.body = teeToCache(cacheDir, requestedUrl, res.body, contentType!, MAX_SIZE_BYTES)
+  } else if (cacheDir && clientRange) {
+    // Browser video elements always use Range requests — kick off a background
+    // download so the next request is a cache hit served from disk.
+    startBackgroundDownload(cacheDir, requestedUrl, isUrlAllowed, MAX_SIZE_BYTES)
+      .catch(() => {}) // fire-and-forget; errors logged inside
+    ctx.body = idleTimeoutStream(res.body!, IDLE_TIMEOUT_MS)
   } else {
     ctx.body = idleTimeoutStream(res.body!, IDLE_TIMEOUT_MS)
   }
