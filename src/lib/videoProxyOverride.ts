@@ -65,14 +65,28 @@ export function applyVideoProxyOverride (
         state.seekTimer = null
       }
 
+      // Soft-clear: blank the source immediately so stale camera/video frames
+      // don't render during the async load gap. Skip MediaStream sources (srcObject).
+      const prevSrc = this.src as HTMLVideoElement | null
+      if (prevSrc instanceof HTMLVideoElement && !prevSrc.srcObject) {
+        cleanupVideo(prevSrc)
+      }
+      this.src = null
+      if (this.regl) {
+        this.tex = this.regl.texture({ shape: [1, 1] })
+      }
+      this.dynamic = false
+
       // Bump epoch — any pending callbacks from a previous call become stale
       const epoch = ++state.epoch
 
       // Extract custom params before spreading into regl.texture
       const startTime = params?.startTime as number | 'random' | undefined
-      const reglParams = params ? Object.fromEntries(
-        Object.entries(params).filter(([k]) => k !== 'startTime'),
-      ) : undefined
+      const reglParams = params
+        ? Object.fromEntries(
+            Object.entries(params).filter(([k]) => k !== 'startTime'),
+          )
+        : undefined
 
       // Rewrite external URLs through proxy
       const finalUrl = /^https?:\/\//i.test(url)

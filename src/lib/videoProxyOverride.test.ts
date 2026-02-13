@@ -40,10 +40,6 @@ function fireLoadedData (vid: HTMLVideoElement): void {
   vid.dispatchEvent(new Event('loadeddata'))
 }
 
-function fireLoadedMetadata (vid: HTMLVideoElement): void {
-  vid.dispatchEvent(new Event('loadedmetadata'))
-}
-
 function fireSeeked (vid: HTMLVideoElement): void {
   vid.dispatchEvent(new Event('seeked'))
 }
@@ -260,11 +256,12 @@ describe('videoProxyOverride', () => {
       // Timeout fires first
       vi.advanceTimersByTime(300)
       expect(source.src).toBe(vid)
-      expect(source.regl.texture).toHaveBeenCalledTimes(1)
+      // 2 calls: soft-clear placeholder + bind texture
+      expect(source.regl.texture).toHaveBeenCalledTimes(2)
 
       // Late seeked should not rebind
       fireSeeked(vid)
-      expect(source.regl.texture).toHaveBeenCalledTimes(1)
+      expect(source.regl.texture).toHaveBeenCalledTimes(2)
       vi.useRealTimers()
     })
 
@@ -378,6 +375,51 @@ describe('videoProxyOverride', () => {
       fireLoadedData(videos[0])
 
       expect(pauseSpy).toHaveBeenCalled()
+    })
+  })
+
+  describe('soft-clear on initVideo (camera→video bleed prevention)', () => {
+    it('clears source tex/src immediately on initVideo call before video loads', () => {
+      spyOnCreateElement()
+      const source = makeSource()
+      // Simulate a previously bound camera source
+      const prevVideo = document.createElement('video')
+      source.src = prevVideo
+      source.tex = { fake: 'texture' }
+      source.dynamic = true
+      const globals: Record<string, unknown> = { s0: source }
+      const overrides = new Map<string, unknown>()
+
+      applyVideoProxyOverride(['s0'], globals, overrides)
+      source.initVideo('https://example.com/video.mp4')
+
+      // Before loadeddata fires, source should be cleared
+      expect(source.src).toBeNull()
+      expect(source.dynamic).toBe(false)
+      // A 1x1 placeholder texture should have been created
+      expect(source.regl.texture).toHaveBeenCalledWith({ shape: [1, 1] })
+    })
+
+    it('does not cleanup MediaStream srcObject', () => {
+      spyOnCreateElement()
+      const source = makeSource()
+      // Simulate a source with a MediaStream (WebRTC camera)
+      const streamVideo = document.createElement('video')
+      Object.defineProperty(streamVideo, 'srcObject', {
+        value: {}, // truthy srcObject simulates a MediaStream
+        writable: true,
+      })
+      source.src = streamVideo
+      const pauseSpy = vi.spyOn(streamVideo, 'pause')
+
+      const globals: Record<string, unknown> = { s0: source }
+      const overrides = new Map<string, unknown>()
+
+      applyVideoProxyOverride(['s0'], globals, overrides)
+      source.initVideo('https://example.com/video.mp4')
+
+      // MediaStream video should NOT be cleaned up (pause/removeAttribute/load)
+      expect(pauseSpy).not.toHaveBeenCalled()
     })
   })
 

@@ -199,7 +199,10 @@ router.get('/', async (ctx) => {
   }
 
   // Headers received — clear connect timeout so body streaming isn't killed
-  if (connectTimer) { clearTimeout(connectTimer); connectTimer = null }
+  if (connectTimer) {
+    clearTimeout(connectTimer)
+    connectTimer = null
+  }
 
   if (!res) {
     ctx.throw(502, 'Upstream response missing')

@@ -330,7 +330,7 @@ describe('HydraVisualizer relay feedback loop prevention', () => {
     })
   })
 
-  it('calls hush during code change when no relay is active', async () => {
+  it('does not call hush during code change without relay (softHush used instead)', async () => {
     const container = document.createElement('div')
     const root = createRoot(container)
 
@@ -362,8 +362,8 @@ describe('HydraVisualizer relay feedback loop prevention', () => {
       )
     })
 
-    // Without remote video, hush should be called normally
-    expect(hushSpy).toHaveBeenCalled()
+    // softHush is always used now — hydra.hush() is never called
+    expect(hushSpy).not.toHaveBeenCalled()
 
     await act(async () => {
       root.unmount()

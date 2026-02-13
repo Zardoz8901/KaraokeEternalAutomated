@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import fs from 'fs/promises'
 import path from 'path'
 import os from 'os'
-import { Readable, PassThrough } from 'stream'
+// stream imports removed — not used directly in tests
 
 // Mock logger before importing cache module
 vi.mock('../lib/Log.js', () => ({
@@ -367,7 +367,9 @@ describe('startBackgroundDownload', () => {
 
   it('deduplicates concurrent downloads of the same URL', async () => {
     let resolveBody: (() => void) | undefined
-    const bodyPromise = new Promise<void>(r => { resolveBody = r })
+    const bodyPromise = new Promise<void>((resolve) => {
+      resolveBody = resolve
+    })
 
     globalThis.fetch = vi.fn(async () => ({
       ok: true,
@@ -375,9 +377,10 @@ describe('startBackgroundDownload', () => {
       headers: new Headers({ 'content-type': 'video/mp4' }),
       body: new ReadableStream({
         start (controller) {
-          bodyPromise.then(() => {
+          void bodyPromise.then(() => {
             controller.enqueue(new TextEncoder().encode('data'))
             controller.close()
+            return undefined
           })
         },
       }),
@@ -413,10 +416,13 @@ describe('startBackgroundDownload', () => {
         headers: new Headers({ 'content-type': 'video/mp4' }),
         body: new ReadableStream({
           start (controller) {
-            const p = new Promise<void>(r => { resolvers.push(r) })
-            p.then(() => {
+            const p = new Promise<void>((resolve) => {
+              resolvers.push(resolve)
+            })
+            void p.then(() => {
               controller.enqueue(new TextEncoder().encode('data'))
               controller.close()
+              return undefined
             })
           },
         }),
@@ -434,8 +440,8 @@ describe('startBackgroundDownload', () => {
     ).rejects.toThrow('Max concurrent downloads reached')
 
     // Wait for async bodies to call fetch before releasing
-    while (fetchCount < 3) await new Promise(r => setTimeout(r, 10))
-    resolvers.forEach(r => r())
+    while (fetchCount < 3) await new Promise(resolve => setTimeout(resolve, 10))
+    resolvers.forEach(resolve => resolve())
     await Promise.all([p1, p2, p3])
   })
 

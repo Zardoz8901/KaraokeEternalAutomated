@@ -162,8 +162,6 @@ function HydraVisualizer ({
     sensitivity,
     overrideData,
   )
-  compatRef.current = compat
-
   // Throttle FFT emission to ~20Hz (50ms)
   const emitFftData = useMemo(() => throttle((data: AudioData) => {
     // Send a condensed payload to save bandwidth
@@ -233,7 +231,7 @@ function HydraVisualizer ({
     const handlers = events.map((eventName) => {
       const handler = () => {
         cameraDiag('remote video event', { eventName, video: snapshotVideoElement(remoteVideoElement) })
-        setRemoteVideoEpoch((prev) => prev + 1)
+        setRemoteVideoEpoch(prev => prev + 1)
       }
       remoteVideoElement.addEventListener(eventName, handler)
       return { eventName, handler }
@@ -247,6 +245,11 @@ function HydraVisualizer ({
       }
     }
   }, [remoteVideoElement])
+
+  // Keep compatRef in sync via effect (cannot assign ref during render)
+  useEffect(() => {
+    compatRef.current = compat
+  }, [compat])
 
   // Set window.a compat on window so Hydra code can reference a.fft and controls
   useEffect(() => {
@@ -296,9 +299,10 @@ function HydraVisualizer ({
     executeHydraCode(hydra, codeRef.current)
     hydra.tick(16.67)
 
+    const cameraOverrides = cameraOverrideRef.current
     return () => {
       log('Destroying')
-      restoreRemoteCameraOverride(w, cameraOverrideRef.current)
+      restoreRemoteCameraOverride(w, cameraOverrides)
       restoreVideoProxyOverride(w, videoProxyOverrides)
       cancelAnimationFrame(rafRef.current)
       try {
@@ -308,7 +312,8 @@ function HydraVisualizer ({
       }
       hydraRef.current = null
     }
-  }, []) // mount-only — resize handled separately
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // mount-only — resize handled separately; remoteVideoElement deliberately omitted
 
   // Resize without recreating WebGL context
   useEffect(() => {
@@ -345,14 +350,18 @@ function HydraVisualizer ({
     pruneStaleCameraBindings(sources)
 
     for (const src of sources) {
-      if (cameraInitRef.current.has(src)) {
-        cameraDiag('camera source already initialized; skipping', { src })
+      // Skip sources that manage their own video/image/screen init — check FIRST
+      // so we also clear stale camera tracking for sources that switched to explicit init
+      if (sourceInitMap[src]?.hasExplicitInit) {
+        if (cameraInitRef.current.has(src)) {
+          cameraInitRef.current.delete(src)
+        }
+        cameraDiag('source has explicit init; skipping camera auto-bind', { src })
         continue
       }
 
-      // Skip sources that manage their own video/image/screen init
-      if (sourceInitMap[src]?.hasExplicitInit) {
-        cameraDiag('source has explicit init (initVideo/initImage/initScreen); skipping camera auto-bind', { src })
+      if (cameraInitRef.current.has(src)) {
+        cameraDiag('camera source already initialized; skipping', { src })
         continue
       }
 
@@ -427,14 +436,17 @@ function HydraVisualizer ({
       pruneStaleCameraBindings(sources)
 
       for (const src of sources) {
-        if (cameraInitRef.current.has(src)) {
-          cameraDiag('camera source already initialized on code change; skipping', { src })
+        // Skip sources that manage their own video/image/screen init — check FIRST
+        if (sourceInitMap[src]?.hasExplicitInit) {
+          if (cameraInitRef.current.has(src)) {
+            cameraInitRef.current.delete(src)
+          }
+          cameraDiag('source has explicit init on code change; skipping camera auto-bind', { src })
           continue
         }
 
-        // Skip sources that manage their own video/image/screen init
-        if (sourceInitMap[src]?.hasExplicitInit) {
-          cameraDiag('source has explicit init on code change; skipping camera auto-bind', { src })
+        if (cameraInitRef.current.has(src)) {
+          cameraDiag('camera source already initialized on code change; skipping', { src })
           continue
         }
 
@@ -480,6 +492,14 @@ function HydraVisualizer ({
 
     executeHydraCode(hydra, code, compatRef.current ?? undefined)
     errorCountRef.current = 0
+
+    // Render one frame immediately so the new graph is visible even when the
+    // RAF loop is stopped (isPlaying=false). Matches the mount-only effect.
+    try {
+      hydra.tick(16.67)
+    } catch {
+      // Bad user code — swallow so it doesn't cascade into a hard blank
+    }
   }, [code, allowCamera, remoteVideoElement, reportCameraSourcesBound, pruneStaleCameraBindings])
 
   // Animation tick

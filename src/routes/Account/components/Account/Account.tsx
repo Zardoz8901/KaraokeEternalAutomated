@@ -16,7 +16,7 @@ const Account = () => {
   const navigate = useNavigate()
   const user = useAppSelector(state => state.user)
   const upcomingQueueIds = useAppSelector(state => getUpcoming(state, user.userId))
-  const room = useAppSelector(state => {
+  const room = useAppSelector((state) => {
     const roomId = state.user.roomId
     return typeof roomId === 'number' ? state.rooms.entities[roomId] : null
   })

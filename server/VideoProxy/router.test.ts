@@ -312,7 +312,7 @@ describe('VideoProxy', () => {
       globalThis.fetch = originalFetch
       setVideoCacheDir('')
       // Small delay to let tee-to-cache file operations complete before cleanup
-      await new Promise(r => setTimeout(r, 50))
+      await new Promise(resolve => setTimeout(resolve, 50))
       await fs.rm(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 50 })
     })
 

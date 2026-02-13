@@ -120,16 +120,23 @@ export function teeToCache (
   let upstreamDone = false
   let idleTimer: ReturnType<typeof setTimeout> | null = null
 
-  const cleanupTmp = () => { fs.unlink(tmpPath).catch(() => {}) }
+  const cleanupTmp = () => {
+    fs.unlink(tmpPath).catch(() => {})
+  }
 
   const clearIdleTimer = () => {
-    if (idleTimer) { clearTimeout(idleTimer); idleTimer = null }
+    if (idleTimer) {
+      clearTimeout(idleTimer)
+      idleTimer = null
+    }
   }
 
   const resetIdleTimer = () => {
     if (!idleMs || aborted) return
     clearIdleTimer()
-    idleTimer = setTimeout(() => { abort('Upstream idle timeout') }, idleMs)
+    idleTimer = setTimeout(() => {
+      abort('Upstream idle timeout')
+    }, idleMs)
   }
 
   const abort = (reason: string) => {
@@ -175,7 +182,7 @@ export function teeToCache (
     fs.writeFile(metaPath, contentType, 'utf-8')
       .then(() => fs.rename(tmpPath, filePath))
       .then(() => log.verbose('cached: %s', filePath))
-      .catch(err => {
+      .catch((err) => {
         log.error('cache finalize error: %s', err.message)
         cleanupTmp()
       })
@@ -378,7 +385,9 @@ export function startBackgroundDownload (
     log.info('background download complete: %s', filePath)
   })()
 
-  const cleanup = () => { activeDownloads.delete(url) }
+  const cleanup = () => {
+    activeDownloads.delete(url)
+  }
   const tracked = task.then(cleanup, (err) => {
     cleanup()
     log.error('background download failed (%s): %s', url, err.message)
