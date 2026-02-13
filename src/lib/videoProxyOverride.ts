@@ -62,6 +62,12 @@ export function applyVideoProxyOverride (
       // Bump epoch — any pending loadeddata from a previous call becomes stale
       const epoch = ++state.epoch
 
+      // Extract custom params before spreading into regl.texture
+      const startTime = params?.startTime as number | 'random' | undefined
+      const reglParams = params ? Object.fromEntries(
+        Object.entries(params).filter(([k]) => k !== 'startTime'),
+      ) : undefined
+
       // Rewrite external URLs through proxy
       const finalUrl = /^https?:\/\//i.test(url)
         ? `${PROXY_PATH}?url=` + encodeURIComponent(url)
@@ -84,10 +90,18 @@ export function applyVideoProxyOverride (
         }
 
         state.pendingVideo = null
+
+        // Seek before binding — with cached video this is effectively instant
+        if (startTime === 'random' && vid.duration > 0) {
+          vid.currentTime = Math.random() * vid.duration
+        } else if (typeof startTime === 'number') {
+          vid.currentTime = startTime
+        }
+
         this.src = vid
         vid.play()?.catch(() => {}) // swallow autoplay rejection
         if (this.regl) {
-          this.tex = this.regl.texture({ data: vid, ...params })
+          this.tex = this.regl.texture({ data: vid, ...reglParams })
         }
         this.dynamic = true
       })

@@ -146,6 +146,72 @@ describe('videoProxyOverride', () => {
         wrap: 'repeat',
       })
     })
+
+    it('does not pass startTime to regl.texture', () => {
+      const videos = spyOnCreateElement()
+      const source = makeSource()
+      const globals: Record<string, unknown> = { s0: source }
+      const overrides = new Map<string, unknown>()
+
+      applyVideoProxyOverride(['s0'], globals, overrides)
+      source.initVideo('https://example.com/video.mp4', { startTime: 30, wrap: 'repeat' })
+      fireLoadedData(videos[0])
+
+      expect(source.regl.texture).toHaveBeenCalledWith({
+        data: videos[0],
+        wrap: 'repeat',
+      })
+    })
+  })
+
+  describe('startTime param', () => {
+    it('seeks to numeric startTime on loadeddata', () => {
+      const videos = spyOnCreateElement()
+      const source = makeSource()
+      const globals: Record<string, unknown> = { s0: source }
+      const overrides = new Map<string, unknown>()
+
+      applyVideoProxyOverride(['s0'], globals, overrides)
+      source.initVideo('https://example.com/video.mp4', { startTime: 42 })
+
+      const vid = videos[0]
+      Object.defineProperty(vid, 'duration', { value: 120, writable: true })
+      fireLoadedData(vid)
+
+      expect(vid.currentTime).toBe(42)
+    })
+
+    it('seeks to random position when startTime is "random"', () => {
+      const videos = spyOnCreateElement()
+      const source = makeSource()
+      const globals: Record<string, unknown> = { s0: source }
+      const overrides = new Map<string, unknown>()
+
+      applyVideoProxyOverride(['s0'], globals, overrides)
+      source.initVideo('https://example.com/video.mp4', { startTime: 'random' })
+
+      const vid = videos[0]
+      Object.defineProperty(vid, 'duration', { value: 100, writable: true })
+      fireLoadedData(vid)
+
+      expect(vid.currentTime).toBeGreaterThanOrEqual(0)
+      expect(vid.currentTime).toBeLessThan(100)
+    })
+
+    it('does not seek when no startTime provided', () => {
+      const videos = spyOnCreateElement()
+      const source = makeSource()
+      const globals: Record<string, unknown> = { s0: source }
+      const overrides = new Map<string, unknown>()
+
+      applyVideoProxyOverride(['s0'], globals, overrides)
+      source.initVideo('https://example.com/video.mp4')
+
+      const vid = videos[0]
+      fireLoadedData(vid)
+
+      expect(vid.currentTime).toBe(0)
+    })
   })
 
   describe('epoch guard (stale race prevention)', () => {
