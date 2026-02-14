@@ -5,7 +5,7 @@ import { useDispatch } from 'react-redux'
 import { PLAYER_EMIT_FFT } from 'shared/actionTypes'
 import { type AudioData } from './hooks/useAudioAnalyser'
 import { useHydraAudio } from './hooks/useHydraAudio'
-import { getHydraEvalCode, DEFAULT_PATCH } from './hydraEvalCode'
+import { getHydraEvalCode, DEFAULT_PATCH, wrapWithTimerTracking } from './hydraEvalCode'
 import { detectCameraUsage } from 'lib/detectCameraUsage'
 import { applyRemoteCameraOverride, restoreRemoteCameraOverride } from 'lib/remoteCameraOverride'
 import { applyVideoProxyOverride, restoreVideoProxyOverride, HYDRA_VIDEO_READY_EVENT, protectVideoElement } from 'lib/videoProxyOverride'
@@ -38,36 +38,68 @@ function isRemoteVideoRenderable (videoEl: HTMLVideoElement | null) {
 }
 
 // Audio globals exposed on window for Hydra code to reference.
-// Uses an accessor property so sloppy-mode eval (`var a = ...`) silently
-// fails to clobber it, and strict-mode eval assignment won't throw
-// (set is a valid no-op rather than a write to a non-writable property).
+// window.a is a plain writable property — gallery sketches may clobber it.
+// __hydraAudio is a non-configurable getter backed by __hydraAudioRef,
+// providing a stable fallback that survives clobbering and HMR.
 function setAudioGlobals (compat: HydraAudioCompat) {
-  Object.defineProperty(window, 'a', {
-    get () { return compat },
-    set () { /* no-op — prevent eval'd code from clobbering */ },
-    configurable: true,
-    enumerable: true,
-  })
-}
+  const g = globalThis as unknown as Record<string, unknown>
+  g.__hydraAudioRef = compat
+  ;(window as unknown as Record<string, unknown>).a = compat
 
-// No-op: accessor property on window prevents clobbering.
-// Kept for call-site compatibility (tick callback, executeHydraCode).
-function ensureAudioGlobals (_compat: HydraAudioCompat) {
-  // intentionally empty
+  // Define once — configurable: false means sketches cannot redefine it.
+  // The getter reads __hydraAudioRef so it stays current across compat changes.
+  if (!Object.getOwnPropertyDescriptor(window, '__hydraAudio')) {
+    try {
+      Object.defineProperty(window, '__hydraAudio', {
+        get () { return (globalThis as unknown as Record<string, unknown>).__hydraAudioRef },
+        configurable: false,
+        enumerable: false,
+      })
+    } catch {
+      // Already defined strangely from a previous session — skip
+    }
+  }
 }
 
 function clearAudioGlobals () {
   const w = window as unknown as Record<string, unknown>
-  // Remove the accessor property first
-  delete w.a
-  // Defensive cleanup for sessions that previously exposed legacy helpers.
-  delete w.bass
-  delete w.mid
-  delete w.treble
-  delete w.beat
-  delete w.energy
-  delete w.bpm
-  delete w.bright
+  ;(globalThis as unknown as Record<string, unknown>).__hydraAudioRef = null
+  Reflect.deleteProperty(w, 'a')
+  for (const k of ['bass', 'mid', 'treble', 'beat', 'energy', 'bpm', 'bright']) {
+    Reflect.deleteProperty(w, k)
+  }
+}
+
+// Legacy mouse globals used by gallery sketches (vMouseX, mouseX, etc.).
+// Hydra's built-in mouse.x/y returns pageX/pageY pixel coordinates.
+function setMouseShims () {
+  const shimDefs: Array<[string, 'x' | 'y']> = [
+    ['vMouseX', 'x'], ['mouseX', 'x'],
+    ['vMouseY', 'y'], ['mouseY', 'y'],
+  ]
+  for (const [shim, prop] of shimDefs) {
+    try {
+      Object.defineProperty(window, shim, {
+        get () {
+          const m = (window as unknown as Record<string, unknown>).mouse as
+            { x?: number, y?: number } | undefined
+          return m?.[prop] ?? 0
+        },
+        set () { /* no-op — prevents strict-mode throws on assignment */ },
+        configurable: true,
+        enumerable: false,
+      })
+    } catch {
+      // Already non-configurable from a previous HMR cycle — skip
+    }
+  }
+}
+
+function clearMouseShims () {
+  const w = window as unknown as Record<string, unknown>
+  for (const k of ['vMouseX', 'vMouseY', 'mouseX', 'mouseY']) {
+    Reflect.deleteProperty(w, k)
+  }
 }
 
 // Clear render graph outputs without clearing sources (preserves WebRTC video tracks).
@@ -82,15 +114,41 @@ function softHush (hydra: Hydra) {
     h.o.forEach(output => h.synth!.solid(0, 0, 0, 0).out(output))
     h.synth.render(h.o[0])
   }
+
+  // Reset user-set globals so the next preset starts clean.
+  // Presets that set fps=1 or speed=0.1 can make the next preset look frozen.
+  const w = window as unknown as Record<string, unknown>
+  if (typeof w.update === 'function') w.update = function () {}
+  if (typeof w.afterUpdate === 'function') w.afterUpdate = function () {}
+  if (typeof w.fps === 'number') Reflect.deleteProperty(w, 'fps')
+  if (typeof w.speed === 'number') Reflect.deleteProperty(w, 'speed')
+  if (typeof w.bpm === 'number') Reflect.deleteProperty(w, 'bpm')
+}
+
+function clearTrackedTimers () {
+  const g = globalThis as unknown as Record<string, unknown>
+  const ids = g.__hydraUserTimers
+  if (!(ids instanceof Set) || ids.size === 0) return
+  for (const id of ids) {
+    clearTimeout(id as ReturnType<typeof setTimeout>)
+    clearInterval(id as ReturnType<typeof setInterval>)
+  }
+  ids.clear()
 }
 
 function executeHydraCode (hydra: Hydra, code: string, compat?: HydraAudioCompat) {
   try {
-    if (compat) ensureAudioGlobals(compat)
-    hydra.eval(getHydraEvalCode(code))
+    // Reseed audio at each preset boundary so audio is available
+    // even if a previous sketch clobbered window.a or __hydraAudioRef.
+    if (compat) {
+      ;(globalThis as unknown as Record<string, unknown>).__hydraAudioRef = compat
+      ;(window as unknown as Record<string, unknown>).a = compat
+    }
+    clearTrackedTimers()
+    const evalCode = getHydraEvalCode(code)
+    hydra.eval(wrapWithTimerTracking(evalCode))
   } catch (err) {
     warn('Code execution error:', err)
-    // Don't crash — keep last working frame
   }
 }
 
@@ -257,10 +315,14 @@ function HydraVisualizer ({
     compatRef.current = compat
   }, [compat])
 
-  // Set window.a compat on window so Hydra code can reference a.fft and controls
+  // Set window.a compat and mouse shims so Hydra code can reference a.fft, controls, and legacy mouse globals
   useEffect(() => {
     setAudioGlobals(compat)
-    return () => clearAudioGlobals()
+    setMouseShims()
+    return () => {
+      clearAudioGlobals()
+      clearMouseShims()
+    }
   }, [compat])
 
   // Initialize Hydra (mount-only)
@@ -308,6 +370,7 @@ function HydraVisualizer ({
     const cameraOverrides = cameraOverrideRef.current
     return () => {
       log('Destroying')
+      clearTrackedTimers()
       restoreRemoteCameraOverride(w, cameraOverrides)
       restoreVideoProxyOverride(w, videoProxyOverrides)
       cancelAnimationFrame(rafRef.current)
@@ -540,9 +603,6 @@ function HydraVisualizer ({
     // Update audio data from analyser
     updateAudio()
 
-    // Ensure window.a stays valid (guards against clobbering by eval/hush cycles)
-    if (compatRef.current) ensureAudioGlobals(compatRef.current)
-
     // Emit FFT if enabled (always emit while Hydra is running)
     if (emitFft && shouldEmitFft(isPlaying)) {
       emitFftData(audioRef.current)
@@ -561,6 +621,7 @@ function HydraVisualizer ({
       }
       if (errorCountRef.current === 10) {
         warn('Too many errors, re-applying default patch')
+        clearTrackedTimers()
         executeHydraCode(hydra, DEFAULT_PATCH)
         errorCountRef.current = 0
       }

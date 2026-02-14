@@ -27,7 +27,7 @@ export function isProtectedVideoElement (el: HTMLVideoElement): boolean {
 const PROXY_PATH = 'api/video-proxy'
 const SEEK_TIMEOUT_MS = 300
 const READY_POLL_INTERVAL_MS = 200
-const READY_POLL_MAX_ATTEMPTS = 25 // 5 seconds max
+const READY_POLL_MAX_ATTEMPTS = 50 // 10 seconds max (Firefox can be slow)
 
 interface SourceState {
   epoch: number
@@ -141,6 +141,8 @@ export function applyVideoProxyOverride (
       vid.autoplay = true
       vid.loop = true
       vid.muted = true
+      vid.preload = 'auto'
+      vid.playsInline = true
 
       state.pendingVideo = vid
 
@@ -165,6 +167,15 @@ export function applyVideoProxyOverride (
         if (state.pollTimer !== null) {
           clearInterval(state.pollTimer)
           state.pollTimer = null
+        }
+
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('[VideoProxy] bindSource', {
+            readyState: vid.readyState,
+            videoWidth: vid.videoWidth,
+            videoHeight: vid.videoHeight,
+            duration: vid.duration,
+          })
         }
 
         this.src = vid
@@ -226,10 +237,25 @@ export function applyVideoProxyOverride (
       let pollAttempts = 0
       state.pollTimer = setInterval(() => {
         pollAttempts++
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('[VideoProxy] readyState poll', {
+            attempt: pollAttempts,
+            readyState: vid.readyState,
+            networkState: vid.networkState,
+            error: vid.error,
+          })
+        }
         if (bound || state.epoch !== epoch || pollAttempts >= READY_POLL_MAX_ATTEMPTS) {
           if (state.pollTimer !== null) {
             clearInterval(state.pollTimer)
             state.pollTimer = null
+          }
+          if (process.env.NODE_ENV === 'development' && !bound && pollAttempts >= READY_POLL_MAX_ATTEMPTS) {
+            console.warn('[VideoProxy] poll exhausted', {
+              readyState: vid.readyState,
+              networkState: vid.networkState,
+              error: vid.error,
+            })
           }
           return
         }
@@ -243,6 +269,7 @@ export function applyVideoProxyOverride (
       }, READY_POLL_INTERVAL_MS)
 
       vid.src = finalUrl
+      vid.play()?.catch(() => {}) // trigger load immediately (helps Firefox)
     }
   }
 }

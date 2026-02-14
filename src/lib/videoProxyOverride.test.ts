@@ -120,6 +120,8 @@ describe('videoProxyOverride', () => {
       expect(vid.autoplay).toBe(true)
       expect(vid.loop).toBe(true)
       expect(vid.muted).toBe(true)
+      expect(vid.preload).toBe('auto')
+      expect(vid.playsInline).toBe(true)
     })
   })
 
@@ -679,8 +681,8 @@ describe('videoProxyOverride', () => {
       applyVideoProxyOverride(['s0'], globals, overrides)
       source.initVideo('https://example.com/video.mp4')
 
-      // readyState stays at 0 — poll should give up after 25 * 200ms = 5s
-      vi.advanceTimersByTime(5200)
+      // readyState stays at 0 — poll should give up after 50 * 200ms = 10s
+      vi.advanceTimersByTime(10200)
       expect(source.src).toBeNull()
       vi.useRealTimers()
     })
