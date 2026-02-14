@@ -5,7 +5,7 @@ import { useDispatch } from 'react-redux'
 import { PLAYER_EMIT_FFT } from 'shared/actionTypes'
 import { type AudioData } from './hooks/useAudioAnalyser'
 import { useHydraAudio } from './hooks/useHydraAudio'
-import { getHydraEvalCode, DEFAULT_PATCH, wrapWithTimerTracking } from './hydraEvalCode'
+import { getHydraEvalCode, DEFAULT_PATCH } from './hydraEvalCode'
 import { detectCameraUsage } from 'lib/detectCameraUsage'
 import { applyRemoteCameraOverride, restoreRemoteCameraOverride } from 'lib/remoteCameraOverride'
 import { applyVideoProxyOverride, restoreVideoProxyOverride, HYDRA_VIDEO_READY_EVENT, protectVideoElement } from 'lib/videoProxyOverride'
@@ -65,9 +65,6 @@ function clearAudioGlobals () {
   const w = window as unknown as Record<string, unknown>
   ;(globalThis as unknown as Record<string, unknown>).__hydraAudioRef = null
   Reflect.deleteProperty(w, 'a')
-  for (const k of ['bass', 'mid', 'treble', 'beat', 'energy', 'bpm', 'bright']) {
-    Reflect.deleteProperty(w, k)
-  }
 }
 
 // Legacy mouse globals used by gallery sketches (vMouseX, mouseX, etc.).
@@ -120,9 +117,12 @@ function softHush (hydra: Hydra) {
   const w = window as unknown as Record<string, unknown>
   if (typeof w.update === 'function') w.update = function () {}
   if (typeof w.afterUpdate === 'function') w.afterUpdate = function () {}
-  if (typeof w.fps === 'number') Reflect.deleteProperty(w, 'fps')
-  if (typeof w.speed === 'number') Reflect.deleteProperty(w, 'speed')
-  if (typeof w.bpm === 'number') Reflect.deleteProperty(w, 'bpm')
+  // IMPORTANT: do not delete speed/bpm. Hydra's sandbox sync copies window.speed
+  // into synth.speed every tick; deleting makes synth.speed=undefined, which
+  // turns time into NaN and effectively kills rendering.
+  if (typeof w.fps === 'number') w.fps = undefined
+  w.speed = 1
+  w.bpm = 30
 }
 
 function clearTrackedTimers () {
@@ -144,9 +144,13 @@ function executeHydraCode (hydra: Hydra, code: string, compat?: HydraAudioCompat
       ;(globalThis as unknown as Record<string, unknown>).__hydraAudioRef = compat
       ;(window as unknown as Record<string, unknown>).a = compat
     }
+    const w = window as unknown as Record<string, unknown>
+    if (typeof w.speed !== 'number' || !Number.isFinite(w.speed)) w.speed = 1
+    if (typeof w.bpm !== 'number' || !Number.isFinite(w.bpm)) w.bpm = 30
+    if (typeof w.fps === 'number' && !Number.isFinite(w.fps)) w.fps = undefined
+
     clearTrackedTimers()
-    const evalCode = getHydraEvalCode(code)
-    hydra.eval(wrapWithTimerTracking(evalCode))
+    hydra.eval(getHydraEvalCode(code))
   } catch (err) {
     warn('Code execution error:', err)
   }
