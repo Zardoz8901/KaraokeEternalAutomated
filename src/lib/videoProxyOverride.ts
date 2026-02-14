@@ -26,11 +26,14 @@ export function isProtectedVideoElement (el: HTMLVideoElement): boolean {
 
 const PROXY_PATH = 'api/video-proxy'
 const SEEK_TIMEOUT_MS = 300
+const READY_POLL_INTERVAL_MS = 200
+const READY_POLL_MAX_ATTEMPTS = 25 // 5 seconds max
 
 interface SourceState {
   epoch: number
   pendingVideo: HTMLVideoElement | null
   seekTimer: ReturnType<typeof setTimeout> | null
+  pollTimer: ReturnType<typeof setInterval> | null
 }
 
 /** Per-source-instance state, scoped to the hydra external source object. */
@@ -39,7 +42,7 @@ const stateBySource = new WeakMap<object, SourceState>()
 function getState (ext: object): SourceState {
   let s = stateBySource.get(ext)
   if (!s) {
-    s = { epoch: 0, pendingVideo: null, seekTimer: null }
+    s = { epoch: 0, pendingVideo: null, seekTimer: null, pollTimer: null }
     stateBySource.set(ext, s)
   }
   return s
@@ -81,6 +84,10 @@ export function applyVideoProxyOverride (
       if (state.seekTimer !== null) {
         clearTimeout(state.seekTimer)
         state.seekTimer = null
+      }
+      if (state.pollTimer !== null) {
+        clearInterval(state.pollTimer)
+        state.pollTimer = null
       }
 
       // Soft-clear: blank the source immediately so stale camera/video frames
@@ -155,6 +162,10 @@ export function applyVideoProxyOverride (
           clearTimeout(state.seekTimer)
           state.seekTimer = null
         }
+        if (state.pollTimer !== null) {
+          clearInterval(state.pollTimer)
+          state.pollTimer = null
+        }
 
         this.src = vid
         vid.play()?.catch(() => {}) // swallow autoplay rejection
@@ -172,12 +183,17 @@ export function applyVideoProxyOverride (
       }
 
       if (startTime !== undefined) {
-        // startTime path: seek first, bind after seek completes (or timeout)
-        vid.addEventListener('loadeddata', () => {
+        // startTime path: seek first, bind after seek completes (or timeout).
+        // Uses readyHandled flag so only the first event (loadeddata, canplay,
+        // or readyState poll) triggers the seek setup.
+        let readyHandled = false
+        const onReady = (): void => {
+          if (readyHandled) return
           if (state.epoch !== epoch) {
             cleanupVideo(vid)
             return
           }
+          readyHandled = true
 
           if (startTime === 'random' && vid.duration > 0) {
             vid.currentTime = Math.random() * vid.duration
@@ -187,17 +203,44 @@ export function applyVideoProxyOverride (
 
           vid.addEventListener('seeked', () => bindSource(), { once: true })
           state.seekTimer = setTimeout(() => bindSource(), SEEK_TIMEOUT_MS)
-        })
+        }
+        vid.addEventListener('loadeddata', onReady)
+        vid.addEventListener('canplay', onReady)
       } else {
-        // No startTime: bind immediately on loadeddata (matches upstream)
-        vid.addEventListener('loadeddata', () => {
+        // No startTime: bind immediately when media is ready.
+        // Both loadeddata and canplay call bindSource(); the `bound` flag
+        // makes it idempotent — whichever fires first wins.
+        const onReady = (): void => {
           if (state.epoch !== epoch) {
             cleanupVideo(vid)
             return
           }
           bindSource()
-        })
+        }
+        vid.addEventListener('loadeddata', onReady)
+        vid.addEventListener('canplay', onReady)
       }
+
+      // readyState poll: fallback when neither loadeddata nor canplay fire
+      // (observed in Firefox with detached proxy-loaded videos).
+      let pollAttempts = 0
+      state.pollTimer = setInterval(() => {
+        pollAttempts++
+        if (bound || state.epoch !== epoch || pollAttempts >= READY_POLL_MAX_ATTEMPTS) {
+          if (state.pollTimer !== null) {
+            clearInterval(state.pollTimer)
+            state.pollTimer = null
+          }
+          return
+        }
+        if (vid.readyState >= 2) {
+          if (state.pollTimer !== null) {
+            clearInterval(state.pollTimer)
+            state.pollTimer = null
+          }
+          bindSource()
+        }
+      }, READY_POLL_INTERVAL_MS)
 
       vid.src = finalUrl
     }
@@ -222,6 +265,10 @@ export function restoreVideoProxyOverride (
       if (state.seekTimer !== null) {
         clearTimeout(state.seekTimer)
         state.seekTimer = null
+      }
+      if (state.pollTimer !== null) {
+        clearInterval(state.pollTimer)
+        state.pollTimer = null
       }
     }
 

@@ -37,23 +37,29 @@ function isRemoteVideoRenderable (videoEl: HTMLVideoElement | null) {
     && videoEl.videoHeight > 0
 }
 
-// Audio globals exposed on window for Hydra code to reference
+// Audio globals exposed on window for Hydra code to reference.
+// Uses an accessor property so sloppy-mode eval (`var a = ...`) silently
+// fails to clobber it, and strict-mode eval assignment won't throw
+// (set is a valid no-op rather than a write to a non-writable property).
 function setAudioGlobals (compat: HydraAudioCompat) {
-  const w = window as unknown as Record<string, unknown>
-  w.a = compat
+  Object.defineProperty(window, 'a', {
+    get () { return compat },
+    set () { /* no-op — prevent eval'd code from clobbering */ },
+    configurable: true,
+    enumerable: true,
+  })
 }
 
-// Self-healing guard: re-set window.a if it was clobbered (e.g. by hush/eval cycle)
-function ensureAudioGlobals (compat: HydraAudioCompat) {
-  const w = window as unknown as Record<string, unknown>
-  const current = w.a as HydraAudioCompat | undefined
-  if (!current || !current.fft || current !== compat) {
-    w.a = compat
-  }
+// No-op: accessor property on window prevents clobbering.
+// Kept for call-site compatibility (tick callback, executeHydraCode).
+function ensureAudioGlobals (_compat: HydraAudioCompat) {
+  // intentionally empty
 }
 
 function clearAudioGlobals () {
   const w = window as unknown as Record<string, unknown>
+  // Remove the accessor property first
+  delete w.a
   // Defensive cleanup for sessions that previously exposed legacy helpers.
   delete w.bass
   delete w.mid
@@ -62,7 +68,6 @@ function clearAudioGlobals () {
   delete w.energy
   delete w.bpm
   delete w.bright
-  delete w.a
 }
 
 // Clear render graph outputs without clearing sources (preserves WebRTC video tracks).

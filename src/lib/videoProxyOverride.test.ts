@@ -44,6 +44,10 @@ function fireSeeked (vid: HTMLVideoElement): void {
   vid.dispatchEvent(new Event('seeked'))
 }
 
+function fireCanPlay (vid: HTMLVideoElement): void {
+  vid.dispatchEvent(new Event('canplay'))
+}
+
 describe('videoProxyOverride', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
@@ -535,6 +539,173 @@ describe('videoProxyOverride', () => {
       protectVideoElement(el)
       protectVideoElement(el)
       expect(isProtectedVideoElement(el)).toBe(true)
+    })
+  })
+
+  describe('canplay fallback', () => {
+    it('binds source on canplay if loadeddata never fires', () => {
+      const videos = spyOnCreateElement()
+      const source = makeSource()
+      const globals: Record<string, unknown> = { s0: source }
+      const overrides = new Map<string, unknown>()
+
+      applyVideoProxyOverride(['s0'], globals, overrides)
+      source.initVideo('https://example.com/video.mp4')
+
+      // Only fire canplay (no loadeddata)
+      fireCanPlay(videos[0])
+
+      expect(source.src).toBe(videos[0])
+      expect(source.dynamic).toBe(true)
+    })
+
+    it('binds only once when both loadeddata and canplay fire', () => {
+      const videos = spyOnCreateElement()
+      const source = makeSource()
+      const globals: Record<string, unknown> = { s0: source }
+      const overrides = new Map<string, unknown>()
+
+      applyVideoProxyOverride(['s0'], globals, overrides)
+      source.initVideo('https://example.com/video.mp4')
+
+      fireLoadedData(videos[0])
+      fireCanPlay(videos[0])
+
+      // 2 calls: soft-clear placeholder + bind texture (NOT 3)
+      expect(source.regl.texture).toHaveBeenCalledTimes(2)
+    })
+
+    it('epoch guard works on canplay path', () => {
+      const videos = spyOnCreateElement()
+      const source = makeSource()
+      const globals: Record<string, unknown> = { s0: source }
+      const overrides = new Map<string, unknown>()
+
+      applyVideoProxyOverride(['s0'], globals, overrides)
+      source.initVideo('https://example.com/video1.mp4')
+      source.initVideo('https://example.com/video2.mp4')
+
+      // Stale canplay on first video should not bind
+      fireCanPlay(videos[0])
+      expect(source.src).not.toBe(videos[0])
+
+      // Current canplay on second video should bind
+      fireCanPlay(videos[1])
+      expect(source.src).toBe(videos[1])
+    })
+
+    it('startTime path: onReady fires via canplay if loadeddata never fires', () => {
+      const videos = spyOnCreateElement()
+      const source = makeSource()
+      const globals: Record<string, unknown> = { s0: source }
+      const overrides = new Map<string, unknown>()
+
+      applyVideoProxyOverride(['s0'], globals, overrides)
+      source.initVideo('https://example.com/video.mp4', { startTime: 42 })
+
+      const vid = videos[0]
+      Object.defineProperty(vid, 'duration', { value: 120, writable: true })
+
+      // Only canplay fires (no loadeddata)
+      fireCanPlay(vid)
+
+      // Should have seeked
+      expect(vid.currentTime).toBe(42)
+      expect(source.src).toBeNull() // waiting for seeked
+
+      fireSeeked(vid)
+      expect(source.src).toBe(vid)
+      expect(source.dynamic).toBe(true)
+    })
+
+    it('startTime path: onReady fires only once when both events fire', () => {
+      const videos = spyOnCreateElement()
+      const source = makeSource()
+      const globals: Record<string, unknown> = { s0: source }
+      const overrides = new Map<string, unknown>()
+
+      applyVideoProxyOverride(['s0'], globals, overrides)
+      source.initVideo('https://example.com/video.mp4', { startTime: 10 })
+
+      const vid = videos[0]
+      Object.defineProperty(vid, 'duration', { value: 60, writable: true })
+
+      // Both fire — only first should trigger seek setup
+      fireCanPlay(vid)
+      expect(vid.currentTime).toBe(10)
+
+      // Reset to detect if loadeddata re-triggers seek
+      vid.currentTime = 0
+      fireLoadedData(vid)
+      // currentTime should NOT have been set again by loadeddata
+      expect(vid.currentTime).toBe(0)
+    })
+  })
+
+  describe('readyState poll fallback', () => {
+    it('binds via readyState poll when no events fire', () => {
+      vi.useFakeTimers()
+      const videos = spyOnCreateElement()
+      const source = makeSource()
+      const globals: Record<string, unknown> = { s0: source }
+      const overrides = new Map<string, unknown>()
+
+      applyVideoProxyOverride(['s0'], globals, overrides)
+      source.initVideo('https://example.com/video.mp4')
+
+      const vid = videos[0]
+      expect(source.src).toBeNull()
+
+      // readyState < 2 — poll should not bind yet
+      Object.defineProperty(vid, 'readyState', { value: 1, writable: true, configurable: true })
+      vi.advanceTimersByTime(200)
+      expect(source.src).toBeNull()
+
+      // readyState >= 2 — poll should bind
+      Object.defineProperty(vid, 'readyState', { value: 2, writable: true, configurable: true })
+      vi.advanceTimersByTime(200)
+      expect(source.src).toBe(vid)
+      expect(source.dynamic).toBe(true)
+      vi.useRealTimers()
+    })
+
+    it('poll stops after max attempts', () => {
+      vi.useFakeTimers()
+      const videos = spyOnCreateElement()
+      const source = makeSource()
+      const globals: Record<string, unknown> = { s0: source }
+      const overrides = new Map<string, unknown>()
+
+      applyVideoProxyOverride(['s0'], globals, overrides)
+      source.initVideo('https://example.com/video.mp4')
+
+      // readyState stays at 0 — poll should give up after 25 * 200ms = 5s
+      vi.advanceTimersByTime(5200)
+      expect(source.src).toBeNull()
+      vi.useRealTimers()
+    })
+
+    it('poll self-clears when loadeddata fires first', () => {
+      vi.useFakeTimers()
+      const videos = spyOnCreateElement()
+      const source = makeSource()
+      const globals: Record<string, unknown> = { s0: source }
+      const overrides = new Map<string, unknown>()
+
+      applyVideoProxyOverride(['s0'], globals, overrides)
+      source.initVideo('https://example.com/video.mp4')
+
+      const vid = videos[0]
+      fireLoadedData(vid)
+      expect(source.src).toBe(vid)
+
+      // Advancing time should not cause issues (poll should have cleared)
+      source.regl.texture.mockClear()
+      Object.defineProperty(vid, 'readyState', { value: 4, writable: true, configurable: true })
+      vi.advanceTimersByTime(1000)
+      // No extra texture calls from the poll
+      expect(source.regl.texture).not.toHaveBeenCalled()
+      vi.useRealTimers()
     })
   })
 

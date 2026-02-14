@@ -106,6 +106,54 @@ describe('hydraAudioCompat', () => {
     })
   })
 
+  describe('fft invariants', () => {
+    it('fft is always defined after creation', () => {
+      const compat = createHydraAudioCompat()
+      expect(compat.fft).toBeDefined()
+      expect(Array.isArray(compat.fft)).toBe(true)
+    })
+
+    it('fft values default to 0', () => {
+      const compat = createHydraAudioCompat()
+      for (const v of compat.fft) {
+        expect(v).toBe(0)
+      }
+    })
+
+    it('fft is always defined after setBins', () => {
+      const compat = createHydraAudioCompat()
+      compat.setBins(8)
+      expect(compat.fft).toBeDefined()
+      expect(compat.fft.length).toBe(8)
+      for (const v of compat.fft) {
+        expect(v).toBe(0)
+      }
+    })
+
+    it('fft is defined after setBins reduces bins below previous size', () => {
+      const compat = createHydraAudioCompat()
+      compat.setBins(16)
+      compat.update(makeAudioData(128, 0.5))
+      // Now reduce bins — fft must still be valid
+      compat.setBins(2)
+      expect(compat.fft).toBeDefined()
+      expect(compat.fft.length).toBe(2)
+      for (const v of compat.fft) {
+        expect(v).toBe(0) // freshly allocated
+      }
+    })
+
+    it('fft supports standard array operations (length, map, forEach, Array.from)', () => {
+      const compat = createHydraAudioCompat()
+      expect(compat.fft.length).toBe(4)
+      expect(compat.fft.map(v => v + 1)).toEqual([1, 1, 1, 1])
+      const collected: number[] = []
+      compat.fft.forEach(v => collected.push(v))
+      expect(collected).toEqual([0, 0, 0, 0])
+      expect(Array.from(compat.fft)).toEqual([0, 0, 0, 0])
+    })
+  })
+
   describe('update', () => {
     it('populates fft array from rawFrequencyData', () => {
       const compat = createHydraAudioCompat()
