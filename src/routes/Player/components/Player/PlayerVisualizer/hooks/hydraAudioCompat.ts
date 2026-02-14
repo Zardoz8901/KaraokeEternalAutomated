@@ -43,8 +43,9 @@ export function createHydraAudioCompat (): HydraAudioCompat {
   let fft: number[] = new Array(bins).fill(0)
   let prev: number[] = new Array(bins).fill(0)
 
-  const compat: HydraAudioCompat = {
-    fft,
+  let fftSetWarned = false
+
+  const compat = {
     vol: 0,
 
     setBins (n: number) {
@@ -53,7 +54,6 @@ export function createHydraAudioCompat (): HydraAudioCompat {
       bins = clamped
       fft = new Array(bins).fill(0)
       prev = new Array(bins).fill(0)
-      compat.fft = fft
     },
 
     setSmooth (v: number) {
@@ -110,5 +110,17 @@ export function createHydraAudioCompat (): HydraAudioCompat {
     },
   }
 
-  return compat
+  Object.defineProperty(compat, 'fft', {
+    get () { return fft },
+    set () {
+      if (!fftSetWarned) {
+        console.warn('[hydraAudioCompat] a.fft is read-only — use a.setBins() to resize')
+        fftSetWarned = true
+      }
+    },
+    enumerable: true,
+    configurable: false,
+  })
+
+  return compat as HydraAudioCompat
 }
