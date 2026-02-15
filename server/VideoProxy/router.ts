@@ -8,7 +8,7 @@ const router = new KoaRouter({ prefix: '/api/video-proxy' })
 
 // Proxy cap: prevents the server from proxying arbitrarily large upstream media.
 // Raised from 500MB to reduce false 413s for large MP4s.
-export const MAX_SIZE_BYTES = 2 * 1024 * 1024 * 1024 // 2 GB
+export const MAX_SIZE_BYTES = 5 * 1024 * 1024 * 1024 // 5 GB
 // Cache cap: keep disk usage bounded even if proxying larger media is allowed.
 export const MAX_CACHE_BYTES = 500 * 1024 * 1024 // 500 MB
 const CONNECT_TIMEOUT_MS = 15_000 // timeout for initial connection + headers
