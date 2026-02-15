@@ -6,6 +6,7 @@ import { PLAYER_EMIT_FFT } from 'shared/actionTypes'
 import { type AudioData } from './hooks/useAudioAnalyser'
 import { useHydraAudio } from './hooks/useHydraAudio'
 import { getHydraEvalCode, DEFAULT_PATCH } from './hydraEvalCode'
+import { installHydraTimerTracking, uninstallHydraTimerTracking, clearHydraTimers, withHydraTimerOwner, type HydraTimerOwner } from './hydraUserTimers'
 import { detectCameraUsage } from 'lib/detectCameraUsage'
 import { applyRemoteCameraOverride, restoreRemoteCameraOverride } from 'lib/remoteCameraOverride'
 import { applyVideoProxyOverride, restoreVideoProxyOverride, HYDRA_VIDEO_READY_EVENT, protectVideoElement } from 'lib/videoProxyOverride'
@@ -125,7 +126,11 @@ function softHush (hydra: Hydra) {
   w.bpm = 30
 }
 
-function clearTrackedTimers () {
+function clearTrackedTimers (timerOwner?: HydraTimerOwner) {
+  if (timerOwner) {
+    clearHydraTimers(timerOwner)
+    return
+  }
   const g = globalThis as unknown as Record<string, unknown>
   const ids = g.__hydraUserTimers
   if (!(ids instanceof Set) || ids.size === 0) return
@@ -136,7 +141,7 @@ function clearTrackedTimers () {
   ids.clear()
 }
 
-function executeHydraCode (hydra: Hydra, code: string, compat?: HydraAudioCompat) {
+function executeHydraCode (hydra: Hydra, code: string, compat?: HydraAudioCompat, timerOwner?: HydraTimerOwner) {
   try {
     // Reseed audio at each preset boundary so audio is available
     // even if a previous sketch clobbered window.a or __hydraAudioRef.
@@ -149,8 +154,13 @@ function executeHydraCode (hydra: Hydra, code: string, compat?: HydraAudioCompat
     if (typeof w.bpm !== 'number' || !Number.isFinite(w.bpm)) w.bpm = 30
     if (typeof w.fps === 'number' && !Number.isFinite(w.fps)) w.fps = undefined
 
-    clearTrackedTimers()
-    hydra.eval(getHydraEvalCode(code))
+    clearTrackedTimers(timerOwner)
+    const evalCode = getHydraEvalCode(code)
+    if (timerOwner) {
+      withHydraTimerOwner(timerOwner, () => hydra.eval(evalCode))
+    } else {
+      hydra.eval(evalCode)
+    }
   } catch (err) {
     warn('Code execution error:', err)
   }
@@ -207,6 +217,7 @@ function HydraVisualizer ({
   const videoProxyOverrideRef = useRef<Map<string, unknown>>(new Map())
   const prevRemoteVideoRef = useRef<HTMLVideoElement | null>(null)
   const compatRef = useRef<HydraAudioCompat | null>(null)
+  const timerOwnerRef = useRef<HydraTimerOwner>(Symbol('hydraTimers'))
   const [remoteVideoEpoch, setRemoteVideoEpoch] = useState(0)
 
   const reportCameraSourcesBound = useCallback(() => {
@@ -353,6 +364,7 @@ function HydraVisualizer ({
     }
 
     hydraRef.current = hydra
+    installHydraTimerTracking(timerOwnerRef.current)
     errorCountRef.current = 0
 
     // Override initVideo() before first code execution so proxy is active immediately
@@ -368,13 +380,13 @@ function HydraVisualizer ({
     }
 
     // Execute initial patch and render first frame immediately
-    executeHydraCode(hydra, codeRef.current)
-    hydra.tick(16.67)
+    executeHydraCode(hydra, codeRef.current, compatRef.current ?? undefined, timerOwnerRef.current)
+    withHydraTimerOwner(timerOwnerRef.current, () => hydra.tick(16.67))
 
     const cameraOverrides = cameraOverrideRef.current
     return () => {
       log('Destroying')
-      clearTrackedTimers()
+      uninstallHydraTimerTracking(timerOwnerRef.current)
       restoreRemoteCameraOverride(w, cameraOverrides)
       restoreVideoProxyOverride(w, videoProxyOverrides)
       cancelAnimationFrame(rafRef.current)
@@ -399,7 +411,7 @@ function HydraVisualizer ({
         const hydra = hydraRef.current
         if (!hydra) return
         try {
-          hydra.tick(16.67)
+          withHydraTimerOwner(timerOwnerRef.current, () => hydra.tick(16.67))
         } catch {
           // Bad user code — swallow so it doesn't cascade
         }
@@ -587,13 +599,13 @@ function HydraVisualizer ({
 
     reportCameraSourcesBound()
 
-    executeHydraCode(hydra, code, compatRef.current ?? undefined)
+    executeHydraCode(hydra, code, compatRef.current ?? undefined, timerOwnerRef.current)
     errorCountRef.current = 0
 
     // Render one frame immediately so the new graph is visible even when the
     // RAF loop is stopped (isPlaying=false). Matches the mount-only effect.
     try {
-      hydra.tick(16.67)
+      withHydraTimerOwner(timerOwnerRef.current, () => hydra.tick(16.67))
     } catch {
       // Bad user code — swallow so it doesn't cascade into a hard blank
     }
@@ -617,7 +629,7 @@ function HydraVisualizer ({
     lastTimeRef.current = time
 
     try {
-      hydra.tick(dt)
+      withHydraTimerOwner(timerOwnerRef.current, () => hydra.tick(dt))
     } catch (err) {
       errorCountRef.current++
       if (errorCountRef.current <= 3) {
@@ -625,8 +637,7 @@ function HydraVisualizer ({
       }
       if (errorCountRef.current === 10) {
         warn('Too many errors, re-applying default patch')
-        clearTrackedTimers()
-        executeHydraCode(hydra, DEFAULT_PATCH)
+        executeHydraCode(hydra, DEFAULT_PATCH, compatRef.current ?? undefined, timerOwnerRef.current)
         errorCountRef.current = 0
       }
     }
