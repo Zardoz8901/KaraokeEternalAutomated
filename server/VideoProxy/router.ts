@@ -12,7 +12,7 @@ export const MAX_SIZE_BYTES = 5 * 1024 * 1024 * 1024 // 5 GB
 // Cache cap: keep disk usage bounded even if proxying larger media is allowed.
 export const MAX_CACHE_BYTES = 500 * 1024 * 1024 // 500 MB
 const CONNECT_TIMEOUT_MS = 15_000 // timeout for initial connection + headers
-const IDLE_TIMEOUT_MS = 30_000 // abort if no bytes arrive for this long
+const IDLE_TIMEOUT_MS = 120_000 // abort if no bytes arrive for this long
 const MAX_REDIRECTS = 5
 
 const PRIVATE_IP_PATTERNS = [
@@ -79,13 +79,14 @@ export function isContentTypeAllowed (ct: string | null): boolean {
  * Wraps a Web ReadableStream with an idle timeout — aborts if no bytes
  * arrive for `idleMs`. Returns a Node.js Readable.
  */
-function idleTimeoutStream (webStream: ReadableStream, idleMs: number): Readable {
+function idleTimeoutStream (webStream: ReadableStream, idleMs: number, label = ''): Readable {
   const reader = (webStream as import('stream/web').ReadableStream).getReader()
   let timer: ReturnType<typeof setTimeout> | null = null
 
   const resetTimer = (controller: ReadableStreamDefaultController<Uint8Array>) => {
     if (timer) clearTimeout(timer)
     timer = setTimeout(() => {
+      log.warn('idle timeout on proxied stream%s', label ? ` [${label}]` : '')
       reader.cancel('idle timeout').catch(() => {})
       controller.error(new Error('Upstream idle timeout'))
     }, idleMs)
@@ -158,6 +159,7 @@ router.get('/', async (ctx) => {
   let currentUrl = requestedUrl
   let redirects = 0
   let res: Response | null = null
+  const fetchStart = Date.now()
 
   while (true) {
     try {
@@ -231,6 +233,15 @@ router.get('/', async (ctx) => {
   if (contentLength) {
     const size = parseInt(contentLength, 10)
     if (size > MAX_SIZE_BYTES) {
+      log.warn('413 rejecting %s (%sMB > %sMB) [status=%d type=%s range=%s content-range=%s]',
+        requestedUrl.slice(0, 120),
+        (size / 1_000_000).toFixed(1),
+        (MAX_SIZE_BYTES / 1_000_000).toFixed(0),
+        res.status,
+        contentType ?? 'unknown',
+        clientRange || 'none',
+        res.headers.get('content-range') || 'none',
+      )
       await res.body?.cancel()
       ctx.throw(413, 'Upstream resource too large')
       return
@@ -243,6 +254,7 @@ router.get('/', async (ctx) => {
 
   ctx.set('Content-Type', contentType!)
   ctx.set('Accept-Ranges', 'bytes')
+  ctx.set('X-Video-Proxy', '1')
 
   let contentRange: string | null = null
   if (res.status === 206) {
@@ -275,13 +287,15 @@ router.get('/', async (ctx) => {
     }
   }
 
-  log.verbose('proxy %s %s → %d %s (%sMB) [client-range=%s] %s',
+  const fetchMs = Date.now() - fetchStart
+  log.verbose('proxy %s %s → %d %s (%sMB) [range=%s] [%dms] %s',
     ctx.method,
     requestedUrl.slice(0, 120),
     res.status,
     contentType,
     contentLength ? (parseInt(contentLength, 10) / 1_000_000).toFixed(1) : '?',
     clientRange || 'none',
+    fetchMs,
     currentUrl !== requestedUrl ? `(redirected → ${currentUrl.slice(0, 80)})` : '',
   )
 
@@ -304,9 +318,11 @@ router.get('/', async (ctx) => {
       startBackgroundDownload(cacheDir, requestedUrl, isUrlAllowed, MAX_CACHE_BYTES)
         .catch(() => {}) // fire-and-forget; errors logged inside
     }
-    ctx.body = idleTimeoutStream(res.body!, IDLE_TIMEOUT_MS)
+    const streamLabel = `${requestedUrl.slice(0, 80)} range=${clientRange || 'none'} upstream=${res.status}`
+    ctx.body = idleTimeoutStream(res.body!, IDLE_TIMEOUT_MS, streamLabel)
   } else {
-    ctx.body = idleTimeoutStream(res.body!, IDLE_TIMEOUT_MS)
+    const streamLabel = `${requestedUrl.slice(0, 80)} range=${clientRange || 'none'} upstream=${res.status}`
+    ctx.body = idleTimeoutStream(res.body!, IDLE_TIMEOUT_MS, streamLabel)
   }
 })
 

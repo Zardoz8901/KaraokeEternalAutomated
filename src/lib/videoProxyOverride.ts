@@ -31,9 +31,13 @@ const PROXY_PATH = 'api/video-proxy'
  * Hosts known to serve Access-Control-Allow-Origin on media files.
  * For these hosts, skip the proxy and use direct URLs — avoids 413,
  * stream corruption, and codec re-encoding issues with the proxy.
+ *
+ * archive.org CDN nodes (dn*.ca.archive.org, ia*.us.archive.org) do NOT
+ * serve ACAO, even though the initial archive.org 302 redirect does.
+ * Verified 2026-02-15 via curl. Removed to prevent wasted CORS attempts.
+ * The bypass infrastructure + error retry remain for future verified hosts.
  */
-const CORS_CAPABLE_HOSTS = [
-  'archive.org', // *.archive.org (ia600206.us.archive.org, etc.)
+const CORS_CAPABLE_HOSTS: string[] = [
 ]
 
 export function isCorsCapableHost (hostname: string): boolean {
@@ -400,6 +404,12 @@ export function applyVideoProxyOverride (
           }
 
           if (isProxied) {
+            // Only retry direct if the host is known to serve CORS headers.
+            // Otherwise direct will always CORS-fail — terminal error.
+            try {
+              const parsed = new URL(url)
+              if (!isCorsCapableHost(parsed.hostname)) return // terminal
+            } catch { return }
             overrides.set(`__retryDirect:${url}`, true)
           } else {
             overrides.set(`__retryProxy:${url}`, true)
@@ -439,6 +449,11 @@ export function applyVideoProxyOverride (
               })
             }
             if (isProxied) {
+              // Only retry direct if the host is known to serve CORS headers.
+              try {
+                const parsed = new URL(url)
+                if (!isCorsCapableHost(parsed.hostname)) return
+              } catch { return }
               overrides.set(`__retryDirect:${url}`, true)
             } else {
               overrides.set(`__retryProxy:${url}`, true)

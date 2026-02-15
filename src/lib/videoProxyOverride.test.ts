@@ -1080,12 +1080,12 @@ describe('videoProxyOverride', () => {
   })
 
   describe('isCorsCapableHost', () => {
-    it('matches exact archive.org', () => {
-      expect(isCorsCapableHost('archive.org')).toBe(true)
+    it('does not match archive.org (removed from allowlist)', () => {
+      expect(isCorsCapableHost('archive.org')).toBe(false)
     })
 
-    it('matches subdomain of archive.org', () => {
-      expect(isCorsCapableHost('ia600206.us.archive.org')).toBe(true)
+    it('does not match subdomain of archive.org (removed from allowlist)', () => {
+      expect(isCorsCapableHost('ia600206.us.archive.org')).toBe(false)
     })
 
     it('does not match non-allowlisted host', () => {
@@ -1098,7 +1098,7 @@ describe('videoProxyOverride', () => {
   })
 
   describe('CORS-capable host bypass', () => {
-    it('archive.org URL uses direct (not proxied)', () => {
+    it('archive.org URL is proxied (not CORS-capable)', () => {
       const videos = spyOnCreateElement()
       const source = makeSource()
       const globals: Record<string, unknown> = { s0: source }
@@ -1107,10 +1107,12 @@ describe('videoProxyOverride', () => {
       applyVideoProxyOverride(['s0'], globals, overrides)
       source.initVideo('https://archive.org/download/item/file.mp4')
 
-      expect(videos[0].getAttribute('src')).toBe('https://archive.org/download/item/file.mp4')
+      expect(videos[0].getAttribute('src')).toEqual(
+        expect.stringContaining('api/video-proxy?url='),
+      )
     })
 
-    it('*.archive.org subdomain uses direct', () => {
+    it('*.archive.org subdomain is proxied (not CORS-capable)', () => {
       const videos = spyOnCreateElement()
       const source = makeSource()
       const globals: Record<string, unknown> = { s0: source }
@@ -1119,12 +1121,12 @@ describe('videoProxyOverride', () => {
       applyVideoProxyOverride(['s0'], globals, overrides)
       source.initVideo('https://ia600206.us.archive.org/35/items/video/file.mp4')
 
-      expect(videos[0].getAttribute('src')).toBe(
-        'https://ia600206.us.archive.org/35/items/video/file.mp4',
+      expect(videos[0].getAttribute('src')).toEqual(
+        expect.stringContaining('api/video-proxy?url='),
       )
     })
 
-    it('non-allowlisted host is still proxied', () => {
+    it('non-allowlisted host is proxied', () => {
       const videos = spyOnCreateElement()
       const source = makeSource()
       const globals: Record<string, unknown> = { s0: source }
@@ -1162,7 +1164,7 @@ describe('videoProxyOverride', () => {
       vid.dispatchEvent(new Event('error'))
     }
 
-    it('proxied video error retries with direct URL', () => {
+    it('proxied video error is terminal for non-CORS host (no direct retry)', () => {
       const videos = spyOnCreateElement()
       const source = makeSource()
       const globals: Record<string, unknown> = { s0: source }
@@ -1176,51 +1178,52 @@ describe('videoProxyOverride', () => {
         expect.stringContaining('api/video-proxy?url='),
       )
 
-      // Fire error on proxied video → should retry with direct URL
+      // Fire error on proxied video → should NOT retry direct (non-CORS host)
       fireVideoError(videos[0])
 
-      // Second video should be created with the direct URL
-      expect(videos.length).toBe(2)
-      expect(videos[1].getAttribute('src')).toBe('https://example.com/video.mp4')
+      // No second video created — error is terminal
+      expect(videos.length).toBe(1)
     })
 
-    it('direct video error (CORS host) retries with proxy', () => {
+    it('proxied archive.org error is terminal (archive.org not CORS-capable)', () => {
       const videos = spyOnCreateElement()
       const source = makeSource()
       const globals: Record<string, unknown> = { s0: source }
       const overrides = new Map<string, unknown>()
 
       applyVideoProxyOverride(['s0'], globals, overrides)
-      source.initVideo('https://archive.org/download/item/file.mp4')
+      source.initVideo('https://ia600206.us.archive.org/35/items/video/file.mp4')
 
-      // First video should be direct (CORS bypass)
-      expect(videos[0].getAttribute('src')).toBe('https://archive.org/download/item/file.mp4')
-
-      // Fire error → should retry with proxy
-      fireVideoError(videos[0])
-
-      expect(videos.length).toBe(2)
-      expect(videos[1].getAttribute('src')).toEqual(
+      // Should be proxied (no longer CORS-capable)
+      expect(videos[0].getAttribute('src')).toEqual(
         expect.stringContaining('api/video-proxy?url='),
       )
+
+      // Fire error → terminal, no direct retry
+      fireVideoError(videos[0])
+      expect(videos.length).toBe(1)
     })
 
-    it('retry does not loop (second error is terminal)', () => {
+    it('forced proxy retry (via __retryProxy) does not loop on second error', () => {
       const videos = spyOnCreateElement()
       const source = makeSource()
       const globals: Record<string, unknown> = { s0: source }
       const overrides = new Map<string, unknown>()
 
       applyVideoProxyOverride(['s0'], globals, overrides)
+
+      // Simulate a forced proxy retry (as if a direct attempt failed)
+      overrides.set('__retryProxy:https://example.com/video.mp4', true)
       source.initVideo('https://example.com/video.mp4')
 
-      // First error → retry
-      fireVideoError(videos[0])
-      expect(videos.length).toBe(2)
+      // Should be proxied (forced retry)
+      expect(videos[0].getAttribute('src')).toEqual(
+        expect.stringContaining('api/video-proxy?url='),
+      )
 
-      // Second error → no further retry
-      fireVideoError(videos[1])
-      expect(videos.length).toBe(2)
+      // Error on the retry → no further retry (isRetry flag is true)
+      fireVideoError(videos[0])
+      expect(videos.length).toBe(1)
     })
 
     it('stale epoch prevents retry', () => {
@@ -1256,29 +1259,34 @@ describe('videoProxyOverride', () => {
       expect(videos.length).toBe(1)
     })
 
-    it('startTime preserved on retry', () => {
+    it('startTime preserved on direct→proxy retry', () => {
       const videos = spyOnCreateElement()
       const source = makeSource()
       const globals: Record<string, unknown> = { s0: source }
       const overrides = new Map<string, unknown>()
 
       applyVideoProxyOverride(['s0'], globals, overrides)
+
+      // Force a direct URL by using same-origin-like path that's still HTTP
+      // Use __retryProxy to simulate a direct→proxy retry preserving startTime
+      overrides.set('__retryProxy:https://example.com/video.mp4', true)
       source.initVideo('https://example.com/video.mp4', { startTime: 42, wrap: 'repeat' })
 
-      // Fire error → retry
-      fireVideoError(videos[0])
-      expect(videos.length).toBe(2)
+      // Should be proxied (forced retry)
+      expect(videos[0].getAttribute('src')).toEqual(
+        expect.stringContaining('api/video-proxy?url='),
+      )
 
       // The retried video should still honor startTime (seeked path)
-      const vid2 = videos[1]
-      Object.defineProperty(vid2, 'duration', { value: 120, writable: true })
-      fireLoadedData(vid2)
+      const vid = videos[0]
+      Object.defineProperty(vid, 'duration', { value: 120, writable: true })
+      fireLoadedData(vid)
 
       // startTime path: should have set currentTime
-      expect(vid2.currentTime).toBe(42)
+      expect(vid.currentTime).toBe(42)
     })
 
-    it('poll-detected error triggers retry when event has not fired', () => {
+    it('poll-detected error is terminal for non-CORS proxied host', () => {
       vi.useFakeTimers()
       const videos = spyOnCreateElement()
       const source = makeSource()
@@ -1295,12 +1303,10 @@ describe('videoProxyOverride', () => {
         configurable: true,
       })
 
-      // Poll should detect error and trigger retry
+      // Poll should detect error but NOT retry (non-CORS host → terminal)
       vi.advanceTimersByTime(200)
 
-      expect(videos.length).toBe(2)
-      // Retry should use direct URL (original was proxied)
-      expect(videos[1].getAttribute('src')).toBe('https://example.com/video.mp4')
+      expect(videos.length).toBe(1)
 
       vi.useRealTimers()
     })
@@ -1313,22 +1319,21 @@ describe('videoProxyOverride', () => {
       const overrides = new Map<string, unknown>()
 
       applyVideoProxyOverride(['s0'], globals, overrides)
+
+      // Force a proxy retry to get isRetry=true
+      overrides.set('__retryProxy:https://example.com/video.mp4', true)
       source.initVideo('https://example.com/video.mp4')
 
-      // First error via event → retry
-      fireVideoError(videos[0])
-      expect(videos.length).toBe(2)
-
       // Retry video gets error via poll (no event)
-      Object.defineProperty(videos[1], 'error', {
+      Object.defineProperty(videos[0], 'error', {
         value: { code: 4, message: 'MEDIA_ERR_SRC_NOT_SUPPORTED' },
         writable: true,
         configurable: true,
       })
       vi.advanceTimersByTime(200)
 
-      // Should NOT have created a third video
-      expect(videos.length).toBe(2)
+      // Should NOT have created a second video (isRetry prevents it)
+      expect(videos.length).toBe(1)
 
       vi.useRealTimers()
     })

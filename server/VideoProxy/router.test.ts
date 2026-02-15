@@ -6,7 +6,7 @@ import os from 'os'
 
 // Mock the logger before importing router (logger not initialized in test env)
 vi.mock('../lib/Log.js', () => ({
-  default: () => ({ verbose: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() }),
+  default: () => ({ verbose: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }),
 }))
 
 import { isUrlAllowed, isContentTypeAllowed, MAX_CACHE_BYTES, MAX_SIZE_BYTES } from './router.js'
@@ -144,8 +144,8 @@ describe('VideoProxy', () => {
   })
 
   describe('MAX_SIZE_BYTES', () => {
-    it('is 2GB', () => {
-      expect(MAX_SIZE_BYTES).toBe(2 * 1024 * 1024 * 1024)
+    it('is 5GB', () => {
+      expect(MAX_SIZE_BYTES).toBe(5 * 1024 * 1024 * 1024)
     })
   })
 
