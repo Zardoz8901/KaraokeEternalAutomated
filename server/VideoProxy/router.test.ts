@@ -9,7 +9,7 @@ vi.mock('../lib/Log.js', () => ({
   default: () => ({ verbose: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() }),
 }))
 
-import { isUrlAllowed, isContentTypeAllowed, MAX_SIZE_BYTES } from './router.js'
+import { isUrlAllowed, isContentTypeAllowed, MAX_CACHE_BYTES, MAX_SIZE_BYTES } from './router.js'
 import { setVideoCacheDir, getCachePath, getCacheMetaPath } from './cache.js'
 
 /**
@@ -144,8 +144,14 @@ describe('VideoProxy', () => {
   })
 
   describe('MAX_SIZE_BYTES', () => {
+    it('is 2GB', () => {
+      expect(MAX_SIZE_BYTES).toBe(2 * 1024 * 1024 * 1024)
+    })
+  })
+
+  describe('MAX_CACHE_BYTES', () => {
     it('is 500MB', () => {
-      expect(MAX_SIZE_BYTES).toBe(500 * 1024 * 1024)
+      expect(MAX_CACHE_BYTES).toBe(500 * 1024 * 1024)
     })
   })
 

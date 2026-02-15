@@ -6,7 +6,11 @@ import { getVideoCacheDir, isCached, teeToCache, serveCachedFile, startBackgroun
 const log = getLogger('VideoProxy')
 const router = new KoaRouter({ prefix: '/api/video-proxy' })
 
-export const MAX_SIZE_BYTES = 500 * 1024 * 1024 // 500 MB
+// Proxy cap: prevents the server from proxying arbitrarily large upstream media.
+// Raised from 500MB to reduce false 413s for large MP4s.
+export const MAX_SIZE_BYTES = 2 * 1024 * 1024 * 1024 // 2 GB
+// Cache cap: keep disk usage bounded even if proxying larger media is allowed.
+export const MAX_CACHE_BYTES = 500 * 1024 * 1024 // 500 MB
 const CONNECT_TIMEOUT_MS = 15_000 // timeout for initial connection + headers
 const IDLE_TIMEOUT_MS = 30_000 // abort if no bytes arrive for this long
 const MAX_REDIRECTS = 5
@@ -223,6 +227,7 @@ router.get('/', async (ctx) => {
   }
 
   const contentLength = res.headers.get('content-length')
+  let totalSizeBytes: number | null = null
   if (contentLength) {
     const size = parseInt(contentLength, 10)
     if (size > MAX_SIZE_BYTES) {
@@ -230,14 +235,18 @@ router.get('/', async (ctx) => {
       ctx.throw(413, 'Upstream resource too large')
       return
     }
+    if (Number.isFinite(size) && size > 0) {
+      totalSizeBytes = size
+    }
     ctx.set('Content-Length', contentLength)
   }
 
   ctx.set('Content-Type', contentType!)
   ctx.set('Accept-Ranges', 'bytes')
 
+  let contentRange: string | null = null
   if (res.status === 206) {
-    const contentRange = res.headers.get('content-range')
+    contentRange = res.headers.get('content-range')
     if (!contentRange) {
       await res.body?.cancel()
       ctx.throw(502, 'Upstream 206 missing Content-Range')
@@ -246,6 +255,14 @@ router.get('/', async (ctx) => {
 
     ctx.status = 206
     ctx.set('Content-Range', contentRange)
+
+    const totalMatch = /^bytes \d+-\d+\/(\d+)$/.exec(contentRange)
+    if (totalMatch) {
+      const total = parseInt(totalMatch[1], 10)
+      if (Number.isFinite(total) && total > 0) {
+        totalSizeBytes = total
+      }
+    }
 
     // If upstream omitted Content-Length, compute it from Content-Range
     if (!contentLength) {
@@ -261,13 +278,24 @@ router.get('/', async (ctx) => {
   log.verbose('proxying %s (%sMB): %s', contentType, contentLength ? (parseInt(contentLength, 10) / 1_000_000).toFixed(2) : '?', currentUrl)
 
   // Tee to cache on full 200 responses only (not Range/206 — those are partial)
-  if (cacheDir && res.status === 200 && !clientRange && res.body) {
-    ctx.body = teeToCache(cacheDir, requestedUrl, res.body, contentType!, MAX_SIZE_BYTES)
+  const canTeeToCache =
+    !!cacheDir &&
+    res.status === 200 &&
+    !clientRange &&
+    !!res.body &&
+    totalSizeBytes !== null &&
+    totalSizeBytes <= MAX_CACHE_BYTES
+
+  if (canTeeToCache) {
+    ctx.body = teeToCache(cacheDir, requestedUrl, res.body!, contentType!, MAX_CACHE_BYTES)
   } else if (cacheDir && clientRange) {
     // Browser video elements always use Range requests — kick off a background
     // download so the next request is a cache hit served from disk.
-    startBackgroundDownload(cacheDir, requestedUrl, isUrlAllowed, MAX_SIZE_BYTES)
-      .catch(() => {}) // fire-and-forget; errors logged inside
+    // Only do this for reasonably sized media so we don't fill disk on giant videos.
+    if (totalSizeBytes !== null && totalSizeBytes <= MAX_CACHE_BYTES) {
+      startBackgroundDownload(cacheDir, requestedUrl, isUrlAllowed, MAX_CACHE_BYTES)
+        .catch(() => {}) // fire-and-forget; errors logged inside
+    }
     ctx.body = idleTimeoutStream(res.body!, IDLE_TIMEOUT_MS)
   } else {
     ctx.body = idleTimeoutStream(res.body!, IDLE_TIMEOUT_MS)
