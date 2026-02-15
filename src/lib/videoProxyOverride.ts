@@ -29,6 +29,39 @@ const SEEK_TIMEOUT_MS = 300
 const READY_POLL_INTERVAL_MS = 200
 const READY_POLL_MAX_ATTEMPTS = 50 // 10 seconds max (Firefox can be slow)
 
+function isVideoProxyDebugEnabled (): boolean {
+  if (process.env.NODE_ENV === 'development') return true
+  if (typeof window === 'undefined') return false
+  try {
+    const params = new URLSearchParams(window.location.search)
+    if (params.has('hydraVideoDebug')) return true
+    return window.localStorage?.getItem('hydraVideoDebug') === '1'
+  } catch {
+    return false
+  }
+}
+
+function ensureVideoMountPoint (): HTMLElement | null {
+  if (typeof document === 'undefined') return null
+  const id = '__hydraVideoMount'
+  const existing = document.getElementById(id)
+  if (existing) return existing as HTMLElement
+
+  const el = document.createElement('div')
+  el.id = id
+  // Offscreen but not display:none (Firefox may not decode detached/hidden videos reliably).
+  el.style.position = 'fixed'
+  el.style.left = '-99999px'
+  el.style.top = '0'
+  el.style.width = '1px'
+  el.style.height = '1px'
+  el.style.opacity = '0'
+  el.style.pointerEvents = 'none'
+  el.style.overflow = 'hidden'
+  ;(document.body || document.documentElement).appendChild(el)
+  return el
+}
+
 interface SourceState {
   epoch: number
   pendingVideo: HTMLVideoElement | null
@@ -51,7 +84,8 @@ function getState (ext: object): SourceState {
 function cleanupVideo (vid: HTMLVideoElement): void {
   vid.pause()
   vid.removeAttribute('src')
-  vid.load()
+  try { vid.load() } catch {}
+  if (typeof vid.remove === 'function') vid.remove()
 }
 
 /**
@@ -145,6 +179,8 @@ export function applyVideoProxyOverride (
       vid.playsInline = true
 
       state.pendingVideo = vid
+      const mount = ensureVideoMountPoint()
+      if (mount) mount.appendChild(vid)
 
       // Bind source at most once — shared by seeked listener and timeout fallback
       let bound = false
@@ -158,6 +194,8 @@ export function applyVideoProxyOverride (
           }
           return
         }
+        // Avoid binding a 0x0 video (regl can create a permanently broken texture).
+        if (vid.videoWidth <= 0 || vid.videoHeight <= 0) return
         bound = true
         state.pendingVideo = null
         if (state.seekTimer !== null) {
@@ -169,7 +207,7 @@ export function applyVideoProxyOverride (
           state.pollTimer = null
         }
 
-        if (process.env.NODE_ENV === 'development') {
+        if (isVideoProxyDebugEnabled()) {
           console.debug('[VideoProxy] bindSource', {
             readyState: vid.readyState,
             videoWidth: vid.videoWidth,
@@ -237,7 +275,7 @@ export function applyVideoProxyOverride (
       let pollAttempts = 0
       state.pollTimer = setInterval(() => {
         pollAttempts++
-        if (process.env.NODE_ENV === 'development') {
+        if (isVideoProxyDebugEnabled()) {
           console.debug('[VideoProxy] readyState poll', {
             attempt: pollAttempts,
             readyState: vid.readyState,
@@ -250,7 +288,7 @@ export function applyVideoProxyOverride (
             clearInterval(state.pollTimer)
             state.pollTimer = null
           }
-          if (process.env.NODE_ENV === 'development' && !bound && pollAttempts >= READY_POLL_MAX_ATTEMPTS) {
+          if (isVideoProxyDebugEnabled() && !bound && pollAttempts >= READY_POLL_MAX_ATTEMPTS) {
             console.warn('[VideoProxy] poll exhausted', {
               readyState: vid.readyState,
               networkState: vid.networkState,
@@ -259,7 +297,7 @@ export function applyVideoProxyOverride (
           }
           return
         }
-        if (vid.readyState >= 2) {
+        if (vid.readyState >= 2 && vid.videoWidth > 0 && vid.videoHeight > 0) {
           if (state.pollTimer !== null) {
             clearInterval(state.pollTimer)
             state.pollTimer = null
@@ -269,6 +307,7 @@ export function applyVideoProxyOverride (
       }, READY_POLL_INTERVAL_MS)
 
       vid.src = finalUrl
+      try { vid.load() } catch {}
       vid.play()?.catch(() => {}) // trigger load immediately (helps Firefox)
     }
   }

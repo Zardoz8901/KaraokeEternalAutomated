@@ -29,7 +29,12 @@ function spyOnCreateElement (): HTMLVideoElement[] {
   vi.spyOn(document, 'createElement').mockImplementation(
     ((tag: string, options?: ElementCreationOptions) => {
       const el = origCreate(tag, options)
-      if (tag === 'video') created.push(el as HTMLVideoElement)
+      if (tag === 'video') {
+        const vid = el as HTMLVideoElement
+        Object.defineProperty(vid, 'videoWidth', { value: 640, writable: true, configurable: true })
+        Object.defineProperty(vid, 'videoHeight', { value: 360, writable: true, configurable: true })
+        created.push(vid)
+      }
       return el
     }) as typeof document.createElement,
   )
