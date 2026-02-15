@@ -38,8 +38,6 @@ export function useCameraReceiver () {
     const handleAction = async (action: { type: string, payload?: unknown }) => {
       if (!action || typeof action.type !== 'string') return
 
-      debug('socket action', { type: action.type })
-
       switch (action.type) {
         case CAMERA_OFFER: {
           debug('received offer', { hasSubscriber: Boolean(subRef.current) })
