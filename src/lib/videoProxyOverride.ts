@@ -164,10 +164,23 @@ export function applyVideoProxyOverride (
           )
         : undefined
 
-      // Rewrite external URLs through proxy
-      const finalUrl = /^https?:\/\//i.test(url)
-        ? `${PROXY_PATH}?url=` + encodeURIComponent(url)
-        : url
+      // Rewrite cross-origin URLs through proxy.
+      // Same-origin absolute URLs (e.g. "https://<this-host>/api/media/...") must
+      // NOT be proxied because the server-side fetch will not include cookies and
+      // authenticated endpoints will return 401.
+      let finalUrl = url
+      if (/^https?:\/\//i.test(url)) {
+        try {
+          const parsed = new URL(url)
+          const pageOrigin = window.location.origin
+          if (parsed.origin !== pageOrigin) {
+            finalUrl = `${PROXY_PATH}?url=` + encodeURIComponent(url)
+          }
+        } catch {
+          // If URL parsing fails, fall back to proxying (safer for CORS).
+          finalUrl = `${PROXY_PATH}?url=` + encodeURIComponent(url)
+        }
+      }
 
       // Create video element (mirrors hydra-source.js initVideo)
       const vid = document.createElement('video')

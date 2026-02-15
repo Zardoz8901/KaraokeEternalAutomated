@@ -73,6 +73,20 @@ describe('videoProxyOverride', () => {
       )
     })
 
+    it('does not proxy same-origin absolute URLs', () => {
+      const videos = spyOnCreateElement()
+      const source = makeSource()
+      const globals: Record<string, unknown> = { s0: source }
+      const overrides = new Map<string, unknown>()
+
+      applyVideoProxyOverride(['s0'], globals, overrides)
+
+      const url = window.location.origin + '/api/media/123?type=video'
+      source.initVideo(url)
+
+      expect(videos[0].getAttribute('src')).toBe(url)
+    })
+
     it('uses base-relative proxy path (no leading slash)', () => {
       const videos = spyOnCreateElement()
       const source = makeSource()
