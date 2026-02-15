@@ -196,34 +196,50 @@ export function applyVideoProxyOverride (
       const mount = ensureVideoMountPoint()
       if (mount) mount.appendChild(vid)
 
-      // Bind source at most once — shared by seeked listener and timeout fallback
+      // Two-phase binding:
+      // Phase 1 (bind): metadata available + dimensions known → create texture, set src/dynamic
+      // Phase 2 (frame-ready): readyState >= 2 → dispatch HYDRA_VIDEO_READY_EVENT for paused tick
       let bound = false
+      let frameReady = false
+      const hasStartTime = startTime !== undefined
+
+      // Phase 2 signal — dispatches the event that HydraVisualizer listens to
+      // for triggering a tick when paused. Centralized timer cleanup point.
+      const signalFrameReady = (): void => {
+        if (frameReady) return
+        if (state.epoch !== epoch) return
+        frameReady = true
+
+        if (state.seekTimer !== null) { clearTimeout(state.seekTimer); state.seekTimer = null }
+        if (state.pollTimer !== null) { clearInterval(state.pollTimer); state.pollTimer = null }
+
+        const target = globals as unknown as EventTarget
+        if (typeof target.dispatchEvent === 'function') {
+          target.dispatchEvent(new Event(HYDRA_VIDEO_READY_EVENT))
+        }
+      }
+
+      // Phase 1 — bind source at most once.
+      // Creates texture (placeholder at readyState<2, data at readyState>=2).
+      // Does NOT dispatch the event — signalFrameReady() handles that.
       const bindSource = (): void => {
         if (bound) return
         if (state.epoch !== epoch) {
+          // Stale callback — only clean up the stale vid, NOT state timers
+          // (they may belong to a newer init call)
           cleanupVideo(vid)
-          if (state.seekTimer !== null) {
-            clearTimeout(state.seekTimer)
-            state.seekTimer = null
-          }
           return
         }
         // Avoid binding a 0x0 video (regl can create a permanently broken texture).
         if (vid.videoWidth <= 0 || vid.videoHeight <= 0) return
         bound = true
         state.pendingVideo = null
-        if (state.seekTimer !== null) {
-          clearTimeout(state.seekTimer)
-          state.seekTimer = null
-        }
-        if (state.pollTimer !== null) {
-          clearInterval(state.pollTimer)
-          state.pollTimer = null
-        }
+        // Note: do NOT clear seekTimer or pollTimer here — signalFrameReady() handles that
 
         if (isVideoProxyDebugEnabled()) {
           console.debug('[VideoProxy] bindSource', {
             readyState: vid.readyState,
+            metadataOnly: vid.readyState < 2,
             videoWidth: vid.videoWidth,
             videoHeight: vid.videoHeight,
             duration: vid.duration,
@@ -233,27 +249,36 @@ export function applyVideoProxyOverride (
         this.src = vid
         vid.play()?.catch(() => {}) // swallow autoplay rejection
         if (this.regl) {
-          this.tex = this.regl.texture({ data: vid, ...reglParams })
+          if (vid.readyState >= 2) {
+            try {
+              this.tex = this.regl.texture({ data: vid, ...reglParams })
+            } catch {
+              // Firefox edge case: texImage2D may still fail at readyState 2
+              this.tex = this.regl.texture({ width: vid.videoWidth, height: vid.videoHeight, ...reglParams })
+            }
+          } else {
+            // Metadata-only: sized placeholder; tick fills in data when readyState >= 2
+            this.tex = this.regl.texture({ width: vid.videoWidth, height: vid.videoHeight, ...reglParams })
+          }
         }
         this.dynamic = true
 
-        // Signal that a video source is ready — HydraVisualizer listens to
-        // fire a single tick so the new frame renders even when paused.
-        const target = globals as unknown as EventTarget
-        if (typeof target.dispatchEvent === 'function') {
-          target.dispatchEvent(new Event(HYDRA_VIDEO_READY_EVENT))
+        // If already frame-ready, dispatch event immediately
+        if (vid.readyState >= 2) {
+          signalFrameReady()
         }
+        // Otherwise: signalFrameReady() called later by loadeddata/canplay/poll
       }
 
-      if (startTime !== undefined) {
+      if (hasStartTime) {
         // startTime path: seek first, bind after seek completes (or timeout).
-        // Uses readyHandled flag so only the first event (loadeddata, canplay,
-        // or readyState poll) triggers the seek setup.
+        // Uses readyHandled flag so only the first event (loadedmetadata, loadeddata,
+        // canplay, or readyState poll) triggers the seek setup.
         let readyHandled = false
         const onReady = (): void => {
           if (readyHandled) return
           if (state.epoch !== epoch) {
-            cleanupVideo(vid)
+            cleanupVideo(vid) // stale — only clean vid, NOT timers
             return
           }
           readyHandled = true
@@ -264,28 +289,72 @@ export function applyVideoProxyOverride (
             vid.currentTime = startTime
           }
 
-          vid.addEventListener('seeked', () => bindSource(), { once: true })
-          state.seekTimer = setTimeout(() => bindSource(), SEEK_TIMEOUT_MS)
+          vid.addEventListener('seeked', () => {
+            if (state.epoch !== epoch) return // stale — no timer cleanup
+            bindSource()
+            if (bound && vid.readyState >= 2) signalFrameReady()
+          }, { once: true })
+          state.seekTimer = setTimeout(() => {
+            bindSource()
+            if (bound && vid.readyState >= 2) signalFrameReady()
+          }, SEEK_TIMEOUT_MS)
         }
+        vid.addEventListener('loadedmetadata', onReady)
         vid.addEventListener('loadeddata', onReady)
         vid.addEventListener('canplay', onReady)
+
+        // Separate frame-ready listeners: onReady is gated by readyHandled
+        // (only fires once for seek setup), so loadeddata/canplay after seek
+        // won't re-enter onReady. These listeners handle Phase 2 dispatch.
+        const onFrameReady = (): void => {
+          if (state.epoch !== epoch) return
+          if (bound && vid.readyState >= 2) signalFrameReady()
+        }
+        vid.addEventListener('loadeddata', onFrameReady)
+        vid.addEventListener('canplay', onFrameReady)
       } else {
         // No startTime: bind immediately when media is ready.
-        // Both loadeddata and canplay call bindSource(); the `bound` flag
+        // loadedmetadata/loadeddata/canplay all call bindSource(); the `bound` flag
         // makes it idempotent — whichever fires first wins.
         const onReady = (): void => {
           if (state.epoch !== epoch) {
-            cleanupVideo(vid)
+            cleanupVideo(vid) // stale — only clean vid, NOT timers
             return
           }
           bindSource()
+          // After bind, check if we can signal frame-ready
+          if (bound && vid.readyState >= 2) signalFrameReady()
         }
+        vid.addEventListener('loadedmetadata', onReady)
         vid.addEventListener('loadeddata', onReady)
         vid.addEventListener('canplay', onReady)
       }
 
-      // readyState poll: fallback when neither loadeddata nor canplay fire
-      // (observed in Firefox with detached proxy-loaded videos).
+      // Diagnostic logging: track all video lifecycle events when debug enabled
+      if (isVideoProxyDebugEnabled()) {
+        const diagEvents = [
+          'loadstart', 'loadedmetadata', 'loadeddata', 'canplay',
+          'canplaythrough', 'playing', 'stalled', 'waiting', 'suspend', 'error',
+        ] as const
+        for (const evt of diagEvents) {
+          vid.addEventListener(evt, () => {
+            console.debug('[VideoProxy] event:%s', evt, {
+              readyState: vid.readyState,
+              networkState: vid.networkState,
+              videoWidth: vid.videoWidth,
+              videoHeight: vid.videoHeight,
+              duration: vid.duration,
+              error: vid.error ? { code: vid.error.code, message: vid.error.message } : null,
+              currentSrc: vid.currentSrc,
+              bound,
+              frameReady,
+            })
+          })
+        }
+      }
+
+      // readyState poll: fallback when events don't fire (observed in Firefox).
+      // Two-phase: bind at readyState >= 1, signal frame-ready at readyState >= 2.
       let pollAttempts = 0
       state.pollTimer = setInterval(() => {
         pollAttempts++
@@ -294,29 +363,53 @@ export function applyVideoProxyOverride (
             attempt: pollAttempts,
             readyState: vid.readyState,
             networkState: vid.networkState,
-            error: vid.error,
+            videoWidth: vid.videoWidth,
+            videoHeight: vid.videoHeight,
+            bound,
+            frameReady,
+            error: vid.error ? { code: vid.error.code, message: vid.error.message } : null,
           })
         }
-        if (bound || state.epoch !== epoch || pollAttempts >= READY_POLL_MAX_ATTEMPTS) {
-          if (state.pollTimer !== null) {
-            clearInterval(state.pollTimer)
-            state.pollTimer = null
-          }
-          if (isVideoProxyDebugEnabled() && !bound && pollAttempts >= READY_POLL_MAX_ATTEMPTS) {
-            console.warn('[VideoProxy] poll exhausted', {
+
+        // Early exit: vid.error means decode/network failure — stop polling
+        if (vid.error) {
+          if (state.pollTimer !== null) { clearInterval(state.pollTimer); state.pollTimer = null }
+          if (isVideoProxyDebugEnabled()) {
+            console.warn('[VideoProxy] video error — stopping poll', {
+              url: finalUrl,
+              error: { code: vid.error.code, message: vid.error.message },
               readyState: vid.readyState,
               networkState: vid.networkState,
-              error: vid.error,
             })
           }
           return
         }
-        if (vid.readyState >= 2 && vid.videoWidth > 0 && vid.videoHeight > 0) {
-          if (state.pollTimer !== null) {
-            clearInterval(state.pollTimer)
-            state.pollTimer = null
+
+        if (frameReady || state.epoch !== epoch || pollAttempts >= READY_POLL_MAX_ATTEMPTS) {
+          if (state.pollTimer !== null) { clearInterval(state.pollTimer); state.pollTimer = null }
+          if (!bound && pollAttempts >= READY_POLL_MAX_ATTEMPTS && isVideoProxyDebugEnabled()) {
+            console.warn('[VideoProxy] video init failed — poll exhausted', {
+              url: finalUrl,
+              readyState: vid.readyState,
+              networkState: vid.networkState,
+              videoWidth: vid.videoWidth,
+              videoHeight: vid.videoHeight,
+              duration: vid.duration,
+              error: vid.error ? { code: vid.error.code, message: vid.error.message } : null,
+            })
           }
+          return
+        }
+
+        // Phase 1: bind at readyState >= 1 with valid dimensions
+        // For startTime videos: skip — the event-driven onReady→seeked path handles binding.
+        if (!bound && !hasStartTime && vid.readyState >= 1 && vid.videoWidth > 0 && vid.videoHeight > 0) {
           bindSource()
+        }
+
+        // Phase 2: frame-ready at readyState >= 2
+        if (bound && !frameReady && vid.readyState >= 2) {
+          signalFrameReady()
         }
       }, READY_POLL_INTERVAL_MS)
 

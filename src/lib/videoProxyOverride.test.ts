@@ -41,7 +41,14 @@ function spyOnCreateElement (): HTMLVideoElement[] {
   return created
 }
 
+function fireLoadedMetadata (vid: HTMLVideoElement): void {
+  vid.dispatchEvent(new Event('loadedmetadata'))
+}
+
 function fireLoadedData (vid: HTMLVideoElement): void {
+  // Under two-phase binding, readyState >= 2 is required for frame-ready signal.
+  // Simulate the browser's state at loadeddata time.
+  setReadyState(vid, 2)
   vid.dispatchEvent(new Event('loadeddata'))
 }
 
@@ -50,7 +57,13 @@ function fireSeeked (vid: HTMLVideoElement): void {
 }
 
 function fireCanPlay (vid: HTMLVideoElement): void {
+  // Under two-phase binding, readyState >= 2 is required for frame-ready signal.
+  setReadyState(vid, 2)
   vid.dispatchEvent(new Event('canplay'))
+}
+
+function setReadyState (vid: HTMLVideoElement, state: number): void {
+  Object.defineProperty(vid, 'readyState', { value: state, writable: true, configurable: true })
 }
 
 describe('videoProxyOverride', () => {
@@ -677,16 +690,15 @@ describe('videoProxyOverride', () => {
       const vid = videos[0]
       expect(source.src).toBeNull()
 
-      // readyState < 2 — poll should not bind yet
-      Object.defineProperty(vid, 'readyState', { value: 1, writable: true, configurable: true })
-      vi.advanceTimersByTime(200)
-      expect(source.src).toBeNull()
-
-      // readyState >= 2 — poll should bind
-      Object.defineProperty(vid, 'readyState', { value: 2, writable: true, configurable: true })
+      // readyState >= 1 with valid dimensions — poll binds (Phase 1: placeholder)
+      setReadyState(vid, 1)
       vi.advanceTimersByTime(200)
       expect(source.src).toBe(vid)
       expect(source.dynamic).toBe(true)
+
+      // readyState >= 2 — poll signals frame-ready (Phase 2)
+      setReadyState(vid, 2)
+      vi.advanceTimersByTime(200)
       vi.useRealTimers()
     })
 
@@ -760,6 +772,310 @@ describe('videoProxyOverride', () => {
       restoreVideoProxyOverride(globals, overrides)
 
       expect(pauseSpy).toHaveBeenCalled()
+    })
+  })
+
+  describe('loadedmetadata two-phase binding', () => {
+    it('binds with placeholder texture at readyState 1, no event dispatch', () => {
+      const videos = spyOnCreateElement()
+      const source = makeSource()
+      const target = new EventTarget()
+      const globals = Object.assign(target, { s0: source }) as unknown as Record<string, unknown>
+      const overrides = new Map<string, unknown>()
+
+      let eventFired = false
+      target.addEventListener(HYDRA_VIDEO_READY_EVENT, () => { eventFired = true })
+
+      applyVideoProxyOverride(['s0'], globals, overrides)
+      source.initVideo('https://example.com/video.mp4')
+
+      const vid = videos[0]
+      setReadyState(vid, 1)
+      fireLoadedMetadata(vid)
+
+      // Phase 1: bind happened (placeholder texture, src set, dynamic true)
+      expect(source.src).toBe(vid)
+      expect(source.dynamic).toBe(true)
+      // Placeholder texture: width/height, NOT { data: vid }
+      expect(source.regl.texture).toHaveBeenLastCalledWith({ width: 640, height: 360 })
+      // Phase 2 NOT yet: event must NOT fire at readyState < 2
+      expect(eventFired).toBe(false)
+    })
+
+    it('dispatches event on subsequent loadeddata (frame-ready)', () => {
+      const videos = spyOnCreateElement()
+      const source = makeSource()
+      const target = new EventTarget()
+      const globals = Object.assign(target, { s0: source }) as unknown as Record<string, unknown>
+      const overrides = new Map<string, unknown>()
+
+      let eventFired = false
+      target.addEventListener(HYDRA_VIDEO_READY_EVENT, () => { eventFired = true })
+
+      applyVideoProxyOverride(['s0'], globals, overrides)
+      source.initVideo('https://example.com/video.mp4')
+
+      const vid = videos[0]
+      // Phase 1: loadedmetadata at readyState 1
+      setReadyState(vid, 1)
+      fireLoadedMetadata(vid)
+      expect(source.src).toBe(vid)
+      expect(eventFired).toBe(false)
+
+      // Phase 2: loadeddata at readyState 2 → event dispatched
+      setReadyState(vid, 2)
+      fireLoadedData(vid)
+      expect(eventFired).toBe(true)
+    })
+
+    it('binds with { data: vid } at readyState >= 2 and dispatches event immediately', () => {
+      const videos = spyOnCreateElement()
+      const source = makeSource()
+      const target = new EventTarget()
+      const globals = Object.assign(target, { s0: source }) as unknown as Record<string, unknown>
+      const overrides = new Map<string, unknown>()
+
+      let eventFired = false
+      target.addEventListener(HYDRA_VIDEO_READY_EVENT, () => { eventFired = true })
+
+      applyVideoProxyOverride(['s0'], globals, overrides)
+      source.initVideo('https://example.com/video.mp4')
+
+      const vid = videos[0]
+      setReadyState(vid, 2)
+      fireLoadedMetadata(vid)
+
+      // Both phases at once: data texture + event
+      expect(source.src).toBe(vid)
+      expect(source.regl.texture).toHaveBeenLastCalledWith({ data: vid })
+      expect(eventFired).toBe(true)
+    })
+
+    it('loadedmetadata binds, loadeddata signals frame-ready (no double texture)', () => {
+      const videos = spyOnCreateElement()
+      const source = makeSource()
+      const globals: Record<string, unknown> = { s0: source }
+      const overrides = new Map<string, unknown>()
+
+      applyVideoProxyOverride(['s0'], globals, overrides)
+      source.initVideo('https://example.com/video.mp4')
+
+      const vid = videos[0]
+      setReadyState(vid, 1)
+      fireLoadedMetadata(vid) // Phase 1 bind → placeholder texture
+
+      setReadyState(vid, 2)
+      fireLoadedData(vid) // Phase 2 frame-ready → event only, no rebind
+
+      // 2 texture calls: soft-clear placeholder (1x1) + bind placeholder (WxH)
+      // NOT 3 — loadeddata must not create another texture
+      expect(source.regl.texture).toHaveBeenCalledTimes(2)
+    })
+
+    it('regl.texture({ data: vid }) try/catch falls back to placeholder', () => {
+      const videos = spyOnCreateElement()
+      const source = makeSource()
+
+      // Make regl.texture throw when called with { data: ... }
+      let callCount = 0
+      source.regl.texture = vi.fn((opts: Record<string, unknown>) => {
+        callCount++
+        if ('data' in opts) throw new Error('texImage2D failed')
+        return { ...opts }
+      })
+
+      const globals: Record<string, unknown> = { s0: source }
+      const overrides = new Map<string, unknown>()
+
+      applyVideoProxyOverride(['s0'], globals, overrides)
+      source.initVideo('https://example.com/video.mp4')
+
+      const vid = videos[0]
+      setReadyState(vid, 2)
+      // Should not throw — falls back to placeholder
+      fireLoadedMetadata(vid)
+
+      expect(source.src).toBe(vid)
+      expect(source.dynamic).toBe(true)
+      // Last successful call should be the placeholder (width/height), not data
+      const lastCall = source.regl.texture.mock.calls[source.regl.texture.mock.calls.length - 1]
+      expect(lastCall[0]).toEqual({ width: 640, height: 360 })
+    })
+
+    it('stale callback only cleans vid, not state timers', () => {
+      vi.useFakeTimers()
+      const videos = spyOnCreateElement()
+      const source = makeSource()
+      const globals: Record<string, unknown> = { s0: source }
+      const overrides = new Map<string, unknown>()
+
+      applyVideoProxyOverride(['s0'], globals, overrides)
+      source.initVideo('https://example.com/video1.mp4')
+      source.initVideo('https://example.com/video2.mp4')
+
+      // Fire loadedmetadata on stale (first) video — should cleanup vid but NOT timers
+      const vid1 = videos[0]
+      setReadyState(vid1, 1)
+      const pauseSpy = vi.spyOn(vid1, 'pause')
+      fireLoadedMetadata(vid1)
+      expect(pauseSpy).toHaveBeenCalled()
+
+      // Second video's poll should still be running
+      const vid2 = videos[1]
+      setReadyState(vid2, 2)
+      vi.advanceTimersByTime(200)
+      // Poll should have bound the second video
+      expect(source.src).toBe(vid2)
+
+      vi.useRealTimers()
+    })
+  })
+
+  describe('readyState poll two-phase', () => {
+    it('poll binds at readyState 1, signals frame-ready at readyState 2', () => {
+      vi.useFakeTimers()
+      const videos = spyOnCreateElement()
+      const source = makeSource()
+      const target = new EventTarget()
+      const globals = Object.assign(target, { s0: source }) as unknown as Record<string, unknown>
+      const overrides = new Map<string, unknown>()
+
+      let eventFired = false
+      target.addEventListener(HYDRA_VIDEO_READY_EVENT, () => { eventFired = true })
+
+      applyVideoProxyOverride(['s0'], globals, overrides)
+      source.initVideo('https://example.com/video.mp4')
+
+      const vid = videos[0]
+      // Phase 1: readyState 1 with valid dimensions → bind, no event
+      setReadyState(vid, 1)
+      vi.advanceTimersByTime(200)
+      expect(source.src).toBe(vid)
+      expect(source.dynamic).toBe(true)
+      expect(eventFired).toBe(false)
+
+      // Phase 2: readyState 2 → event dispatched
+      setReadyState(vid, 2)
+      vi.advanceTimersByTime(200)
+      expect(eventFired).toBe(true)
+
+      vi.useRealTimers()
+    })
+
+    it('poll skips Phase 1 for startTime videos', () => {
+      vi.useFakeTimers()
+      const videos = spyOnCreateElement()
+      const source = makeSource()
+      const globals: Record<string, unknown> = { s0: source }
+      const overrides = new Map<string, unknown>()
+
+      applyVideoProxyOverride(['s0'], globals, overrides)
+      source.initVideo('https://example.com/video.mp4', { startTime: 42 })
+
+      const vid = videos[0]
+      Object.defineProperty(vid, 'duration', { value: 120, writable: true })
+      setReadyState(vid, 1)
+
+      // Poll should NOT bind startTime videos at readyState 1
+      vi.advanceTimersByTime(200)
+      expect(source.src).toBeNull()
+
+      // Event-driven path: loadedmetadata triggers seek, then seeked binds
+      fireLoadedMetadata(vid)
+      expect(vid.currentTime).toBe(42)
+      expect(source.src).toBeNull() // waiting for seeked
+
+      fireSeeked(vid)
+      expect(source.src).toBe(vid)
+
+      vi.useRealTimers()
+    })
+
+    it('poll stops on vid.error', () => {
+      vi.useFakeTimers()
+      const videos = spyOnCreateElement()
+      const source = makeSource()
+      const globals: Record<string, unknown> = { s0: source }
+      const overrides = new Map<string, unknown>()
+
+      applyVideoProxyOverride(['s0'], globals, overrides)
+      source.initVideo('https://example.com/video.mp4')
+
+      const vid = videos[0]
+      // Simulate a MediaError
+      Object.defineProperty(vid, 'error', {
+        value: { code: 4, message: 'MEDIA_ERR_SRC_NOT_SUPPORTED' },
+        writable: true,
+        configurable: true,
+      })
+
+      // Poll should stop after seeing the error
+      vi.advanceTimersByTime(200)
+      // Even after many more intervals, source stays unbound
+      vi.advanceTimersByTime(2000)
+      expect(source.src).toBeNull()
+
+      vi.useRealTimers()
+    })
+
+    it('poll exhaustion warning gated behind debug flag', () => {
+      vi.useFakeTimers()
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      spyOnCreateElement()
+      const source = makeSource()
+      const globals: Record<string, unknown> = { s0: source }
+      const overrides = new Map<string, unknown>()
+
+      applyVideoProxyOverride(['s0'], globals, overrides)
+      source.initVideo('https://example.com/video.mp4')
+
+      // readyState stays 0 — poll exhausts after 10s
+      vi.advanceTimersByTime(10200)
+
+      // In production (debug disabled), no console.warn about poll exhaustion
+      const pollWarnings = warnSpy.mock.calls.filter(
+        args => typeof args[0] === 'string' && args[0].includes('poll exhausted'),
+      )
+      expect(pollWarnings.length).toBe(0)
+
+      vi.useRealTimers()
+    })
+  })
+
+  describe('startTime + loadedmetadata', () => {
+    it('loadedmetadata triggers seek, bind on seeked with placeholder, event on loadeddata', () => {
+      const videos = spyOnCreateElement()
+      const source = makeSource()
+      const target = new EventTarget()
+      const globals = Object.assign(target, { s0: source }) as unknown as Record<string, unknown>
+      const overrides = new Map<string, unknown>()
+
+      let eventFired = false
+      target.addEventListener(HYDRA_VIDEO_READY_EVENT, () => { eventFired = true })
+
+      applyVideoProxyOverride(['s0'], globals, overrides)
+      source.initVideo('https://example.com/video.mp4', { startTime: 42 })
+
+      const vid = videos[0]
+      Object.defineProperty(vid, 'duration', { value: 120, writable: true })
+
+      // loadedmetadata at readyState 1 → triggers seek
+      setReadyState(vid, 1)
+      fireLoadedMetadata(vid)
+      expect(vid.currentTime).toBe(42)
+      expect(source.src).toBeNull() // waiting for seeked
+
+      // seeked → bind with placeholder (readyState still 1)
+      fireSeeked(vid)
+      expect(source.src).toBe(vid)
+      expect(source.dynamic).toBe(true)
+      expect(source.regl.texture).toHaveBeenLastCalledWith({ width: 640, height: 360 })
+      expect(eventFired).toBe(false) // still readyState < 2
+
+      // loadeddata at readyState 2 → frame-ready, event dispatched
+      setReadyState(vid, 2)
+      fireLoadedData(vid)
+      expect(eventFired).toBe(true)
     })
   })
 })
