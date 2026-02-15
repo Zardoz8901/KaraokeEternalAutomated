@@ -1,5 +1,6 @@
 type HydraExternalSource = {
   initVideo?: (url?: string, params?: Record<string, unknown>) => void
+  tick?: (time: number) => void
   src?: unknown
   tex?: unknown
   regl?: { texture: (opts: Record<string, unknown>) => unknown }
@@ -322,6 +323,43 @@ export function applyVideoProxyOverride (
       vid.src = finalUrl
       try { vid.load() } catch {}
       vid.play()?.catch(() => {}) // trigger load immediately (helps Firefox)
+    }
+  }
+}
+
+/**
+ * Patch HydraSource.prototype.tick to skip `tex.subimage(src)` when the
+ * video element is not ready (readyState < 2 or 0×0 dimensions).  This
+ * prevents WebGL warnings in Firefox caused by decoder stalls, tab
+ * backgrounding, or video loop boundaries.  Skipping a frame just retains
+ * the previous texture content — no visible flicker.
+ *
+ * Uses a WeakSet so each prototype is patched at most once, even across
+ * multiple Hydra init cycles.
+ */
+const patchedPrototypes = new WeakSet<object>()
+
+export function patchHydraSourceTick (
+  sources: string[],
+  globals: Record<string, unknown>,
+): void {
+  for (const src of sources) {
+    const ext = globals[src] as HydraExternalSource | undefined
+    if (!ext || typeof ext.tick !== 'function') continue
+
+    const proto = Object.getPrototypeOf(ext) as Record<string, unknown> | null
+    if (!proto || typeof proto.tick !== 'function' || patchedPrototypes.has(proto)) continue
+    patchedPrototypes.add(proto)
+
+    const origTick = proto.tick as (time: number) => void
+    proto.tick = function (this: HydraExternalSource, time: number) {
+      if (
+        this.src instanceof HTMLVideoElement &&
+        (this.src.readyState < 2 || this.src.videoWidth <= 0 || this.src.videoHeight <= 0)
+      ) {
+        return
+      }
+      origTick.call(this, time)
     }
   }
 }

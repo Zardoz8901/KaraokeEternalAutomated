@@ -9,7 +9,7 @@ import { getHydraEvalCode, DEFAULT_PATCH } from './hydraEvalCode'
 import { installHydraTimerTracking, uninstallHydraTimerTracking, clearHydraTimers, withHydraTimerOwner, type HydraTimerOwner } from './hydraUserTimers'
 import { detectCameraUsage } from 'lib/detectCameraUsage'
 import { applyRemoteCameraOverride, restoreRemoteCameraOverride } from 'lib/remoteCameraOverride'
-import { applyVideoProxyOverride, restoreVideoProxyOverride, HYDRA_VIDEO_READY_EVENT, protectVideoElement } from 'lib/videoProxyOverride'
+import { applyVideoProxyOverride, restoreVideoProxyOverride, patchHydraSourceTick, HYDRA_VIDEO_READY_EVENT, protectVideoElement } from 'lib/videoProxyOverride'
 import { shouldEmitFft } from './hooks/emitFftPolicy'
 import type { HydraAudioCompat } from './hooks/hydraAudioCompat'
 import styles from './HydraVisualizer.css'
@@ -372,6 +372,7 @@ function HydraVisualizer ({
     const videoSources = ['s0', 's1', 's2', 's3']
     const videoProxyOverrides = videoProxyOverrideRef.current
     applyVideoProxyOverride(videoSources, w, videoProxyOverrides)
+    patchHydraSourceTick(videoSources, w)
 
     // If remote camera is already attached before Hydra init, apply override now.
     if (remoteVideoElement) {
