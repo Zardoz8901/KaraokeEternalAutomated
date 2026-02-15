@@ -26,6 +26,19 @@ export function isProtectedVideoElement (el: HTMLVideoElement): boolean {
 }
 
 const PROXY_PATH = 'api/video-proxy'
+
+/**
+ * Hosts known to serve Access-Control-Allow-Origin on media files.
+ * For these hosts, skip the proxy and use direct URLs — avoids 413,
+ * stream corruption, and codec re-encoding issues with the proxy.
+ */
+const CORS_CAPABLE_HOSTS = [
+  'archive.org', // *.archive.org (ia600206.us.archive.org, etc.)
+]
+
+export function isCorsCapableHost (hostname: string): boolean {
+  return CORS_CAPABLE_HOSTS.some(h => hostname === h || hostname.endsWith('.' + h))
+}
 const SEEK_TIMEOUT_MS = 300
 const READY_POLL_INTERVAL_MS = 200
 const READY_POLL_MAX_ATTEMPTS = 50 // 10 seconds max (Firefox can be slow)
@@ -165,21 +178,39 @@ export function applyVideoProxyOverride (
           )
         : undefined
 
+      // Check for retry override from a previous failed attempt
+      const retryDirect = overrides.get(`__retryDirect:${url}`)
+      const retryProxy = overrides.get(`__retryProxy:${url}`)
+      if (retryDirect) overrides.delete(`__retryDirect:${url}`)
+      if (retryProxy) overrides.delete(`__retryProxy:${url}`)
+      const isRetry = !!(retryDirect || retryProxy)
+
       // Rewrite cross-origin URLs through proxy.
       // Same-origin absolute URLs (e.g. "https://<this-host>/api/media/...") must
       // NOT be proxied because the server-side fetch will not include cookies and
       // authenticated endpoints will return 401.
+      // CORS-capable hosts bypass the proxy entirely (avoids 413 / stream corruption).
       let finalUrl = url
-      if (/^https?:\/\//i.test(url)) {
+      let isProxied = false
+      if (retryDirect) {
+        // Retry forced direct — skip proxy
+        finalUrl = url
+      } else if (retryProxy) {
+        // Retry forced proxy
+        finalUrl = `${PROXY_PATH}?url=` + encodeURIComponent(url)
+        isProxied = true
+      } else if (/^https?:\/\//i.test(url)) {
         try {
           const parsed = new URL(url)
           const pageOrigin = window.location.origin
-          if (parsed.origin !== pageOrigin) {
+          if (parsed.origin !== pageOrigin && !isCorsCapableHost(parsed.hostname)) {
             finalUrl = `${PROXY_PATH}?url=` + encodeURIComponent(url)
+            isProxied = true
           }
         } catch {
           // If URL parsing fails, fall back to proxying (safer for CORS).
           finalUrl = `${PROXY_PATH}?url=` + encodeURIComponent(url)
+          isProxied = true
         }
       }
 
@@ -353,6 +384,30 @@ export function applyVideoProxyOverride (
         }
       }
 
+      // Error-triggered retry: try the opposite URL strategy once.
+      // Re-invokes initVideo which increments epoch and cleans up this video.
+      if (!isRetry && /^https?:\/\//i.test(url)) {
+        vid.addEventListener('error', () => {
+          if (state.epoch !== epoch) return // stale
+          if (frameReady) return // already working
+
+          if (isVideoProxyDebugEnabled()) {
+            console.debug('[VideoProxy] video error — attempting retry', {
+              url: finalUrl,
+              wasProxied: isProxied,
+              error: vid.error ? { code: vid.error.code, message: vid.error.message } : null,
+            })
+          }
+
+          if (isProxied) {
+            overrides.set(`__retryDirect:${url}`, true)
+          } else {
+            overrides.set(`__retryProxy:${url}`, true)
+          }
+          this.initVideo(url, params)
+        }, { once: true })
+      }
+
       // readyState poll: fallback when events don't fire (observed in Firefox).
       // Two-phase: bind at readyState >= 1, signal frame-ready at readyState >= 2.
       let pollAttempts = 0
@@ -371,10 +426,25 @@ export function applyVideoProxyOverride (
           })
         }
 
-        // Early exit: vid.error means decode/network failure — stop polling
+        // Early exit: vid.error means decode/network failure — stop polling.
+        // If not already a retry, trigger the flip-strategy retry once.
         if (vid.error) {
           if (state.pollTimer !== null) { clearInterval(state.pollTimer); state.pollTimer = null }
-          if (isVideoProxyDebugEnabled()) {
+          if (!isRetry && /^https?:\/\//i.test(url) && !frameReady && state.epoch === epoch) {
+            if (isVideoProxyDebugEnabled()) {
+              console.debug('[VideoProxy] poll detected video error — attempting retry', {
+                url: finalUrl,
+                wasProxied: isProxied,
+                error: { code: vid.error.code, message: vid.error.message },
+              })
+            }
+            if (isProxied) {
+              overrides.set(`__retryDirect:${url}`, true)
+            } else {
+              overrides.set(`__retryProxy:${url}`, true)
+            }
+            this.initVideo(url, params)
+          } else if (isVideoProxyDebugEnabled()) {
             console.warn('[VideoProxy] video error — stopping poll', {
               url: finalUrl,
               error: { code: vid.error.code, message: vid.error.message },

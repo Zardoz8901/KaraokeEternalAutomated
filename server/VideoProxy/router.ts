@@ -275,7 +275,15 @@ router.get('/', async (ctx) => {
     }
   }
 
-  log.verbose('proxying %s (%sMB): %s', contentType, contentLength ? (parseInt(contentLength, 10) / 1_000_000).toFixed(2) : '?', currentUrl)
+  log.verbose('proxy %s %s → %d %s (%sMB) [client-range=%s] %s',
+    ctx.method,
+    requestedUrl.slice(0, 120),
+    res.status,
+    contentType,
+    contentLength ? (parseInt(contentLength, 10) / 1_000_000).toFixed(1) : '?',
+    clientRange || 'none',
+    currentUrl !== requestedUrl ? `(redirected → ${currentUrl.slice(0, 80)})` : '',
+  )
 
   // Tee to cache on full 200 responses only (not Range/206 — those are partial)
   const canTeeToCache =
