@@ -35,12 +35,19 @@ async function getHandler () {
  */
 function createCtx (query: Record<string, string> = {}, headers: Record<string, string> = {}) {
   const responseHeaders: Record<string, string> = {}
+  const res = {
+    headersSent: false,
+    writableEnded: false,
+    destroyed: false,
+    destroy: vi.fn(),
+  }
   return {
     user: { userId: 1 },
     query,
     headers,
     status: 200 as number,
     body: undefined as unknown,
+    res,
     set (key: string, val: string) { responseHeaders[key.toLowerCase()] = val },
     get (key: string) { return headers[key.toLowerCase()] ?? '' },
     throw (status: number, msg?: string) { throw Object.assign(new Error(msg ?? `HTTP ${status}`), { status }) },
@@ -449,6 +456,79 @@ describe('VideoProxy', () => {
       const ctx = createCtx({ url }, { range: 'bytes=100-200' })
 
       await expect(handler(ctx, async () => {})).rejects.toMatchObject({ status: 416 })
+    })
+  })
+
+  describe('stream error recovery', () => {
+    let originalFetch: typeof globalThis.fetch
+
+    beforeEach(() => {
+      originalFetch = globalThis.fetch
+    })
+
+    afterEach(() => {
+      globalThis.fetch = originalFetch
+    })
+
+    it('destroys response when body stream errors after headers sent', async () => {
+      globalThis.fetch = vi.fn(async () =>
+        createUpstreamResponse({
+          status: 200,
+          ok: true,
+          headers: {
+            'content-type': 'video/mp4',
+            'content-length': '5000',
+          },
+          body: 'video-data',
+        }),
+      ) as typeof fetch
+
+      const handler = await getHandler()
+      const ctx = createCtx({ url: 'https://example.com/video.mp4' })
+
+      await handler(ctx, async () => {})
+
+      // Simulate headers already sent (Koa has flushed headers to the client)
+      ctx.res.headersSent = true
+
+      // Emit a stream error (e.g. upstream idle timeout, ECONNRESET)
+      const bodyStream = ctx.body as Readable
+      const streamErr = new Error('Upstream idle timeout')
+      bodyStream.destroy(streamErr)
+
+      // Give the error handler a tick to fire
+      await new Promise(resolve => setTimeout(resolve, 10))
+
+      expect(ctx.res.destroy).toHaveBeenCalledWith(streamErr)
+    })
+
+    it('does not destroy response when headers have not been sent', async () => {
+      globalThis.fetch = vi.fn(async () =>
+        createUpstreamResponse({
+          status: 200,
+          ok: true,
+          headers: {
+            'content-type': 'video/mp4',
+            'content-length': '5000',
+          },
+          body: 'video-data',
+        }),
+      ) as typeof fetch
+
+      const handler = await getHandler()
+      const ctx = createCtx({ url: 'https://example.com/video.mp4' })
+
+      await handler(ctx, async () => {})
+
+      // Headers NOT sent — Koa can still send a proper error response
+      ctx.res.headersSent = false
+
+      const bodyStream = ctx.body as Readable
+      bodyStream.destroy(new Error('Upstream idle timeout'))
+
+      await new Promise(resolve => setTimeout(resolve, 10))
+
+      expect(ctx.res.destroy).not.toHaveBeenCalled()
     })
   })
 })

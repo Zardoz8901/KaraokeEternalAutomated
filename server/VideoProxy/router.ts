@@ -324,6 +324,18 @@ router.get('/', async (ctx) => {
     const streamLabel = `${requestedUrl.slice(0, 80)} range=${clientRange || 'none'} upstream=${res.status}`
     ctx.body = idleTimeoutStream(res.body!, IDLE_TIMEOUT_MS, streamLabel)
   }
+
+  // Koa bug workaround: when a stream body errors after headers are sent,
+  // ctx.onerror() returns without closing ctx.res — the browser hangs on
+  // partial data. Force-close the response so the browser gets a clean
+  // connection reset and can recover (retry range request, show error, etc.).
+  // When headers have NOT been sent, Koa can still send a proper error response.
+  const bodyStream = ctx.body as import('stream').Readable
+  bodyStream.once('error', (err) => {
+    if (ctx.res.headersSent && !ctx.res.writableEnded && !ctx.res.destroyed) {
+      ctx.res.destroy(err)
+    }
+  })
 })
 
 export default router
