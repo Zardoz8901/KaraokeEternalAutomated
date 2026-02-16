@@ -13,6 +13,10 @@ const FATAL_PATTERNS: Array<{ regex: RegExp, description: string }> = [
     regex: /Math\.random\s*\.\s*[a-zA-Z_$]\w*\s*[.[(]/g,
     description: 'Property dereference on Math.random (returns number, not object)',
   },
+  {
+    regex: /setInterval\s*\([^,]*,\s*0\s*\)/g,
+    description: 'setInterval with 0ms delay floods main thread',
+  },
 ]
 
 function isInsideSkipRegion (pos: number, regions: SkipRegion[]): boolean {

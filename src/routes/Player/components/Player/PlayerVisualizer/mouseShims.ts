@@ -19,6 +19,9 @@ type MouseShimFn = {
 
 const shimCache = new Map<string, MouseShimFn>()
 
+// EMA smoothing state for vMouseXSmooth / vMouseYSmooth
+const smoothState = { x: 0, y: 0 }
+
 function createMouseShim (axis: 'x' | 'y'): MouseShimFn {
   const getValue = (): number => {
     const m = (window as unknown as Record<string, unknown>).mouse as
@@ -40,6 +43,57 @@ const SHIM_DEFS: Array<[string, 'x' | 'y']> = [
   ['vMouseY', 'y'], ['mouseY', 'y'],
 ]
 
+interface HydraProps {
+  resolution?: [number, number]
+}
+
+function getMouseVal (axis: 'x' | 'y'): number {
+  const m = (window as unknown as Record<string, unknown>).mouse as
+    { x?: number, y?: number } | undefined
+  return m?.[axis] ?? 0
+}
+
+function createNormalizedShim (axis: 'x' | 'y'): (arg?: unknown) => number {
+  return function normalizedShim (arg?: unknown): number {
+    const raw = getMouseVal(axis)
+    if (raw === 0) return 0
+
+    // If called with Hydra props containing resolution, use that
+    if (arg && typeof arg === 'object' && !Array.isArray(arg)) {
+      const props = arg as HydraProps
+      if (props.resolution) {
+        const divisor = axis === 'x' ? props.resolution[0] : props.resolution[1]
+        return divisor ? raw / divisor : 0
+      }
+    }
+
+    // Fall back to window dimensions
+    const divisor = axis === 'x' ? window.innerWidth : window.innerHeight
+    return divisor ? raw / divisor : 0
+  }
+}
+
+function createSmoothedShim (axis: 'x' | 'y'): (factor?: unknown) => number {
+  return function smoothedShim (factor?: unknown): number {
+    const raw = getMouseVal(axis)
+    const divisor = axis === 'x' ? window.innerWidth : window.innerHeight
+    const normalized = divisor ? raw / divisor : 0
+
+    const f = typeof factor === 'number' && factor >= 0 && factor < 1 ? factor : 0.9
+    smoothState[axis] += (normalized - smoothState[axis]) * (1 - f)
+    return smoothState[axis]
+  }
+}
+
+const HELPER_DEFS: Array<[string, () => (arg?: unknown) => number]> = [
+  ['vMouseX01', () => createNormalizedShim('x')],
+  ['vMouseY01', () => createNormalizedShim('y')],
+  ['vMouseXSmooth', () => createSmoothedShim('x')],
+  ['vMouseYSmooth', () => createSmoothedShim('y')],
+]
+
+const helperCache = new Map<string, (arg?: unknown) => number>()
+
 export function setMouseShims (): void {
   for (const [name, axis] of SHIM_DEFS) {
     if (!shimCache.has(name)) {
@@ -57,6 +111,23 @@ export function setMouseShims (): void {
       // Already non-configurable from a previous HMR cycle — skip
     }
   }
+
+  for (const [name, factory] of HELPER_DEFS) {
+    if (!helperCache.has(name)) {
+      helperCache.set(name, factory())
+    }
+
+    try {
+      Object.defineProperty(window, name, {
+        get () { return helperCache.get(name) },
+        set () { /* no-op */ },
+        configurable: true,
+        enumerable: false,
+      })
+    } catch {
+      // Already non-configurable from a previous HMR cycle — skip
+    }
+  }
 }
 
 export function clearMouseShims (): void {
@@ -64,5 +135,15 @@ export function clearMouseShims (): void {
   for (const [name] of SHIM_DEFS) {
     Reflect.deleteProperty(w, name)
   }
+  for (const [name] of HELPER_DEFS) {
+    Reflect.deleteProperty(w, name)
+  }
   shimCache.clear()
+  helperCache.clear()
+  resetMouseSmoothing()
+}
+
+export function resetMouseSmoothing (): void {
+  smoothState.x = 0
+  smoothState.y = 0
 }

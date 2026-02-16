@@ -88,4 +88,47 @@ describe('detectFatalPatterns', () => {
       expect(r1).toBe(r2)
     })
   })
+
+  describe('setInterval with 0ms delay', () => {
+    it('catches setInterval(fn, 0)', () => {
+      const result = detectFatalPatterns('setInterval(fn, 0)')
+      expect(result).toBeTruthy()
+      expect(result).toContain('setInterval')
+    })
+
+    it('catches setInterval with arrow function body and 0ms', () => {
+      const result = detectFatalPatterns('setInterval(() => { osc(10).out() }, 0)')
+      expect(result).toBeTruthy()
+    })
+
+    it('catches setInterval with whitespace around 0', () => {
+      const result = detectFatalPatterns('setInterval(fn,  0 )')
+      expect(result).toBeTruthy()
+    })
+
+    it('passes setInterval(fn, 16) (non-zero delay)', () => {
+      expect(detectFatalPatterns('setInterval(fn, 16)')).toBeNull()
+    })
+
+    it('passes setInterval(fn, 10)', () => {
+      expect(detectFatalPatterns('setInterval(fn, 10)')).toBeNull()
+    })
+
+    it('passes setTimeout(fn, 0) (runs once, not a flood)', () => {
+      expect(detectFatalPatterns('setTimeout(fn, 0)')).toBeNull()
+    })
+
+    it('ignores setInterval(fn, 0) in a line comment', () => {
+      expect(detectFatalPatterns('// setInterval(fn, 0)\nosc(10).out()')).toBeNull()
+    })
+
+    it('ignores setInterval(fn, 0) in a block comment', () => {
+      expect(detectFatalPatterns('/* setInterval(fn, 0) */ osc(10).out()')).toBeNull()
+    })
+
+    it('ignores setInterval(fn, 0) in a string literal', () => {
+      expect(detectFatalPatterns('"setInterval(fn, 0)"')).toBeNull()
+      expect(detectFatalPatterns("'setInterval(fn, 0)'")).toBeNull()
+    })
+  })
 })
