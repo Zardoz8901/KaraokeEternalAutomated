@@ -2,12 +2,16 @@ type TimerId = ReturnType<typeof setTimeout> | ReturnType<typeof setInterval>
 
 export type HydraTimerOwner = symbol
 
+const TIMER_ERROR_THRESHOLD = 5
+
 type TimerTrackingState = {
   patched: boolean
   owners: Set<HydraTimerOwner>
   currentOwner: HydraTimerOwner | null
   timersByOwner: Map<HydraTimerOwner, Set<TimerId>>
   ownerByTimerId: Map<TimerId, HydraTimerOwner>
+  errorCountByOwner: Map<HydraTimerOwner, number>
+  onTimerErrorThresholdByOwner: Map<HydraTimerOwner, (owner: HydraTimerOwner) => void>
 
   nativeSetTimeout: typeof window.setTimeout
   nativeSetInterval: typeof window.setInterval
@@ -33,6 +37,8 @@ function getState (): TimerTrackingState | null {
     currentOwner: null,
     timersByOwner: new Map(),
     ownerByTimerId: new Map(),
+    errorCountByOwner: new Map(),
+    onTimerErrorThresholdByOwner: new Map(),
     nativeSetTimeout: window.setTimeout.bind(window),
     nativeSetInterval: window.setInterval.bind(window),
     nativeClearTimeout: window.clearTimeout.bind(window),
@@ -79,12 +85,29 @@ function untrackTimer (state: TimerTrackingState, id: TimerId) {
   state.ownerByTimerId.delete(id)
 }
 
+function handleTimerError (state: TimerTrackingState, activeOwner: HydraTimerOwner, err: unknown) {
+  const count = (state.errorCountByOwner.get(activeOwner) ?? 0) + 1
+  state.errorCountByOwner.set(activeOwner, count)
+  if (count <= 3) {
+    console.warn('[HydraTimers] Timer callback error:', err)
+  }
+  if (count === TIMER_ERROR_THRESHOLD) {
+    console.warn('[HydraTimers] Error threshold reached, clearing owner timers')
+    clearHydraTimers(activeOwner)
+    const cb = state.onTimerErrorThresholdByOwner.get(activeOwner)
+    cb?.(activeOwner)
+  }
+}
+
 export function clearHydraTimers (owner: HydraTimerOwner): void {
   const state = getState()
   if (!state) return
 
   const ids = state.timersByOwner.get(owner)
-  if (!ids || ids.size === 0) return
+  if (!ids || ids.size === 0) {
+    state.errorCountByOwner.delete(owner)
+    return
+  }
 
   for (const id of ids) {
     state.nativeClearTimeout(id as unknown as Parameters<typeof clearTimeout>[0])
@@ -92,14 +115,21 @@ export function clearHydraTimers (owner: HydraTimerOwner): void {
     state.ownerByTimerId.delete(id)
   }
   ids.clear()
+  state.errorCountByOwner.delete(owner)
 }
 
-export function installHydraTimerTracking (owner: HydraTimerOwner): void {
+export function installHydraTimerTracking (
+  owner: HydraTimerOwner,
+  onErrorThreshold?: (owner: HydraTimerOwner) => void,
+): void {
   const state = getState()
   if (!state) return
 
   state.owners.add(owner)
   if (!state.timersByOwner.has(owner)) state.timersByOwner.set(owner, new Set())
+  if (onErrorThreshold) {
+    state.onTimerErrorThresholdByOwner.set(owner, onErrorThreshold)
+  }
 
   if (state.patched) return
 
@@ -110,7 +140,13 @@ export function installHydraTimerTracking (owner: HydraTimerOwner): void {
     }
 
     const wrappedHandler: TimerHandler = (typeof handler === 'function')
-      ? ((...cbArgs: unknown[]) => withHydraTimerOwner(activeOwner, () => (handler as (...a: unknown[]) => void)(...cbArgs)))
+      ? ((...cbArgs: unknown[]) => {
+          try {
+            withHydraTimerOwner(activeOwner, () => (handler as (...a: unknown[]) => void)(...cbArgs))
+          } catch (err) {
+            handleTimerError(state, activeOwner, err)
+          }
+        })
       : handler
 
     const id = state.nativeSetTimeout(wrappedHandler, timeout, ...(args as [])) as unknown as TimerId
@@ -125,7 +161,13 @@ export function installHydraTimerTracking (owner: HydraTimerOwner): void {
     }
 
     const wrappedHandler: TimerHandler = (typeof handler === 'function')
-      ? ((...cbArgs: unknown[]) => withHydraTimerOwner(activeOwner, () => (handler as (...a: unknown[]) => void)(...cbArgs)))
+      ? ((...cbArgs: unknown[]) => {
+          try {
+            withHydraTimerOwner(activeOwner, () => (handler as (...a: unknown[]) => void)(...cbArgs))
+          } catch (err) {
+            handleTimerError(state, activeOwner, err)
+          }
+        })
       : handler
 
     const id = state.nativeSetInterval(wrappedHandler, timeout, ...(args as [])) as unknown as TimerId
@@ -163,6 +205,7 @@ export function uninstallHydraTimerTracking (owner: HydraTimerOwner): void {
   clearHydraTimers(owner)
   state.timersByOwner.delete(owner)
   state.owners.delete(owner)
+  state.onTimerErrorThresholdByOwner.delete(owner)
 
   if (state.owners.size > 0) return
   if (!state.patched) return
@@ -185,6 +228,8 @@ export function uninstallHydraTimerTracking (owner: HydraTimerOwner): void {
   state.currentOwner = null
   state.timersByOwner.clear()
   state.ownerByTimerId.clear()
+  state.errorCountByOwner.clear()
+  state.onTimerErrorThresholdByOwner.clear()
   state.patchedSetTimeout = undefined
   state.patchedSetInterval = undefined
   state.patchedClearTimeout = undefined

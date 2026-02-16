@@ -7,6 +7,7 @@ import { type AudioData } from './hooks/useAudioAnalyser'
 import { useHydraAudio } from './hooks/useHydraAudio'
 import { getHydraEvalCode, DEFAULT_PATCH } from './hydraEvalCode'
 import { installHydraTimerTracking, uninstallHydraTimerTracking, clearHydraTimers, withHydraTimerOwner, type HydraTimerOwner } from './hydraUserTimers'
+import { setMouseShims, clearMouseShims } from './mouseShims'
 import { detectCameraUsage } from 'lib/detectCameraUsage'
 import { applyRemoteCameraOverride, restoreRemoteCameraOverride } from 'lib/remoteCameraOverride'
 import { applyVideoProxyOverride, restoreVideoProxyOverride, patchHydraSourceTick, HYDRA_VIDEO_READY_EVENT, protectVideoElement } from 'lib/videoProxyOverride'
@@ -66,38 +67,6 @@ function clearAudioGlobals () {
   const w = window as unknown as Record<string, unknown>
   ;(globalThis as unknown as Record<string, unknown>).__hydraAudioRef = null
   Reflect.deleteProperty(w, 'a')
-}
-
-// Legacy mouse globals used by gallery sketches (vMouseX, mouseX, etc.).
-// Hydra's built-in mouse.x/y returns pageX/pageY pixel coordinates.
-function setMouseShims () {
-  const shimDefs: Array<[string, 'x' | 'y']> = [
-    ['vMouseX', 'x'], ['mouseX', 'x'],
-    ['vMouseY', 'y'], ['mouseY', 'y'],
-  ]
-  for (const [shim, prop] of shimDefs) {
-    try {
-      Object.defineProperty(window, shim, {
-        get () {
-          const m = (window as unknown as Record<string, unknown>).mouse as
-            { x?: number, y?: number } | undefined
-          return m?.[prop] ?? 0
-        },
-        set () { /* no-op — prevents strict-mode throws on assignment */ },
-        configurable: true,
-        enumerable: false,
-      })
-    } catch {
-      // Already non-configurable from a previous HMR cycle — skip
-    }
-  }
-}
-
-function clearMouseShims () {
-  const w = window as unknown as Record<string, unknown>
-  for (const k of ['vMouseX', 'vMouseY', 'mouseX', 'mouseY']) {
-    Reflect.deleteProperty(w, k)
-  }
 }
 
 // Clear render graph outputs without clearing sources (preserves WebRTC video tracks).
@@ -364,7 +333,13 @@ function HydraVisualizer ({
     }
 
     hydraRef.current = hydra
-    installHydraTimerTracking(timerOwnerRef.current)
+    installHydraTimerTracking(timerOwnerRef.current, (errorOwner) => {
+      if (errorOwner === timerOwnerRef.current && hydraRef.current) {
+        warn('Timer error threshold reached, recovering to default patch')
+        executeHydraCode(hydraRef.current, DEFAULT_PATCH, compatRef.current ?? undefined, timerOwnerRef.current)
+        errorCountRef.current = 0
+      }
+    })
     errorCountRef.current = 0
 
     // Override initVideo() before first code execution so proxy is active immediately

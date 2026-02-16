@@ -33,6 +33,27 @@ describe('getHydraEvalCode', () => {
   })
 })
 
+describe('getHydraEvalCode guard integration', () => {
+  it('returns DEFAULT_PATCH for code with fatal Math.random dereference', () => {
+    expect(getHydraEvalCode('osc(Math.random.afft[2]).out()')).toBe(DEFAULT_PATCH)
+  })
+
+  it('passes valid code with Math.random() through unchanged', () => {
+    const code = 'osc(Math.random() * 20).out()'
+    expect(getHydraEvalCode(code)).toBe(code)
+  })
+
+  it('passes safe code through unchanged', () => {
+    const code = 'osc(10).out()'
+    expect(getHydraEvalCode(code)).toBe(code)
+  })
+
+  it('ignores fatal patterns inside comments', () => {
+    const code = '// Math.random.afft[2]\nosc(10).out()'
+    expect(getHydraEvalCode(code)).toBe(code)
+  })
+})
+
 describe('wrapWithTimerTracking', () => {
   it('wraps code in IIFE with timer shadows', () => {
     const wrapped = wrapWithTimerTracking('osc(10).out()')

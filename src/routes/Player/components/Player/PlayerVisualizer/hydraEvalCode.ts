@@ -1,3 +1,5 @@
+import { detectFatalPatterns } from './hydraCodeGuard'
+
 export const DEFAULT_PATCH = `
 ;(function () {
 var __H = globalThis.__hydraAudio
@@ -13,8 +15,19 @@ osc(20, 0.1, function () { return (__A && __A.fft && __A.fft[0] || 0) * 2 })
 })()
 `.trim()
 
+// Deduped guard logging: only warn once per unique code string
+const guardWarnedCodes = new Set<string>()
+
 export function getHydraEvalCode (code?: string): string {
   if (typeof code === 'string' && code.trim().length > 0) {
+    const fatal = detectFatalPatterns(code)
+    if (fatal) {
+      if (!guardWarnedCodes.has(code)) {
+        guardWarnedCodes.add(code)
+        console.warn('[HydraGuard] Fatal pattern detected, using default patch:', fatal)
+      }
+      return DEFAULT_PATCH
+    }
     return code
   }
   return DEFAULT_PATCH

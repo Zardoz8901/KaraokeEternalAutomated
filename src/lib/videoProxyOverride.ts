@@ -218,6 +218,16 @@ export function applyVideoProxyOverride (
         }
       }
 
+      if (isVideoProxyDebugEnabled()) {
+        let reason: string
+        if (retryDirect) reason = 'retry-direct'
+        else if (retryProxy) reason = 'retry-proxy'
+        else if (!/^https?:\/\//i.test(url)) reason = 'relative-url'
+        else if (!isProxied) reason = 'same-origin'
+        else reason = 'proxied-cross-origin'
+        console.debug('[VideoProxy] URL routing', { sourceKey: src, originalUrl: url, finalUrl, isProxied, reason })
+      }
+
       // Create video element (mirrors hydra-source.js initVideo)
       const vid = document.createElement('video')
       vid.crossOrigin = 'anonymous'
