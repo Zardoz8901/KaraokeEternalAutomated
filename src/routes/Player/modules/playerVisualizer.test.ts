@@ -156,11 +156,10 @@ describe('playerVisualizer actual implementation', () => {
     expect(newState.mode).toBe('hydra')
   })
 
-  it('should have hydraCode equal to getDefaultPreset() in initial state', async () => {
+  it('should have hydraCode undefined in initial state (resolved async from room config)', async () => {
     const { default: reducer } = await import('./playerVisualizer')
-    const { getDefaultPreset } = await import('routes/Orchestrator/components/hydraPresets')
     const state = reducer(undefined, { type: '@@INIT' })
-    expect(state.hydraCode).toBe(getDefaultPreset())
+    expect(state.hydraCode).toBeUndefined()
   })
 
   it('should update hydraCode via VISUALIZER_HYDRA_CODE', async () => {
@@ -210,12 +209,10 @@ describe('playerVisualizer actual implementation', () => {
     expect(state.hydraPresetIndex).toBeGreaterThanOrEqual(0)
   })
 
-  it('should have hydraPresetName in initial state', async () => {
+  it('should have empty hydraPresetName in initial state', async () => {
     const { default: reducer } = await import('./playerVisualizer')
     const state = reducer(undefined, { type: '@@INIT' })
-    expect(typeof state.hydraPresetName).toBe('string')
-    expect(state.hydraPresetName).toContain('[')
-    expect(state.hydraPresetName).toContain(']')
+    expect(state.hydraPresetName).toBe('')
   })
 
   /**
@@ -304,12 +301,11 @@ describe('playerVisualizer hasHydraUpdate lifecycle', () => {
     expect(state.hasHydraUpdate).toBe(false)
   })
 
-  it('PLAYER_LOAD should preserve initial hydraCode (getRandomPreset guard)', async () => {
+  it('PLAYER_LOAD should preserve initial hydraCode (undefined before room config)', async () => {
     const { default: reducer } = await import('./playerVisualizer')
-    const { getDefaultPreset } = await import('routes/Orchestrator/components/hydraPresets')
     const state = reducer(undefined, { type: '@@INIT' })
     const newState = reducer(state, { type: PLAYER_LOAD })
-    expect(newState.hydraCode).toBe(getDefaultPreset())
+    expect(newState.hydraCode).toBeUndefined()
   })
 
   it('PLAYER_LOAD should preserve existing hydraCode', async () => {

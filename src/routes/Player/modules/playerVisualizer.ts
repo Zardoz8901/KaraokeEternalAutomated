@@ -7,7 +7,7 @@ import {
   VISUALIZER_STATE_SYNC,
 } from 'shared/actionTypes'
 import type { PlaybackOptions, VisualizerMode } from 'shared/types'
-import { getDefaultPreset, getDefaultPresetIndex, getPresetLabel } from 'routes/Orchestrator/components/hydraPresets'
+import { getPresetLabel } from 'routes/Orchestrator/components/hydraPresets'
 import type { InjectionLevel } from 'routes/Player/components/Player/PlayerVisualizer/hooks/audioInjectProfiles'
 import type { PresetCategory } from 'routes/Player/components/Player/PlayerVisualizer/hooks/presetClassifier'
 
@@ -56,19 +56,17 @@ export interface PlayerVisualizerState {
   presetCategory: PresetCategory
 }
 
-const _defaultHydraIndex = getDefaultPresetIndex()
-
 const initialState: PlayerVisualizerState = {
   isEnabled: true,
   isSupported: true,
   sensitivity: 1,
   mode: 'hydra',
-  hydraCode: getDefaultPreset(),
-  hydraPresetIndex: _defaultHydraIndex,
-  hydraPresetName: getPresetLabel(_defaultHydraIndex),
+  hydraCode: undefined,
+  hydraPresetIndex: 0,
+  hydraPresetName: '',
   hydraPresetId: null,
   hydraPresetFolderId: null,
-  hydraPresetSource: 'gallery',
+  hydraPresetSource: undefined,
   hasHydraUpdate: false,
   allowCamera: false,
   cycleOnSongTransition: false,
