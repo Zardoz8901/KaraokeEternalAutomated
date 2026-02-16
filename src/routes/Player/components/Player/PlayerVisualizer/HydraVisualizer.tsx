@@ -334,10 +334,8 @@ function HydraVisualizer ({
 
     hydraRef.current = hydra
     installHydraTimerTracking(timerOwnerRef.current, (errorOwner) => {
-      if (errorOwner === timerOwnerRef.current && hydraRef.current) {
-        warn('Timer error threshold reached, recovering to default patch')
-        executeHydraCode(hydraRef.current, DEFAULT_PATCH, compatRef.current ?? undefined, timerOwnerRef.current)
-        errorCountRef.current = 0
+      if (errorOwner === timerOwnerRef.current) {
+        warn('Timer error threshold reached, cleared broken timers (render graph continues)')
       }
     })
     errorCountRef.current = 0
