@@ -31,7 +31,8 @@ test.describe('Player smoke', () => {
       data: TEST_USER,
     })
 
-    if (!setupRes.ok()) {
+    const status = setupRes.status()
+    if (status === 401 || status === 403) {
       // Already initialized — login instead
       const loginRes = await page.request.post('/api/login', {
         data: {
@@ -41,7 +42,7 @@ test.describe('Player smoke', () => {
       })
       expect(loginRes.ok(), `Login failed: ${loginRes.status()}`).toBeTruthy()
     } else {
-      expect(setupRes.ok(), `Setup failed: ${setupRes.status()}`).toBeTruthy()
+      expect(setupRes.ok(), `Setup failed: ${status}`).toBeTruthy()
     }
   })
 
