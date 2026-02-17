@@ -76,6 +76,26 @@ describe('sanitizeValue', () => {
     expect(result).toContain('[REDACTED_BEARER]')
   })
 
+  it('redacts email addresses in strings', () => {
+    const input = 'User john.doe@example.com reported an error'
+    const result = sanitizeValue(input) as string
+    expect(result).not.toContain('john.doe@example.com')
+    expect(result).toContain('[REDACTED_EMAIL]')
+  })
+
+  it('redacts IPv4 addresses in strings', () => {
+    const input = 'Connection from 192.168.1.42 failed'
+    const result = sanitizeValue(input) as string
+    expect(result).not.toContain('192.168.1.42')
+    expect(result).toContain('[REDACTED_IP]')
+  })
+
+  it('does not redact version numbers that look like IPs', () => {
+    // Only redact 4-octet patterns, not version strings like "v1.2.3"
+    expect(sanitizeValue('node v22.0.0')).toBe('node v22.0.0')
+    expect(sanitizeValue('version 1.2.3')).toBe('version 1.2.3')
+  })
+
   it('handles strings with no sensitive content', () => {
     expect(sanitizeValue('normal error message')).toBe('normal error message')
   })

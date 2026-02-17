@@ -215,13 +215,14 @@ export const fetchAccount = createAsyncThunk(
 export const connectSocket = createAsyncThunk<void, void, { state: RootState }>(
   'user/SOCKET_CONNECT',
   async (_, { dispatch, getState }) => {
-    const versions = {
+    const query = {
       library: getState().library.version,
       stars: getState().starCounts.version,
+      telemetrySessionId: telemetry.sessionId,
     }
 
-    dispatch(requestSocketConnect(versions))
-    socket.io.opts.query = versions
+    dispatch(requestSocketConnect(query))
+    socket.io.opts.query = query
   },
 )
 

@@ -31,7 +31,7 @@ test.describe('Player smoke', () => {
       data: TEST_USER,
     })
 
-    if (setupRes.status() === 403) {
+    if (!setupRes.ok()) {
       // Already initialized — login instead
       const loginRes = await page.request.post('/api/login', {
         data: {

@@ -85,14 +85,20 @@ export const FORBIDDEN_KEYS = new Set([
  * - URLs (http:// or https://)
  * - JWT-like tokens (three dot-separated base64 segments)
  * - Bearer tokens
+ * - Email addresses
+ * - IPv4 addresses (4-octet dotted-decimal, not version strings)
  */
 const URL_PATTERN = /https?:\/\/[^\s"')]+/gi
 const JWT_PATTERN = /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g
 const BEARER_PATTERN = /Bearer\s+[A-Za-z0-9_.\-/+=]+/gi
+const EMAIL_PATTERN = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g
+// Match IPv4 (4 octets 0-255) — require word boundary or start-of-string to avoid
+// matching version strings like "v1.2.3" (which only have 3 dot-separated segments)
+const IPV4_PATTERN = /(?<![.\w])(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)(?![.\w])/g
 
 /**
- * Sanitize a string value by redacting URLs, JWTs, and bearer tokens.
- * Returns the sanitized string (non-strings pass through unchanged).
+ * Sanitize a string value by redacting URLs, JWTs, bearer tokens, emails,
+ * and IP addresses. Returns the sanitized string (non-strings pass through unchanged).
  */
 export function sanitizeValue (value: unknown): unknown {
   if (typeof value !== 'string') return value
@@ -100,6 +106,8 @@ export function sanitizeValue (value: unknown): unknown {
   sanitized = sanitized.replace(URL_PATTERN, '[REDACTED_URL]')
   sanitized = sanitized.replace(JWT_PATTERN, '[REDACTED_TOKEN]')
   sanitized = sanitized.replace(BEARER_PATTERN, '[REDACTED_BEARER]')
+  sanitized = sanitized.replace(EMAIL_PATTERN, '[REDACTED_EMAIL]')
+  sanitized = sanitized.replace(IPV4_PATTERN, '[REDACTED_IP]')
   return sanitized
 }
 
