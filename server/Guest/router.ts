@@ -2,6 +2,8 @@ import KoaRouter from '@koa/router'
 import jsonWebToken from 'jsonwebtoken'
 import 'koa-body' // Import for module augmentation (adds body to ctx.request)
 import getLogger from '../lib/Log.js'
+import { getServerTelemetry } from '../lib/Telemetry.js'
+import { AUTH_GUEST_JOIN_START, AUTH_GUEST_JOIN_SUCCESS, AUTH_GUEST_JOIN_FAILURE } from '../../shared/telemetry.js'
 import Rooms from '../Rooms/Rooms.js'
 import User from '../User/User.js'
 
@@ -59,6 +61,8 @@ router.post('/join', async (ctx) => {
     ctx.throw(429, 'Too many requests. Please try again later.')
   }
 
+  const tel = getServerTelemetry()
+
   const body = (ctx.request as unknown as { body: GuestJoinBody }).body
   const { roomId, inviteCode, guestName } = body
 
@@ -73,6 +77,8 @@ router.post('/join', async (ctx) => {
     ctx.throw(400, 'Invalid invitation')
   }
 
+  tel.emit(AUTH_GUEST_JOIN_START, { room_id: roomId, auth_type: 'guest' })
+
   // Validate room exists, is open, and invite code matches
   const roomData = await Rooms.getRoomData(roomId)
   if (!roomData?.invitationToken || roomData.invitationToken !== inviteCode) {
@@ -85,6 +91,7 @@ router.post('/join', async (ctx) => {
     guest = await User.createGuest(guestName, roomId)
   } catch (err) {
     log.warn('Guest creation failed for room %d: %s', roomId, (err as Error).message)
+    tel.emit(AUTH_GUEST_JOIN_FAILURE, { room_id: roomId, auth_type: 'guest' })
     ctx.throw(400, 'Invalid invitation')
   }
 
@@ -113,6 +120,7 @@ router.post('/join', async (ctx) => {
   await Rooms.updateActivity(roomId)
 
   log.info('Guest %s (userId: %d) joined room %d', guest.username, guest.userId, roomId)
+  tel.emit(AUTH_GUEST_JOIN_SUCCESS, { room_id: roomId, user_id: guest.userId, auth_type: 'guest' })
 
   ctx.body = { success: true }
 })

@@ -1,5 +1,7 @@
 import { createAction, createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import socket from 'lib/socket'
+import telemetry from 'lib/telemetry'
+import { AUTH_SESSION_CHECK, AUTH_LOGIN_SUCCESS } from 'shared/telemetry'
 import AppRouter from 'lib/AppRouter'
 import { RootState } from 'store/store'
 import HttpApi from 'lib/HttpApi'
@@ -100,11 +102,13 @@ export const checkSession = createAsyncThunk<void, void, { state: RootState }>(
       })
 
       const user = await Promise.race([
-        api.get('user', { skipAuthRedirect: true }),
+        api.get<Partial<UserState>>('user', { skipAuthRedirect: true }),
         timeoutPromise,
       ])
 
       thunkAPI.dispatch(receiveAccount(user))
+      telemetry.setUserContext(user.userId ?? null, user.roomId ?? null)
+      telemetry.emit(AUTH_SESSION_CHECK, { user_id: user.userId ?? null, is_admin: !!user.isAdmin, is_guest: !!user.isGuest })
       thunkAPI.dispatch(fetchPrefs())
       thunkAPI.dispatch(connectSocket())
       socket.open()
@@ -125,9 +129,11 @@ export const checkSession = createAsyncThunk<void, void, { state: RootState }>(
 export const login = createAsyncThunk(
   LOGIN,
   async (creds: Record<string, unknown>, thunkAPI) => {
-    const user = await api.post('login', { body: creds })
+    const user = await api.post<Partial<UserState>>('login', { body: creds })
 
     thunkAPI.dispatch(receiveAccount(user))
+    telemetry.setUserContext(user.userId ?? null, user.roomId ?? null)
+    telemetry.emit(AUTH_LOGIN_SUCCESS, { user_id: user.userId ?? null, is_admin: !!user.isAdmin, is_guest: !!user.isGuest })
     thunkAPI.dispatch(fetchPrefs())
     thunkAPI.dispatch(connectSocket())
     socket.open()

@@ -1,4 +1,6 @@
 import { detectFatalPatterns } from './hydraCodeGuard'
+import telemetry from 'lib/telemetry'
+import { HYDRA_GUARD_BLOCKED } from 'shared/telemetry'
 
 export const DEFAULT_PATCH = `
 ;(function () {
@@ -25,6 +27,7 @@ export function getHydraEvalCode (code?: string): string {
       if (!guardWarnedCodes.has(code)) {
         guardWarnedCodes.add(code)
         console.warn('[HydraGuard] Fatal pattern detected, using default patch:', fatal)
+        telemetry.emit(HYDRA_GUARD_BLOCKED, { guard_reason: fatal })
       }
       return DEFAULT_PATCH
     }

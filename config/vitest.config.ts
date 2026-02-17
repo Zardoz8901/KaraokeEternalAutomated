@@ -21,6 +21,7 @@ export default defineConfig({
       '**/node_modules/**',
       '**/build/**',
       '**/dist/**',
+      '**/e2e/**',
     ],
     // Use jsdom for client-side tests (src directory)
     environmentMatchGlobs: [

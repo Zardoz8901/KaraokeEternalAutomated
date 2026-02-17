@@ -1,4 +1,6 @@
 import getLogger from './lib/Log.js'
+import { getServerTelemetry } from './lib/Telemetry.js'
+import { SOCKET_CONNECT, SOCKET_DISCONNECT } from '../shared/telemetry.js'
 import jsonWebToken from 'jsonwebtoken'
 import parseCookie from './lib/parseCookie.js'
 import Library from './Library/Library.js'
@@ -119,6 +121,15 @@ export default function (io, jwtKey, validateProxySource: (ip: string) => boolea
 
       // success
       log.verbose('%s (%s) connected from %s', sock.user.name, sock.id, sock.handshake.address)
+      const tel = getServerTelemetry()
+      tel.emit(SOCKET_CONNECT, {
+        user_id: sock.user.userId,
+        room_id: sock.user.roomId ?? undefined,
+        socket_id: sock.id,
+        client_session_id: typeof sock.handshake.query.telemetrySessionId === 'string'
+          ? sock.handshake.query.telemetrySessionId.slice(0, 128)
+          : '',
+      })
     } catch (err) {
       io.to(sock.id).emit('action', {
         type: SOCKET_AUTH_ERROR,
@@ -135,6 +146,13 @@ export default function (io, jwtKey, validateProxySource: (ip: string) => boolea
       log.verbose('%s (%s) disconnected (%s)',
         sock.user.name, sock.id, reason,
       )
+
+      getServerTelemetry().emit(SOCKET_DISCONNECT, {
+        user_id: sock.user.userId,
+        room_id: sock.user.roomId ?? undefined,
+        socket_id: sock.id,
+        reason,
+      })
 
       // Log potential socket instability for debugging
       if (reason === 'transport error' || reason === 'transport close') {

@@ -9,6 +9,8 @@ import { getHydraEvalCode, DEFAULT_PATCH } from './hydraEvalCode'
 import { installHydraTimerTracking, uninstallHydraTimerTracking, clearHydraTimers, withHydraTimerOwner, type HydraTimerOwner } from './hydraUserTimers'
 import { setMouseShims, clearMouseShims } from './mouseShims'
 import { detectCameraUsage } from 'lib/detectCameraUsage'
+import telemetry from 'lib/telemetry'
+import { HYDRA_PRESET_EVAL_START, HYDRA_PRESET_EVAL_SUCCESS, HYDRA_PRESET_EVAL_ERROR, HYDRA_FALLBACK_APPLIED } from 'shared/telemetry'
 import { applyRemoteCameraOverride, restoreRemoteCameraOverride } from 'lib/remoteCameraOverride'
 import { applyVideoProxyOverride, restoreVideoProxyOverride, patchHydraSourceTick, HYDRA_VIDEO_READY_EVENT, protectVideoElement } from 'lib/videoProxyOverride'
 import { shouldEmitFft } from './hooks/emitFftPolicy'
@@ -111,6 +113,9 @@ function clearTrackedTimers (timerOwner?: HydraTimerOwner) {
 }
 
 function executeHydraCode (hydra: Hydra, code: string, compat?: HydraAudioCompat, timerOwner?: HydraTimerOwner) {
+  const t0 = performance.now()
+  telemetry.emit(HYDRA_PRESET_EVAL_START, { code_length: code?.length ?? 0 })
+
   try {
     // Reseed audio at each preset boundary so audio is available
     // even if a previous sketch clobbered window.a or __hydraAudioRef.
@@ -130,8 +135,14 @@ function executeHydraCode (hydra: Hydra, code: string, compat?: HydraAudioCompat
     } else {
       hydra.eval(evalCode)
     }
+
+    telemetry.emit(HYDRA_PRESET_EVAL_SUCCESS, { duration_ms: Math.round(performance.now() - t0) })
   } catch (err) {
     warn('Code execution error:', err)
+    telemetry.emit(HYDRA_PRESET_EVAL_ERROR, {
+      duration_ms: Math.round(performance.now() - t0),
+      error: (err instanceof Error ? err.message : String(err)),
+    })
   }
 }
 
@@ -611,6 +622,7 @@ function HydraVisualizer ({
       }
       if (errorCountRef.current === 10) {
         warn('Too many errors, re-applying default patch')
+        telemetry.emit(HYDRA_FALLBACK_APPLIED, { reason: 'tick_error_threshold' })
         executeHydraCode(hydra, DEFAULT_PATCH, compatRef.current ?? undefined, timerOwnerRef.current)
         errorCountRef.current = 0
       }
