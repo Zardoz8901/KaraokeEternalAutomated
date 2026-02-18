@@ -85,4 +85,55 @@ describe('extractUserClaims', () => {
     expect(result.isAdmin).toBe(true)
     expect(result.isGuest).toBe(true)
   })
+
+  it('handles empty string groups', () => {
+    const result = extractUserClaims(fakeTokenResponse({
+      sub: 'user6',
+      preferred_username: 'frank',
+      name: 'Frank',
+      groups: '',
+    }))
+
+    expect(result.groups).toEqual([])
+    expect(result.isAdmin).toBe(false)
+    expect(result.isGuest).toBe(false)
+  })
+
+  it('handles undefined groups claim', () => {
+    const result = extractUserClaims(fakeTokenResponse({
+      sub: 'user7',
+      preferred_username: 'grace',
+      name: 'Grace',
+    }))
+
+    expect(result.groups).toEqual([])
+    expect(result.isAdmin).toBe(false)
+    expect(result.isGuest).toBe(false)
+  })
+
+  it('handles whitespace-only groups string', () => {
+    const result = extractUserClaims(fakeTokenResponse({
+      sub: 'user8',
+      preferred_username: 'heidi',
+      name: 'Heidi',
+      groups: '  ,  |  ',
+    }))
+
+    expect(result.groups).toEqual([])
+    expect(result.isAdmin).toBe(false)
+    expect(result.isGuest).toBe(false)
+  })
+
+  it('handles single group without separator', () => {
+    const result = extractUserClaims(fakeTokenResponse({
+      sub: 'user9',
+      preferred_username: 'ivan',
+      name: 'Ivan',
+      groups: 'admin',
+    }))
+
+    expect(result.groups).toEqual(['admin'])
+    expect(result.isAdmin).toBe(true)
+    expect(result.isGuest).toBe(false)
+  })
 })

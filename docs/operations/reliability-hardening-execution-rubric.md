@@ -138,14 +138,14 @@ Supporting checklist per week:
 
 | Workstream | Priority | Done Evidence |
 |---|---|---|
-| KI-1 admin demotion parser fix | P0 | Unit tests for comma and pipe group parsing; manual role-change verification |
-| KI-2 bootstrap deadlock root cause fix | P0 | Repro test plus fix; no perpetual loading under network delay/failure |
-| KI-3 camera subscriber pinning | P0 | Integration test proving correct subscriber binding and recovery |
+| KI-1 admin demotion parser fix | P0 | **Done** — regex `/[,|]/` in `server/Auth/oidc.ts:166`; 9 tests (5 existing + 4 edge cases) in `server/Auth/oidc.test.ts` |
+| KI-2 bootstrap deadlock hardening | P0 | **Done** — retry/backoff (3 attempts: 0ms, 1s, 2s), error classification (network/timeout/http), `bootstrapError` Redux state, `AUTH_SESSION_CHECK_FAILURE` telemetry; reducer tests in `src/store/modules/user.test.ts` |
+| KI-3 camera subscriber pinning | P0 | **Done** — directed relay + subscriber pinning in `server/Player/socket.ts`; regression tests in `server/Player/socket.test.ts` |
 | KI-4 socket action rate limiting | P1 | **Done** — token bucket limiter in `server/lib/socketRateLimit.ts`; integration in `server/socket.ts`; tests in `socketRateLimit.test.ts` |
 | H-1 WebRTC payload validation | P0 | **Done** — guards in `server/lib/payloadGuards.ts`; rejection tests in `socket.test.ts` Payload validation describe block |
 | H-2 Hydra payload size cap | P0 | **Done** — `isValidHydraCode` + `isValidPayloadSize` guards; rejection tests in `socket.test.ts` |
-| M-1 proxy private IP denylist | P1 | Proxy validator test matrix includes local/private ranges |
-| Video telemetry completion | P1 | **Done** — 5 video events (`video_init_start/success/error`, `video_proxy_response`, `video_stall`) in `src/lib/telemetry.ts`; tests in `telemetry.test.ts` |
+| M-1 proxy private IP denylist | P1 | **Done** — full denylist in `server/VideoProxy/router.ts`: 127/8, 10/8, 172.16/12, 192.168/16, 169.254/16, 100.64/10, fc00::/7, fe80::/10; boundary tests in `server/VideoProxy/router.test.ts` |
+| Video telemetry completion | P1 | **Done** — `video_init_start`, `video_init_bound`, `video_init_frame_ready`, `video_init_error`, `video_proxy_response` emitted in client/server paths; coverage in `src/lib/videoProxyOverride.test.ts` and `server/lib/Telemetry.test.ts` |
 | Playwright stability pass | P1 | Chromium required stable, Firefox nightly stable trend |
 
 ---
@@ -186,7 +186,8 @@ Review participants: maintainers owning each pillar
 
 | Date | Change |
 |---|---|
-| 2026-02-18 | Added Week 2 scorecard (55.00); updated backlog done evidence for KI-4, H-1, H-2, video telemetry |
+| 2026-02-18 | Closed KI-1, KI-2, M-1 in backlog; all Phase 1 reliability blockers now done |
+| 2026-02-18 | Added Week 2 scorecard (55.00); updated backlog done evidence for KI-3, KI-4, H-1, H-2, video telemetry |
 | 2026-02-17 | Added Week 1 baseline scoring and context |
 | 2026-02-17 | Initial execution rubric and phase-gate plan created |
 
@@ -258,10 +259,10 @@ To raise score into the 55-65 range next week:
 
 | Category | Weight | Score (0-4) | Weighted Points | Rationale |
 |---|---:|---:|---:|---|
-| Measurement Completeness | 20 | 3 | 15.00 | Video telemetry added (5 events covering init lifecycle, proxy response, stalls). All four pillars now instrumented. Dashboards still missing. |
-| Reliability Outcomes | 25 | 1 | 6.25 | No SLO validation window yet. KI-1, KI-2 (hardening), KI-3 still open. |
+| Measurement Completeness | 20 | 3 | 15.00 | Video telemetry added (5 events covering init start, bind, first-frame, error, and proxy response). All four pillars now instrumented. Dashboards still missing. |
+| Reliability Outcomes | 25 | 1 | 6.25 | No SLO validation window yet. KI-1 and KI-2 hardening remain open. |
 | Test and CI Strength | 15 | 3 | 11.25 | 85 test files, 1014 tests. CI gates active (typecheck, test, Chromium smoke e2e). |
-| Security and Abuse Resistance | 15 | 2 | 7.50 | KI-4 closed (socket rate limiting). H-1/H-2 closed (payload validation). KI-3 still open (subscriber pinning). |
+| Security and Abuse Resistance | 15 | 2 | 7.50 | KI-3/KI-4 closed (subscriber pinning, socket rate limiting). H-1/H-2 closed (payload validation). M-1 proxy hardening still open. |
 | Operability and Incident Readiness | 15 | 2 | 7.50 | No change from Week 1. Rollback drill still pending. |
 | Delivery Discipline | 10 | 3 | 7.50 | No change from Week 1. |
 
@@ -280,23 +281,24 @@ To raise score into the 55-65 range next week:
 
 - KI-4 closed: `server/lib/socketRateLimit.ts` (token bucket limiter), integrated in `server/socket.ts`
 - H-1/H-2 closed: `server/lib/payloadGuards.ts` (type guards + 64KB size cap), rejection tests in `server/Player/socket.test.ts`
-- Video telemetry: 5 events (`video_init_start`, `video_init_success`, `video_init_error`, `video_proxy_response`, `video_stall`) in `src/lib/telemetry.ts`
+- Video telemetry: 5 events (`video_init_start`, `video_init_bound`, `video_init_frame_ready`, `video_init_error`, `video_proxy_response`) in `src/lib/videoProxyOverride.ts` and `server/VideoProxy/router.ts`
 - Test suite: 85 test files (up from 83)
 - KI-2 root cause identified as fixed in commit `d538fc04` (PersistGate removal); hardening deferred due to vitest alias resolution blockers
-- Open: KI-1 (admin demotion parser), KI-3 (subscriber pinning — in progress), M-1 (proxy SSRF hardening)
+- Open: KI-1 (admin demotion parser), KI-2 hardening (bootstrap resiliency), M-1 (proxy SSRF hardening)
 
 ### 12.4 Delta from Week 1
 
 - **Measurement** 2→3: All four pillars now have telemetry event families. Video was the last gap.
-- **Security** 1→2: Three high-priority socket abuse controls closed (KI-4, H-1, H-2). KI-3 prevents full score increase.
+- **Security** 1→2: Four high-priority socket abuse controls closed (KI-3, KI-4, H-1, H-2). M-1 still prevents full score increase.
 - **Outcomes, CI, Operability, Discipline:** No change — blocked on SLO validation window and rollback drill.
 
 ### 12.5 Next-Week Uplift Targets
 
 To raise score into the 65-70 range:
 
-1. Close KI-3 (camera subscriber pinning) with regression tests → Security 2→3.
-2. Close KI-1 (admin demotion parser) with unit tests → Outcomes stays at 1 but removes a P0 blocker.
+1. Close KI-1 (admin demotion parser) with unit tests and manual role-transition verification.
+2. Implement M-1 proxy private-IP denylist completion and expand SSRF test matrix coverage.
 3. Run one rollback drill and document the result → Operability 2→3.
 4. Begin SLO dashboard wiring to move Measurement toward 4.
 
+**Outcome:** Items 1-2 completed on 2026-02-18. KI-1 closed (edge-case tests), KI-2 hardening closed (retry/backoff), M-1 closed (full denylist). All Phase 1 reliability blockers now done. Rollback drill and SLO dashboard wiring still pending.

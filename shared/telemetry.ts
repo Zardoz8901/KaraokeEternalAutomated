@@ -19,6 +19,7 @@ export const QUEUE_CMD_ERROR = 'queue_cmd_error'
 
 // Auth & session pillar
 export const AUTH_SESSION_CHECK = 'auth_session_check'
+export const AUTH_SESSION_CHECK_FAILURE = 'auth_session_check_failure'
 export const AUTH_LOGIN_SUCCESS = 'auth_login_success'
 export const AUTH_GUEST_JOIN_START = 'auth_guest_join_start'
 export const AUTH_GUEST_JOIN_SUCCESS = 'auth_guest_join_success'

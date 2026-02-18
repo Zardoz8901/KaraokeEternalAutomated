@@ -22,6 +22,7 @@ const PRIVATE_IP_PATTERNS = [
   /^10\./, // 10.0.0.0/8
   /^192\.168\./, // 192.168.0.0/16
   /^0\.0\.0\.0$/, // 0.0.0.0
+  /^169\.254\./, // 169.254.0.0/16 (link-local, cloud metadata)
 ]
 
 /**
@@ -43,6 +44,18 @@ function isPrivateHost (hostname: string): boolean {
     const second = parseInt(m172[1], 10)
     if (second >= 16 && second <= 31) return true
   }
+
+  // 100.64.0.0 – 100.127.255.255 (CGNAT / Tailscale)
+  const m100 = /^100\.(\d+)\./.exec(bare)
+  if (m100) {
+    const second = parseInt(m100[1], 10)
+    if (second >= 64 && second <= 127) return true
+  }
+
+  // IPv6 ULA fc00::/7 (fc00:: – fdff::)
+  if (/^f[cd]/i.test(bare)) return true
+  // IPv6 link-local fe80::/10 (fe80:: – febf::)
+  if (/^fe[89ab]/i.test(bare)) return true
 
   return false
 }

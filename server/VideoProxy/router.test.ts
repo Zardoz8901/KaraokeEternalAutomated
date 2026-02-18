@@ -107,9 +107,38 @@ describe('VideoProxy', () => {
       expect(isUrlAllowed('https://[::1]/video.mp4')).toBe(false)
     })
 
+    it('rejects link-local IPs (169.254.0.0/16)', () => {
+      expect(isUrlAllowed('https://169.254.169.254/video.mp4')).toBe(false) // cloud metadata
+      expect(isUrlAllowed('https://169.254.0.1/video.mp4')).toBe(false)
+    })
+
+    it('rejects CGNAT IPs (100.64.0.0/10)', () => {
+      expect(isUrlAllowed('https://100.64.0.1/video.mp4')).toBe(false)
+      expect(isUrlAllowed('https://100.127.255.255/video.mp4')).toBe(false)
+    })
+
+    it('rejects IPv6 ULA (fc00::/7)', () => {
+      expect(isUrlAllowed('https://[fc00::1]/video.mp4')).toBe(false)
+      expect(isUrlAllowed('https://[fd00::1]/video.mp4')).toBe(false)
+    })
+
+    it('rejects IPv6 link-local (fe80::/10)', () => {
+      expect(isUrlAllowed('https://[fe80::1]/video.mp4')).toBe(false)
+    })
+
     it('allows non-private 172.x addresses', () => {
       expect(isUrlAllowed('https://172.15.0.1/video.mp4')).toBe(true)
       expect(isUrlAllowed('https://172.32.0.1/video.mp4')).toBe(true)
+    })
+
+    it('allows addresses at CGNAT boundaries', () => {
+      expect(isUrlAllowed('https://100.63.255.255/video.mp4')).toBe(true)
+      expect(isUrlAllowed('https://100.128.0.1/video.mp4')).toBe(true)
+    })
+
+    it('allows addresses at link-local boundaries', () => {
+      expect(isUrlAllowed('https://169.253.255.255/video.mp4')).toBe(true)
+      expect(isUrlAllowed('https://169.255.0.1/video.mp4')).toBe(true)
     })
 
     it('rejects invalid URLs', () => {

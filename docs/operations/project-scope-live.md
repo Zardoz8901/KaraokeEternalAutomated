@@ -55,8 +55,9 @@ Targets from [reliability-release-playbook.md](reliability-release-playbook.md).
 | Socket rate limiting (KI-4) | Complete | — | 2026-02-18 |
 | Video telemetry instrumentation | Complete | — | 2026-02-18 |
 | Camera subscriber pinning (KI-3) | Complete | — | 2026-02-18 |
-| Admin demotion fix (KI-1) | Not started | High | TBD |
-| Bootstrap deadlock fix (KI-2) | Root cause fixed | Medium | Hardening deferred |
+| Admin demotion fix (KI-1) | Complete | — | 2026-02-18 |
+| Bootstrap hardening (KI-2) | Complete | — | 2026-02-18 |
+| SSRF denylist completion (M-1) | Complete | — | 2026-02-18 |
 
 ---
 
@@ -66,13 +67,13 @@ Source: CLAUDE.md Known Issues + security audit (2026-02-12).
 
 | ID | Severity | Area | Description | Mitigation |
 |----|----------|------|-------------|------------|
-| KI-1 | HIGH | Auth | Admin demotion bug: group header parsing needs both `,` and `\|` separators | Pending fix in `server/serverWorker.ts` |
-| KI-2 | MEDIUM | Bootstrap | Perpetual loading state: bootstrap deadlock in `src/main.tsx` | Root cause fixed in `d538fc04` (PersistGate removal); 5s timeout secondary mitigation; hardening deferred |
+| KI-1 | CLOSED | Auth | ~~Admin demotion bug: group header parsing~~ | Closed — regex `/[,|]/` in `server/Auth/oidc.ts`; edge-case tests added |
+| KI-2 | CLOSED | Bootstrap | ~~Perpetual loading state: bootstrap deadlock~~ | Closed — retry/backoff + error classification in `src/store/modules/user.ts`; `bootstrapError` state + telemetry |
 | KI-3 | CLOSED | Camera | ~~Subscriber pinning not implemented in `server/Player/socket.ts`~~ | Closed — directed relay with subscriber pinning in `server/Player/socket.ts` |
 | KI-4 | CLOSED | Socket | ~~No server-side rate limiting on socket actions~~ | Closed — token bucket rate limiter in `server/lib/socketRateLimit.ts` |
 | H-1 | CLOSED | Socket | ~~WebRTC relay payloads lack validation~~ | Closed — payload guards in `server/lib/payloadGuards.ts` |
 | H-2 | CLOSED | Socket | ~~Hydra code payload lacks server-side size limit~~ | Closed — payload guards in `server/lib/payloadGuards.ts` |
-| M-1 | MEDIUM | Proxy | SSRF prevention needs private IP block list | Partial implementation exists in `proxyValidator.ts` |
+| M-1 | CLOSED | Proxy | ~~SSRF prevention needs private IP block list~~ | Closed — full denylist in `server/VideoProxy/router.ts`: 127/8, 10/8, 172.16/12, 192.168/16, 169.254/16, 100.64/10, fc00::/7, fe80::/10, ::1, localhost |
 
 ---
 
@@ -92,10 +93,11 @@ Execution rubric: [reliability-hardening-execution-rubric.md](reliability-harden
 - WebRTC payload validation (H-1, H-2) — 2026-02-18
 - Video telemetry (init lifecycle, proxy response) instrumented — 2026-02-18
 - Camera subscriber pinning (KI-3) — 2026-02-18
+- Admin demotion fix (KI-1) — 2026-02-18
+- Bootstrap hardening with retry/backoff (KI-2) — 2026-02-18
+- SSRF denylist completion (M-1) — 2026-02-18
 
 ### 60 days (by 2026-04-18)
-- Admin demotion fix (KI-1)
-- Bootstrap deadlock hardening (KI-2) — retry/backoff, error differentiation
 - All SLO dashboards populated from telemetry data
 
 ### 90 days (by 2026-05-18)
@@ -125,7 +127,8 @@ From [reliability-release-playbook.md](reliability-release-playbook.md) section 
 
 | Date | Change |
 |------|--------|
-| 2026-02-18 | Closed KI-4 (socket rate limiting), H-1/H-2 (payload validation); added video telemetry; updated KI-2 status (root cause fixed, hardening deferred); KI-3 in progress |
+| 2026-02-18 | Closed KI-1 (admin demotion parser), KI-2 (bootstrap retry/backoff), M-1 (SSRF denylist completion); all Phase 1 reliability blockers now closed |
+| 2026-02-18 | Closed KI-3/KI-4 (camera subscriber pinning, socket rate limiting), H-1/H-2 (payload validation); added video telemetry; updated KI-2 status (root cause fixed, hardening deferred) |
 | 2026-02-17 | Added reliability hardening execution rubric and scoring model |
 | 2026-02-17 | Initial living scope doc created |
 

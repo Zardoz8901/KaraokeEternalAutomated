@@ -1,7 +1,7 @@
 import { createAction, createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import socket from 'lib/socket'
 import telemetry from 'lib/telemetry'
-import { AUTH_SESSION_CHECK, AUTH_LOGIN_SUCCESS } from 'shared/telemetry'
+import { AUTH_SESSION_CHECK, AUTH_SESSION_CHECK_FAILURE, AUTH_LOGIN_SUCCESS } from 'shared/telemetry'
 import AppRouter from 'lib/AppRouter'
 import { RootState } from 'store/store'
 import HttpApi from 'lib/HttpApi'
@@ -34,6 +34,7 @@ interface UserState {
   isGuest: boolean
   isBootstrapping: boolean
   isLoggingOut: boolean
+  bootstrapError: string | null // 'timeout' | 'network' | null
   dateCreated: number
   dateUpdated: number
 }
@@ -49,6 +50,7 @@ const initialState: UserState = {
   isGuest: false,
   isBootstrapping: true,
   isLoggingOut: false,
+  bootstrapError: null,
   dateCreated: 0,
   dateUpdated: 0,
 }
@@ -56,6 +58,7 @@ const initialState: UserState = {
 // Action creators (defined before slice so they can be used in extraReducers)
 const receiveAccount = createAction<Partial<UserState>>(ACCOUNT_RECEIVE)
 export const bootstrapComplete = createAction('user/BOOTSTRAP_COMPLETE')
+const setBootstrapError = createAction<string>('user/BOOTSTRAP_ERROR')
 const requestSocketConnect = createAction<Record<string, unknown>>(SOCKET_REQUEST_CONNECT)
 const logoutInternal = createAction(LOGOUT)
 const socketAuthErrorInternal = createAction(SOCKET_AUTH_ERROR)
@@ -72,9 +75,13 @@ const userSlice = createSlice({
     builder
       .addCase(receiveAccount, (state, action) => {
         Object.assign(state, action.payload)
+        state.bootstrapError = null
       })
       .addCase(bootstrapComplete, (state) => {
         state.isBootstrapping = false
+      })
+      .addCase(setBootstrapError, (state, action) => {
+        state.bootstrapError = action.payload
       })
       .addCase(logoutInternal, () => {
         return { ...initialState, isBootstrapping: false, isLoggingOut: false }
@@ -92,34 +99,61 @@ const { logoutStart } = userSlice.actions
 // Async Thunks
 // ------------------------------------
 const SESSION_CHECK_TIMEOUT_MS = 5000 // 5 second timeout to prevent perpetual loading
+const RETRY_DELAYS = [0, 1000, 2000] // backoff schedule for retryable errors
+
+/** Classify checkSession errors into retryable and non-retryable categories. */
+function classifySessionError (err: unknown): 'network' | 'timeout' | 'http' {
+  if (err instanceof TypeError) return 'network' // fetch() DNS/connection failure
+  if (err instanceof Error && err.message === 'Session check timeout') return 'timeout'
+  return 'http' // 401/403/500 — deterministic, don't retry
+}
 
 export const checkSession = createAsyncThunk<void, void, { state: RootState }>(
   'user/CHECK_SESSION',
   async (_, thunkAPI) => {
+    let lastErrorType: 'network' | 'timeout' | 'http' = 'http'
+    let attempts = 0
+
     try {
-      const timeoutPromise = new Promise<never>((_resolve, reject) => {
-        setTimeout(() => reject(new Error('Session check timeout')), SESSION_CHECK_TIMEOUT_MS)
-      })
+      for (const delay of RETRY_DELAYS) {
+        if (delay > 0) await new Promise(resolve => setTimeout(resolve, delay))
+        attempts++
 
-      const user = await Promise.race([
-        api.get<Partial<UserState>>('user', { skipAuthRedirect: true }),
-        timeoutPromise,
-      ])
+        try {
+          const timeoutPromise = new Promise<never>((_resolve, reject) => {
+            setTimeout(() => reject(new Error('Session check timeout')), SESSION_CHECK_TIMEOUT_MS)
+          })
 
-      thunkAPI.dispatch(receiveAccount(user))
-      telemetry.setUserContext(user.userId ?? null, user.roomId ?? null)
-      telemetry.emit(AUTH_SESSION_CHECK, { user_id: user.userId ?? null, is_admin: !!user.isAdmin, is_guest: !!user.isGuest })
-      thunkAPI.dispatch(fetchPrefs())
-      thunkAPI.dispatch(connectSocket())
-      socket.open()
+          const user = await Promise.race([
+            api.get<Partial<UserState>>('user', { skipAuthRedirect: true }),
+            timeoutPromise,
+          ])
 
-      // Consume ?redirect param (set by RequireAuth → /account?redirect=...)
-      const redirect = new URLSearchParams(window.location.search).get('redirect')
-      if (redirect) {
-        AppRouter.navigate(basename.replace(/\/$/, '') + redirect)
+          thunkAPI.dispatch(receiveAccount(user))
+          telemetry.setUserContext(user.userId ?? null, user.roomId ?? null)
+          telemetry.emit(AUTH_SESSION_CHECK, { user_id: user.userId ?? null, is_admin: !!user.isAdmin, is_guest: !!user.isGuest, attempts })
+          thunkAPI.dispatch(fetchPrefs())
+          thunkAPI.dispatch(connectSocket())
+          socket.open()
+
+          // Consume ?redirect param (set by RequireAuth → /account?redirect=...)
+          const redirect = new URLSearchParams(window.location.search).get('redirect')
+          if (redirect) {
+            AppRouter.navigate(basename.replace(/\/$/, '') + redirect)
+          }
+          return // success — exit retry loop
+        } catch (err) {
+          lastErrorType = classifySessionError(err)
+          if (lastErrorType === 'http') break // deterministic failure, don't retry
+        }
       }
-    } catch {
-      // No valid session, timeout, or network error - expected for unauthenticated users
+
+      // All attempts exhausted or non-retryable error
+      telemetry.emit(AUTH_SESSION_CHECK_FAILURE, { error_type: lastErrorType, attempts })
+      // Only surface transient errors — HTTP errors (401/403) are normal for unauthenticated users
+      if (lastErrorType !== 'http') {
+        thunkAPI.dispatch(setBootstrapError(lastErrorType))
+      }
     } finally {
       thunkAPI.dispatch(bootstrapComplete())
     }
