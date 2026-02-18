@@ -48,6 +48,9 @@ const log = getLogger('PlayerSocket')
 // Track which socket is the active camera publisher per room
 const roomCameraPublishers = new Map<number, string>() // roomId → publisherSocketId
 
+// Track which socket is the pinned camera subscriber per room (KI-3)
+const roomCameraSubscribers = new Map<number, string>() // roomId → subscriberSocketId
+
 interface RoomControlSocket {
   id?: string
   user?: {
@@ -186,9 +189,23 @@ export function cleanupCameraPublisher (
   if (roomCameraPublishers.get(roomId) !== socketId) return
 
   roomCameraPublishers.delete(roomId)
+  roomCameraSubscribers.delete(roomId)
   const roomPrefix = Rooms.prefix(roomId)
   io.to(roomPrefix).emit('action', { type: CAMERA_STOP })
   log.verbose('auto-broadcast CAMERA_STOP room=%s (publisher %s disconnected)', roomId, socketId)
+}
+
+/**
+ * If the disconnecting socket was the pinned camera subscriber for this room,
+ * clear the pin so a new subscriber can take over on the next offer cycle.
+ */
+export function cleanupCameraSubscriber (
+  roomId: number,
+  socketId: string,
+): void {
+  if (roomCameraSubscribers.get(roomId) !== socketId) return
+  roomCameraSubscribers.delete(roomId)
+  log.verbose('cleared subscriber pin room=%s (subscriber %s disconnected)', roomId, socketId)
 }
 
 // ------------------------------------
@@ -291,6 +308,7 @@ const ACTION_HANDLERS = {
     const roomId = sock.user?.roomId
     if (typeof roomId === 'number') {
       roomCameraPublishers.set(roomId, sock.id)
+      roomCameraSubscribers.delete(roomId) // clear stale subscriber pin for new offer cycle
     }
 
     emitCameraRelay(sock, CAMERA_OFFER, payload)
@@ -302,7 +320,28 @@ const ACTION_HANDLERS = {
       return
     }
 
-    emitCameraRelay(sock, CAMERA_ANSWER, payload)
+    const roomId = sock.user?.roomId
+    if (typeof roomId !== 'number') return
+
+    const publisherSocketId = roomCameraPublishers.get(roomId)
+    if (!publisherSocketId) {
+      log.verbose('camera answer rejected: no publisher for room=%s socket=%s', roomId, sock.id)
+      return
+    }
+
+    // Subscriber pinning: first valid answer pins, reject others
+    const pinnedSubscriber = roomCameraSubscribers.get(roomId)
+    if (pinnedSubscriber && pinnedSubscriber !== sock.id) {
+      log.verbose('camera answer rejected: subscriber already pinned room=%s pinned=%s sender=%s', roomId, pinnedSubscriber, sock.id)
+      return
+    }
+
+    if (!pinnedSubscriber) {
+      roomCameraSubscribers.set(roomId, sock.id)
+    }
+
+    // Directed relay: send answer to publisher only
+    sock.server.to(publisherSocketId).emit('action', { type: CAMERA_ANSWER, payload })
   },
   [CAMERA_ICE_REQ]: async (sock, { payload }) => {
     if (!isValidCameraIce(payload) || !isValidPayloadSize(payload)) return
@@ -311,7 +350,26 @@ const ACTION_HANDLERS = {
       return
     }
 
-    emitCameraRelay(sock, CAMERA_ICE, payload)
+    const roomId = sock.user?.roomId
+    if (typeof roomId !== 'number') return
+
+    const publisherSocketId = roomCameraPublishers.get(roomId)
+    const subscriberSocketId = roomCameraSubscribers.get(roomId)
+
+    // Determine target: publisher↔subscriber directed relay
+    let targetSocketId: string | undefined
+    if (sock.id === publisherSocketId) {
+      targetSocketId = subscriberSocketId
+    } else if (sock.id === subscriberSocketId) {
+      targetSocketId = publisherSocketId
+    }
+
+    if (!targetSocketId) {
+      log.verbose('camera ICE rejected: sender is neither publisher nor pinned subscriber room=%s socket=%s', roomId, sock.id)
+      return
+    }
+
+    sock.server.to(targetSocketId).emit('action', { type: CAMERA_ICE, payload })
   },
   [CAMERA_STOP_REQ]: async (sock, { payload }) => {
     if (!isValidCameraStop(payload) || !isValidPayloadSize(payload)) return
@@ -323,6 +381,7 @@ const ACTION_HANDLERS = {
     const roomId = sock.user?.roomId
     if (typeof roomId === 'number') {
       roomCameraPublishers.delete(roomId)
+      roomCameraSubscribers.delete(roomId)
     }
 
     emitCameraRelay(sock, CAMERA_STOP, payload)

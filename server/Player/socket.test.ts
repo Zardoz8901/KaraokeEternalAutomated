@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  CAMERA_ANSWER,
   CAMERA_ANSWER_REQ,
+  CAMERA_ICE,
   CAMERA_ICE_REQ,
   CAMERA_OFFER,
   CAMERA_OFFER_REQ,
@@ -30,7 +32,7 @@ vi.mock('../lib/Log.js', () => ({
 }))
 
 import Rooms from '../Rooms/Rooms.js'
-import handlers, { canManageRoom, cleanupCameraPublisher } from './socket.js'
+import handlers, { canManageRoom, cleanupCameraPublisher, cleanupCameraSubscriber } from './socket.js'
 
 interface MockSocket {
   id: string
@@ -500,5 +502,246 @@ describe('Payload validation', () => {
     const { sock, broadcastEmit } = createMockSocket({ userId: 101, roomId: 88, isAdmin: false })
     await handlers[VISUALIZER_STATE_SYNC_REQ](sock, { payload: { data: 'x'.repeat(100_000) } })
     expect(broadcastEmit).not.toHaveBeenCalled()
+  })
+})
+
+describe('Camera subscriber pinning (KI-3)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  function allowCameraRelay (roomId: number) {
+    vi.mocked(Rooms.get).mockResolvedValue({
+      result: [roomId],
+      entities: {
+        [roomId]: {
+          ownerId: 999,
+          prefs: { allowGuestCameraRelay: true },
+        },
+      },
+    })
+  }
+
+  it('first CAMERA_ANSWER_REQ pins subscriber and relays answer to publisher only', async () => {
+    allowCameraRelay(10)
+
+    // Publisher sends offer
+    const { sock: pubSock } = createMockSocket({ userId: 50, roomId: 10, isAdmin: false }, 'pub-sock')
+    await handlers[CAMERA_OFFER_REQ](pubSock, { payload: { sdp: 'offer', type: 'offer' } })
+
+    // Subscriber sends answer
+    const { sock: subSock, serverTo } = createMockSocket({ userId: 60, roomId: 10, isAdmin: false }, 'sub-sock')
+    const subEmit = vi.fn()
+    subSock.server.to = vi.fn(() => ({ emit: subEmit }))
+
+    await handlers[CAMERA_ANSWER_REQ](subSock, { payload: { sdp: 'answer', type: 'answer' } })
+
+    // Answer should be directed to publisher socket, not room broadcast
+    expect(subSock.server.to).toHaveBeenCalledWith('pub-sock')
+    expect(subEmit).toHaveBeenCalledWith('action', {
+      type: CAMERA_ANSWER,
+      payload: { sdp: 'answer', type: 'answer' },
+    })
+  })
+
+  it('second CAMERA_ANSWER_REQ from different socket is rejected', async () => {
+    allowCameraRelay(10)
+
+    // Publisher sends offer
+    const { sock: pubSock } = createMockSocket({ userId: 50, roomId: 10, isAdmin: false }, 'pub-sock')
+    await handlers[CAMERA_OFFER_REQ](pubSock, { payload: { sdp: 'offer', type: 'offer' } })
+
+    // First subscriber pins
+    const { sock: sub1 } = createMockSocket({ userId: 60, roomId: 10, isAdmin: false }, 'sub-1')
+    sub1.server.to = vi.fn(() => ({ emit: vi.fn() }))
+    await handlers[CAMERA_ANSWER_REQ](sub1, { payload: { sdp: 'answer1', type: 'answer' } })
+
+    // Second subscriber should be rejected
+    const { sock: sub2 } = createMockSocket({ userId: 70, roomId: 10, isAdmin: false }, 'sub-2')
+    const sub2Emit = vi.fn()
+    sub2.server.to = vi.fn(() => ({ emit: sub2Emit }))
+    await handlers[CAMERA_ANSWER_REQ](sub2, { payload: { sdp: 'answer2', type: 'answer' } })
+
+    expect(sub2Emit).not.toHaveBeenCalled()
+  })
+
+  it('pinned subscriber can send multiple answers (renegotiation)', async () => {
+    allowCameraRelay(10)
+
+    const { sock: pubSock } = createMockSocket({ userId: 50, roomId: 10, isAdmin: false }, 'pub-sock')
+    await handlers[CAMERA_OFFER_REQ](pubSock, { payload: { sdp: 'offer', type: 'offer' } })
+
+    const { sock: subSock } = createMockSocket({ userId: 60, roomId: 10, isAdmin: false }, 'sub-sock')
+    const subEmit = vi.fn()
+    subSock.server.to = vi.fn(() => ({ emit: subEmit }))
+
+    await handlers[CAMERA_ANSWER_REQ](subSock, { payload: { sdp: 'answer1', type: 'answer' } })
+    await handlers[CAMERA_ANSWER_REQ](subSock, { payload: { sdp: 'answer2', type: 'answer' } })
+
+    expect(subEmit).toHaveBeenCalledTimes(2)
+  })
+
+  it('CAMERA_ICE_REQ from publisher routes to pinned subscriber', async () => {
+    allowCameraRelay(10)
+
+    // Setup publisher and subscriber
+    const { sock: pubSock } = createMockSocket({ userId: 50, roomId: 10, isAdmin: false }, 'pub-sock')
+    await handlers[CAMERA_OFFER_REQ](pubSock, { payload: { sdp: 'offer', type: 'offer' } })
+
+    const { sock: subSock } = createMockSocket({ userId: 60, roomId: 10, isAdmin: false }, 'sub-sock')
+    subSock.server.to = vi.fn(() => ({ emit: vi.fn() }))
+    await handlers[CAMERA_ANSWER_REQ](subSock, { payload: { sdp: 'answer', type: 'answer' } })
+
+    // Publisher sends ICE → should route to subscriber
+    const pubEmit = vi.fn()
+    pubSock.server.to = vi.fn(() => ({ emit: pubEmit }))
+    await handlers[CAMERA_ICE_REQ](pubSock, { payload: { candidate: 'ice-pub' } })
+
+    expect(pubSock.server.to).toHaveBeenCalledWith('sub-sock')
+    expect(pubEmit).toHaveBeenCalledWith('action', {
+      type: CAMERA_ICE,
+      payload: { candidate: 'ice-pub' },
+    })
+  })
+
+  it('CAMERA_ICE_REQ from pinned subscriber routes to publisher', async () => {
+    allowCameraRelay(10)
+
+    const { sock: pubSock } = createMockSocket({ userId: 50, roomId: 10, isAdmin: false }, 'pub-sock')
+    await handlers[CAMERA_OFFER_REQ](pubSock, { payload: { sdp: 'offer', type: 'offer' } })
+
+    const { sock: subSock } = createMockSocket({ userId: 60, roomId: 10, isAdmin: false }, 'sub-sock')
+    subSock.server.to = vi.fn(() => ({ emit: vi.fn() }))
+    await handlers[CAMERA_ANSWER_REQ](subSock, { payload: { sdp: 'answer', type: 'answer' } })
+
+    // Subscriber sends ICE → should route to publisher
+    const subIceEmit = vi.fn()
+    subSock.server.to = vi.fn(() => ({ emit: subIceEmit }))
+    await handlers[CAMERA_ICE_REQ](subSock, { payload: { candidate: 'ice-sub' } })
+
+    expect(subSock.server.to).toHaveBeenCalledWith('pub-sock')
+    expect(subIceEmit).toHaveBeenCalledWith('action', {
+      type: CAMERA_ICE,
+      payload: { candidate: 'ice-sub' },
+    })
+  })
+
+  it('CAMERA_ICE_REQ from unauthorized socket is rejected', async () => {
+    allowCameraRelay(10)
+
+    const { sock: pubSock } = createMockSocket({ userId: 50, roomId: 10, isAdmin: false }, 'pub-sock')
+    await handlers[CAMERA_OFFER_REQ](pubSock, { payload: { sdp: 'offer', type: 'offer' } })
+
+    const { sock: subSock } = createMockSocket({ userId: 60, roomId: 10, isAdmin: false }, 'sub-sock')
+    subSock.server.to = vi.fn(() => ({ emit: vi.fn() }))
+    await handlers[CAMERA_ANSWER_REQ](subSock, { payload: { sdp: 'answer', type: 'answer' } })
+
+    // Unauthorized third party sends ICE
+    const { sock: rogue } = createMockSocket({ userId: 70, roomId: 10, isAdmin: false }, 'rogue-sock')
+    const rogueEmit = vi.fn()
+    rogue.server.to = vi.fn(() => ({ emit: rogueEmit }))
+    await handlers[CAMERA_ICE_REQ](rogue, { payload: { candidate: 'rogue-ice' } })
+
+    expect(rogueEmit).not.toHaveBeenCalled()
+  })
+
+  it('new CAMERA_OFFER_REQ clears stale subscriber pin', async () => {
+    allowCameraRelay(10)
+
+    // First session: publish + subscribe
+    const { sock: pubSock } = createMockSocket({ userId: 50, roomId: 10, isAdmin: false }, 'pub-sock')
+    await handlers[CAMERA_OFFER_REQ](pubSock, { payload: { sdp: 'offer1', type: 'offer' } })
+
+    const { sock: sub1 } = createMockSocket({ userId: 60, roomId: 10, isAdmin: false }, 'sub-1')
+    sub1.server.to = vi.fn(() => ({ emit: vi.fn() }))
+    await handlers[CAMERA_ANSWER_REQ](sub1, { payload: { sdp: 'answer1', type: 'answer' } })
+
+    // New offer clears old subscriber pin
+    await handlers[CAMERA_OFFER_REQ](pubSock, { payload: { sdp: 'offer2', type: 'offer' } })
+
+    // New subscriber should be able to pin
+    const { sock: sub2 } = createMockSocket({ userId: 70, roomId: 10, isAdmin: false }, 'sub-2')
+    const sub2Emit = vi.fn()
+    sub2.server.to = vi.fn(() => ({ emit: sub2Emit }))
+    await handlers[CAMERA_ANSWER_REQ](sub2, { payload: { sdp: 'answer2', type: 'answer' } })
+
+    expect(sub2.server.to).toHaveBeenCalledWith('pub-sock')
+    expect(sub2Emit).toHaveBeenCalledWith('action', {
+      type: CAMERA_ANSWER,
+      payload: { sdp: 'answer2', type: 'answer' },
+    })
+  })
+
+  it('CAMERA_STOP_REQ clears subscriber pin', async () => {
+    allowCameraRelay(10)
+
+    const { sock: pubSock } = createMockSocket({ userId: 50, roomId: 10, isAdmin: false }, 'pub-sock')
+    await handlers[CAMERA_OFFER_REQ](pubSock, { payload: { sdp: 'offer', type: 'offer' } })
+
+    const { sock: subSock } = createMockSocket({ userId: 60, roomId: 10, isAdmin: false }, 'sub-sock')
+    subSock.server.to = vi.fn(() => ({ emit: vi.fn() }))
+    await handlers[CAMERA_ANSWER_REQ](subSock, { payload: { sdp: 'answer', type: 'answer' } })
+
+    // Stop the relay
+    await handlers[CAMERA_STOP_REQ](pubSock, { payload: {} })
+
+    // After new offer, a different subscriber should be able to pin
+    await handlers[CAMERA_OFFER_REQ](pubSock, { payload: { sdp: 'offer2', type: 'offer' } })
+    const { sock: newSub } = createMockSocket({ userId: 70, roomId: 10, isAdmin: false }, 'new-sub')
+    const newSubEmit = vi.fn()
+    newSub.server.to = vi.fn(() => ({ emit: newSubEmit }))
+    await handlers[CAMERA_ANSWER_REQ](newSub, { payload: { sdp: 'answer2', type: 'answer' } })
+
+    expect(newSubEmit).toHaveBeenCalled()
+  })
+
+  it('cleanupCameraPublisher clears subscriber pin', async () => {
+    allowCameraRelay(10)
+
+    const { sock: pubSock } = createMockSocket({ userId: 50, roomId: 10, isAdmin: false }, 'pub-sock')
+    await handlers[CAMERA_OFFER_REQ](pubSock, { payload: { sdp: 'offer', type: 'offer' } })
+
+    const { sock: subSock } = createMockSocket({ userId: 60, roomId: 10, isAdmin: false }, 'sub-sock')
+    subSock.server.to = vi.fn(() => ({ emit: vi.fn() }))
+    await handlers[CAMERA_ANSWER_REQ](subSock, { payload: { sdp: 'answer', type: 'answer' } })
+
+    // Publisher disconnects → cleanup should clear subscriber pin too
+    const { io } = createMockIo()
+    cleanupCameraPublisher(10, 'pub-sock', io)
+
+    // After new offer, a different subscriber should pin
+    const { sock: pub2 } = createMockSocket({ userId: 50, roomId: 10, isAdmin: false }, 'pub-2')
+    await handlers[CAMERA_OFFER_REQ](pub2, { payload: { sdp: 'offer2', type: 'offer' } })
+
+    const { sock: newSub } = createMockSocket({ userId: 80, roomId: 10, isAdmin: false }, 'new-sub')
+    const newSubEmit = vi.fn()
+    newSub.server.to = vi.fn(() => ({ emit: newSubEmit }))
+    await handlers[CAMERA_ANSWER_REQ](newSub, { payload: { sdp: 'answer2', type: 'answer' } })
+
+    expect(newSub.server.to).toHaveBeenCalledWith('pub-2')
+    expect(newSubEmit).toHaveBeenCalled()
+  })
+
+  it('cleanupCameraSubscriber clears pin when pinned subscriber disconnects', async () => {
+    allowCameraRelay(10)
+
+    const { sock: pubSock } = createMockSocket({ userId: 50, roomId: 10, isAdmin: false }, 'pub-sock')
+    await handlers[CAMERA_OFFER_REQ](pubSock, { payload: { sdp: 'offer', type: 'offer' } })
+
+    const { sock: subSock } = createMockSocket({ userId: 60, roomId: 10, isAdmin: false }, 'sub-sock')
+    subSock.server.to = vi.fn(() => ({ emit: vi.fn() }))
+    await handlers[CAMERA_ANSWER_REQ](subSock, { payload: { sdp: 'answer', type: 'answer' } })
+
+    // Subscriber disconnects
+    cleanupCameraSubscriber(10, 'sub-sock')
+
+    // New subscriber should be able to pin on next offer cycle
+    await handlers[CAMERA_OFFER_REQ](pubSock, { payload: { sdp: 'offer2', type: 'offer' } })
+    const { sock: newSub } = createMockSocket({ userId: 70, roomId: 10, isAdmin: false }, 'new-sub')
+    const newSubEmit = vi.fn()
+    newSub.server.to = vi.fn(() => ({ emit: newSubEmit }))
+    await handlers[CAMERA_ANSWER_REQ](newSub, { payload: { sdp: 'answer2', type: 'answer' } })
+
+    expect(newSubEmit).toHaveBeenCalled()
   })
 })
