@@ -1,5 +1,6 @@
 import getLogger from './lib/Log.js'
 import { getServerTelemetry } from './lib/Telemetry.js'
+import { createRateLimitState, checkRateLimit } from './lib/socketRateLimit.js'
 import { SOCKET_CONNECT, SOCKET_DISCONNECT } from '../shared/telemetry.js'
 import jsonWebToken from 'jsonwebtoken'
 import parseCookie from './lib/parseCookie.js'
@@ -120,6 +121,7 @@ export default function (io, jwtKey, validateProxySource: (ip: string) => boolea
       }
 
       // success
+      sock._rateLimitState = createRateLimitState()
       log.verbose('%s (%s) connected from %s', sock.user.name, sock.id, sock.handshake.address)
       const tel = getServerTelemetry()
       tel.emit(SOCKET_CONNECT, {
@@ -227,6 +229,18 @@ export default function (io, jwtKey, validateProxySource: (ip: string) => boolea
         return acknowledge({
           type: SOCKET_AUTH_ERROR,
         })
+      }
+
+      // Rate limit check before handler dispatch
+      if (sock._rateLimitState) {
+        const rl = checkRateLimit(sock._rateLimitState, type)
+        if (!rl.allowed) {
+          if (rl.disconnect) {
+            log.warn('rate limit disconnect: %s (%s) action=%s', sock.user.name, sock.id, type)
+            sock.disconnect(true)
+          }
+          return
+        }
       }
 
       if (typeof handlers[type] !== 'function') {

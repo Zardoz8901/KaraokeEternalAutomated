@@ -29,6 +29,13 @@ export const SOCKET_CONNECT = 'socket_connect'
 export const SOCKET_DISCONNECT = 'socket_disconnect'
 export const SOCKET_RECONNECT = 'socket_reconnect'
 
+// Video lifecycle pillar
+export const VIDEO_INIT_START = 'video_init_start'
+export const VIDEO_INIT_BOUND = 'video_init_bound'
+export const VIDEO_INIT_FRAME_READY = 'video_init_frame_ready'
+export const VIDEO_INIT_ERROR = 'video_init_error'
+export const VIDEO_PROXY_RESPONSE = 'video_proxy_response'
+
 // --- Types ---
 
 export interface TelemetryEvent {
@@ -124,6 +131,11 @@ export const RATE_LIMITS: Record<string, number> = {
   [HYDRA_PRESET_EVAL_ERROR]: 2000,
   [HYDRA_FALLBACK_APPLIED]: 2000,
   [SOCKET_RECONNECT]: 5000,
+  [VIDEO_INIT_START]: 1000,
+  [VIDEO_INIT_BOUND]: 1000,
+  [VIDEO_INIT_FRAME_READY]: 1000,
+  [VIDEO_INIT_ERROR]: 2000,
+  [VIDEO_PROXY_RESPONSE]: 1000,
 }
 
 /**

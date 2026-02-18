@@ -1,6 +1,14 @@
 import Rooms from '../Rooms/Rooms.js'
 import { resolveRoomAccessPrefs } from '../../shared/roomAccess.js'
 import getLogger from '../lib/Log.js'
+import {
+  isValidPayloadSize,
+  isValidCameraOffer,
+  isValidCameraAnswer,
+  isValidCameraIce,
+  isValidCameraStop,
+  isValidHydraCode,
+} from '../lib/payloadGuards.js'
 
 import {
   PLAYER_CMD_NEXT,
@@ -255,7 +263,8 @@ const ACTION_HANDLERS = {
     })
   },
   [VISUALIZER_HYDRA_CODE_REQ]: async (sock, { payload }) => {
-    const payloadObject = payload && typeof payload === 'object' ? payload as Record<string, unknown> : undefined
+    if (!isValidHydraCode(payload) || !isValidPayloadSize(payload)) return
+    const payloadObject = payload as Record<string, unknown>
     if (!(await canSendHydraCode(sock, payloadObject))) return
 
     sock.server.to(Rooms.prefix(sock.user.roomId)).emit('action', {
@@ -264,6 +273,7 @@ const ACTION_HANDLERS = {
     })
   },
   [VISUALIZER_STATE_SYNC_REQ]: async (sock, { payload }) => {
+    if (!isValidPayloadSize(payload)) return
     if (!(await canSendVisualizer(sock))) return
 
     sock.server.to(Rooms.prefix(sock.user.roomId)).emit('action', {
@@ -272,6 +282,7 @@ const ACTION_HANDLERS = {
     })
   },
   [CAMERA_OFFER_REQ]: async (sock, { payload }) => {
+    if (!isValidCameraOffer(payload) || !isValidPayloadSize(payload)) return
     if (!(await canRelayCamera(sock))) {
       log.verbose('camera relay denied %s room=%s socket=%s', CAMERA_OFFER_REQ, sock.user?.roomId, sock.id)
       return
@@ -285,6 +296,7 @@ const ACTION_HANDLERS = {
     emitCameraRelay(sock, CAMERA_OFFER, payload)
   },
   [CAMERA_ANSWER_REQ]: async (sock, { payload }) => {
+    if (!isValidCameraAnswer(payload) || !isValidPayloadSize(payload)) return
     if (!(await canRelayCamera(sock))) {
       log.verbose('camera relay denied %s room=%s socket=%s', CAMERA_ANSWER_REQ, sock.user?.roomId, sock.id)
       return
@@ -293,6 +305,7 @@ const ACTION_HANDLERS = {
     emitCameraRelay(sock, CAMERA_ANSWER, payload)
   },
   [CAMERA_ICE_REQ]: async (sock, { payload }) => {
+    if (!isValidCameraIce(payload) || !isValidPayloadSize(payload)) return
     if (!(await canRelayCamera(sock))) {
       log.verbose('camera relay denied %s room=%s socket=%s', CAMERA_ICE_REQ, sock.user?.roomId, sock.id)
       return
@@ -301,6 +314,7 @@ const ACTION_HANDLERS = {
     emitCameraRelay(sock, CAMERA_ICE, payload)
   },
   [CAMERA_STOP_REQ]: async (sock, { payload }) => {
+    if (!isValidCameraStop(payload) || !isValidPayloadSize(payload)) return
     if (!(await canRelayCamera(sock))) {
       log.verbose('camera relay denied %s room=%s socket=%s', CAMERA_STOP_REQ, sock.user?.roomId, sock.id)
       return

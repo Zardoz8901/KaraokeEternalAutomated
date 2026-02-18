@@ -7,6 +7,14 @@ type HydraExternalSource = {
   dynamic?: boolean
 }
 
+import telemetry from 'lib/telemetry'
+import {
+  VIDEO_INIT_START,
+  VIDEO_INIT_BOUND,
+  VIDEO_INIT_FRAME_READY,
+  VIDEO_INIT_ERROR,
+} from 'shared/telemetry'
+
 export const HYDRA_VIDEO_READY_EVENT = 'hydra:video-ready'
 
 /**
@@ -85,6 +93,7 @@ interface SourceState {
   pendingVideo: HTMLVideoElement | null
   seekTimer: ReturnType<typeof setTimeout> | null
   pollTimer: ReturnType<typeof setInterval> | null
+  initStartTime: number
 }
 
 /** Per-source-instance state, scoped to the hydra external source object. */
@@ -93,7 +102,7 @@ const stateBySource = new WeakMap<object, SourceState>()
 function getState (ext: object): SourceState {
   let s = stateBySource.get(ext)
   if (!s) {
-    s = { epoch: 0, pendingVideo: null, seekTimer: null, pollTimer: null }
+    s = { epoch: 0, pendingVideo: null, seekTimer: null, pollTimer: null, initStartTime: 0 }
     stateBySource.set(ext, s)
   }
   return s
@@ -173,6 +182,7 @@ export function applyVideoProxyOverride (
 
       // Bump epoch — any pending callbacks from a previous call become stale
       const epoch = ++state.epoch
+      state.initStartTime = typeof performance !== 'undefined' ? performance.now() : Date.now()
 
       // Extract custom params before spreading into regl.texture
       const startTime = params?.startTime as number | 'random' | undefined
@@ -248,6 +258,13 @@ export function applyVideoProxyOverride (
       let frameReady = false
       const hasStartTime = startTime !== undefined
 
+      telemetry.emit(VIDEO_INIT_START, {
+        source_key: src,
+        is_proxied: isProxied,
+        is_retry: isRetry,
+        has_start_time: hasStartTime,
+      })
+
       // Phase 2 signal — dispatches the event that HydraVisualizer listens to
       // for triggering a tick when paused. Centralized timer cleanup point.
       const signalFrameReady = (): void => {
@@ -257,6 +274,11 @@ export function applyVideoProxyOverride (
 
         if (state.seekTimer !== null) { clearTimeout(state.seekTimer); state.seekTimer = null }
         if (state.pollTimer !== null) { clearInterval(state.pollTimer); state.pollTimer = null }
+
+        telemetry.emit(VIDEO_INIT_FRAME_READY, {
+          source_key: src,
+          time_to_ready_ms: Math.round((typeof performance !== 'undefined' ? performance.now() : Date.now()) - state.initStartTime),
+        })
 
         const target = globals as unknown as EventTarget
         if (typeof target.dispatchEvent === 'function') {
@@ -307,6 +329,14 @@ export function applyVideoProxyOverride (
           }
         }
         this.dynamic = true
+
+        telemetry.emit(VIDEO_INIT_BOUND, {
+          source_key: src,
+          time_to_bind_ms: Math.round((typeof performance !== 'undefined' ? performance.now() : Date.now()) - state.initStartTime),
+          video_width: vid.videoWidth,
+          video_height: vid.videoHeight,
+          ready_state: vid.readyState,
+        })
 
         // If already frame-ready, dispatch event immediately
         if (vid.readyState >= 2) {
@@ -405,6 +435,14 @@ export function applyVideoProxyOverride (
           if (state.epoch !== epoch) return // stale
           if (frameReady) return // already working
 
+          telemetry.emit(VIDEO_INIT_ERROR, {
+            source_key: src,
+            is_proxied: isProxied,
+            time_to_error_ms: Math.round((typeof performance !== 'undefined' ? performance.now() : Date.now()) - state.initStartTime),
+            error_code: vid.error?.code ?? -1,
+            detected_by: 'event',
+          })
+
           if (isVideoProxyDebugEnabled()) {
             console.debug('[VideoProxy] video error — attempting retry', {
               url: finalUrl,
@@ -450,6 +488,13 @@ export function applyVideoProxyOverride (
         // If not already a retry, trigger the flip-strategy retry once.
         if (vid.error) {
           if (state.pollTimer !== null) { clearInterval(state.pollTimer); state.pollTimer = null }
+          telemetry.emit(VIDEO_INIT_ERROR, {
+            source_key: src,
+            is_proxied: isProxied,
+            time_to_error_ms: Math.round((typeof performance !== 'undefined' ? performance.now() : Date.now()) - state.initStartTime),
+            error_code: vid.error?.code ?? -1,
+            detected_by: 'poll',
+          })
           if (!isRetry && /^https?:\/\//i.test(url) && !frameReady && state.epoch === epoch) {
             if (isVideoProxyDebugEnabled()) {
               console.debug('[VideoProxy] poll detected video error — attempting retry', {

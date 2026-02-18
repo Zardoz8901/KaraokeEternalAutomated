@@ -106,3 +106,23 @@ describe('ServerTelemetry', () => {
     })).not.toThrow()
   })
 })
+
+describe('Video telemetry constants', () => {
+  it('exports all video event constants', async () => {
+    const telemetry = await import('../../shared/telemetry.js')
+    expect(telemetry.VIDEO_INIT_START).toBe('video_init_start')
+    expect(telemetry.VIDEO_INIT_BOUND).toBe('video_init_bound')
+    expect(telemetry.VIDEO_INIT_FRAME_READY).toBe('video_init_frame_ready')
+    expect(telemetry.VIDEO_INIT_ERROR).toBe('video_init_error')
+    expect(telemetry.VIDEO_PROXY_RESPONSE).toBe('video_proxy_response')
+  })
+
+  it('has rate limits for video init events', async () => {
+    const telemetry = await import('../../shared/telemetry.js')
+    expect(telemetry.RATE_LIMITS[telemetry.VIDEO_INIT_START]).toBeGreaterThan(0)
+    expect(telemetry.RATE_LIMITS[telemetry.VIDEO_INIT_BOUND]).toBeGreaterThan(0)
+    expect(telemetry.RATE_LIMITS[telemetry.VIDEO_INIT_FRAME_READY]).toBeGreaterThan(0)
+    expect(telemetry.RATE_LIMITS[telemetry.VIDEO_INIT_ERROR]).toBeGreaterThan(0)
+    expect(telemetry.RATE_LIMITS[telemetry.VIDEO_PROXY_RESPONSE]).toBeGreaterThan(0)
+  })
+})

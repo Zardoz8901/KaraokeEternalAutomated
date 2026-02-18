@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  CAMERA_ANSWER_REQ,
+  CAMERA_ICE_REQ,
   CAMERA_OFFER,
   CAMERA_OFFER_REQ,
   CAMERA_STOP,
@@ -8,6 +10,7 @@ import {
   PLAYER_REQ_NEXT,
   VISUALIZER_HYDRA_CODE,
   VISUALIZER_HYDRA_CODE_REQ,
+  VISUALIZER_STATE_SYNC_REQ,
 } from '../../shared/actionTypes.js'
 
 vi.mock('../Rooms/Rooms.js', () => ({
@@ -230,7 +233,7 @@ describe('Player socket permissions', () => {
 
     const { sock, othersEmit, socketTo } = createMockSocket({ userId: 301, roomId: 88, isAdmin: false })
 
-    await handlers[CAMERA_OFFER_REQ](sock, { payload: { sdp: 'offer' } })
+    await handlers[CAMERA_OFFER_REQ](sock, { payload: { sdp: 'offer', type: 'offer' } })
 
     expect(othersEmit).not.toHaveBeenCalled()
     expect(socketTo).not.toHaveBeenCalled()
@@ -251,11 +254,11 @@ describe('Player socket permissions', () => {
 
     const { sock, othersEmit, broadcastEmit, socketTo, serverTo } = createMockSocket({ userId: 301, roomId: 88, isAdmin: false })
 
-    await handlers[CAMERA_OFFER_REQ](sock, { payload: { sdp: 'offer' } })
+    await handlers[CAMERA_OFFER_REQ](sock, { payload: { sdp: 'offer', type: 'offer' } })
 
     expect(othersEmit).toHaveBeenCalledWith('action', {
       type: CAMERA_OFFER,
-      payload: { sdp: 'offer' },
+      payload: { sdp: 'offer', type: 'offer' },
     })
     expect(socketTo).toHaveBeenCalledWith('ROOM_ID_88')
     expect(serverTo).not.toHaveBeenCalled()
@@ -277,11 +280,11 @@ describe('Player socket permissions', () => {
 
     const { sock, othersEmit, broadcastEmit } = createMockSocket({ userId: 301, roomId: 88, isAdmin: false })
 
-    await handlers[CAMERA_OFFER_REQ](sock, { payload: { sdp: 'offer' } })
+    await handlers[CAMERA_OFFER_REQ](sock, { payload: { sdp: 'offer', type: 'offer' } })
 
     expect(othersEmit).toHaveBeenCalledWith('action', {
       type: CAMERA_OFFER,
-      payload: { sdp: 'offer' },
+      payload: { sdp: 'offer', type: 'offer' },
     })
     expect(broadcastEmit).not.toHaveBeenCalled()
   })
@@ -309,7 +312,7 @@ describe('Camera publisher disconnect cleanup', () => {
     const { sock } = createMockSocket({ userId: 50, roomId: 10, isAdmin: false }, 'pub-sock')
 
     // Publisher sends offer → tracked
-    await handlers[CAMERA_OFFER_REQ](sock, { payload: { sdp: 'offer' } })
+    await handlers[CAMERA_OFFER_REQ](sock, { payload: { sdp: 'offer', type: 'offer' } })
 
     // Simulate disconnect
     const { io, emit } = createMockIo()
@@ -323,7 +326,7 @@ describe('Camera publisher disconnect cleanup', () => {
     const { sock } = createMockSocket({ userId: 50, roomId: 10, isAdmin: false }, 'pub-sock')
 
     // Publisher sends offer → tracked
-    await handlers[CAMERA_OFFER_REQ](sock, { payload: { sdp: 'offer' } })
+    await handlers[CAMERA_OFFER_REQ](sock, { payload: { sdp: 'offer', type: 'offer' } })
 
     // Different socket disconnects
     const { io, emit } = createMockIo()
@@ -337,7 +340,7 @@ describe('Camera publisher disconnect cleanup', () => {
     const { sock } = createMockSocket({ userId: 50, roomId: 10, isAdmin: false }, 'pub-sock')
 
     // Publisher sends offer → tracked
-    await handlers[CAMERA_OFFER_REQ](sock, { payload: { sdp: 'offer' } })
+    await handlers[CAMERA_OFFER_REQ](sock, { payload: { sdp: 'offer', type: 'offer' } })
 
     // Publisher sends explicit stop
     await handlers[CAMERA_STOP_REQ](sock, { payload: {} })
@@ -355,10 +358,10 @@ describe('Camera publisher disconnect cleanup', () => {
     const { sock: sock2 } = createMockSocket({ userId: 60, roomId: 20, isAdmin: false }, 'pub-2')
 
     // First publisher sends offer
-    await handlers[CAMERA_OFFER_REQ](sock1, { payload: { sdp: 'offer-1' } })
+    await handlers[CAMERA_OFFER_REQ](sock1, { payload: { sdp: 'offer-1', type: 'offer' } })
 
     // Second publisher takes over
-    await handlers[CAMERA_OFFER_REQ](sock2, { payload: { sdp: 'offer-2' } })
+    await handlers[CAMERA_OFFER_REQ](sock2, { payload: { sdp: 'offer-2', type: 'offer' } })
 
     // Old publisher disconnects → should NOT trigger CAMERA_STOP (replaced)
     const { io: io1, emit: emit1 } = createMockIo()
@@ -387,8 +390,8 @@ describe('Camera publisher disconnect cleanup', () => {
     const { sock: sockB } = createMockSocket({ userId: 60, roomId: 40, isAdmin: false }, 'pub-b')
 
     // Publishers in different rooms
-    await handlers[CAMERA_OFFER_REQ](sockA, { payload: { sdp: 'offer-a' } })
-    await handlers[CAMERA_OFFER_REQ](sockB, { payload: { sdp: 'offer-b' } })
+    await handlers[CAMERA_OFFER_REQ](sockA, { payload: { sdp: 'offer-a', type: 'offer' } })
+    await handlers[CAMERA_OFFER_REQ](sockB, { payload: { sdp: 'offer-b', type: 'offer' } })
 
     // Disconnect publisher from room 30 → only room 30 gets CAMERA_STOP
     const { io, emit, to } = createMockIo()
@@ -403,5 +406,99 @@ describe('Camera publisher disconnect cleanup', () => {
 
     expect(to2).toHaveBeenCalledWith('ROOM_ID_40')
     expect(emit2).toHaveBeenCalledWith('action', { type: CAMERA_STOP })
+  })
+})
+
+describe('Payload validation', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  function allowAll (roomId: number) {
+    vi.mocked(Rooms.get).mockResolvedValue({
+      result: [roomId],
+      entities: {
+        [roomId]: {
+          ownerId: 999,
+          prefs: {
+            allowGuestCameraRelay: true,
+            allowRoomCollaboratorsToSendVisualizer: true,
+          },
+        },
+      },
+    })
+  }
+
+  function createAdminSocket (roomId = 88) {
+    return createMockSocket({ userId: 1, roomId, isAdmin: true })
+  }
+
+  // --- CAMERA_OFFER_REQ ---
+
+  it('CAMERA_OFFER_REQ rejects non-object payload', async () => {
+    const { sock, othersEmit } = createAdminSocket()
+    await handlers[CAMERA_OFFER_REQ](sock, { payload: 'not-an-object' })
+    expect(othersEmit).not.toHaveBeenCalled()
+  })
+
+  it('CAMERA_OFFER_REQ rejects payload missing type field', async () => {
+    const { sock, othersEmit } = createAdminSocket()
+    await handlers[CAMERA_OFFER_REQ](sock, { payload: { sdp: 'v=0...' } })
+    expect(othersEmit).not.toHaveBeenCalled()
+  })
+
+  it('CAMERA_OFFER_REQ rejects oversized payload', async () => {
+    const { sock, othersEmit } = createAdminSocket()
+    await handlers[CAMERA_OFFER_REQ](sock, { payload: { sdp: 'x'.repeat(100_000), type: 'offer' } })
+    expect(othersEmit).not.toHaveBeenCalled()
+  })
+
+  // --- CAMERA_ANSWER_REQ ---
+
+  it('CAMERA_ANSWER_REQ rejects payload missing type: "answer"', async () => {
+    const { sock, othersEmit } = createAdminSocket()
+    await handlers[CAMERA_ANSWER_REQ](sock, { payload: { sdp: 'v=0...' } })
+    expect(othersEmit).not.toHaveBeenCalled()
+  })
+
+  // --- CAMERA_ICE_REQ ---
+
+  it('CAMERA_ICE_REQ rejects non-object payload', async () => {
+    const { sock, othersEmit } = createAdminSocket()
+    await handlers[CAMERA_ICE_REQ](sock, { payload: null })
+    expect(othersEmit).not.toHaveBeenCalled()
+  })
+
+  // --- CAMERA_STOP_REQ ---
+
+  it('CAMERA_STOP_REQ rejects non-object payload', async () => {
+    const { sock, othersEmit } = createAdminSocket()
+    await handlers[CAMERA_STOP_REQ](sock, { payload: 'stop' })
+    expect(othersEmit).not.toHaveBeenCalled()
+  })
+
+  // --- VISUALIZER_HYDRA_CODE_REQ ---
+
+  it('VISUALIZER_HYDRA_CODE_REQ rejects payload without code string', async () => {
+    allowAll(88)
+    const { sock, broadcastEmit } = createMockSocket({ userId: 101, roomId: 88, isAdmin: false })
+    await handlers[VISUALIZER_HYDRA_CODE_REQ](sock, { payload: { notCode: true } })
+    expect(broadcastEmit).not.toHaveBeenCalled()
+  })
+
+  it('VISUALIZER_HYDRA_CODE_REQ rejects oversized payload', async () => {
+    allowAll(88)
+    const { sock, broadcastEmit } = createMockSocket({ userId: 101, roomId: 88, isAdmin: false })
+    await handlers[VISUALIZER_HYDRA_CODE_REQ](sock, { payload: { code: 'x'.repeat(100_000) } })
+    expect(broadcastEmit).not.toHaveBeenCalled()
+  })
+
+  // --- VISUALIZER_STATE_SYNC_REQ ---
+
+  it('VISUALIZER_STATE_SYNC_REQ rejects oversized payload', async () => {
+    allowAll(88)
+    const { sock, broadcastEmit } = createMockSocket({ userId: 101, roomId: 88, isAdmin: false })
+    await handlers[VISUALIZER_STATE_SYNC_REQ](sock, { payload: { data: 'x'.repeat(100_000) } })
+    expect(broadcastEmit).not.toHaveBeenCalled()
   })
 })

@@ -1,6 +1,8 @@
 import { Readable } from 'stream'
 import KoaRouter from '@koa/router'
 import getLogger from '../lib/Log.js'
+import { getServerTelemetry } from '../lib/Telemetry.js'
+import { VIDEO_PROXY_RESPONSE } from '../../shared/telemetry.js'
 import { getVideoCacheDir, isCached, teeToCache, serveCachedFile, startBackgroundDownload } from './cache.js'
 
 const log = getLogger('VideoProxy')
@@ -170,6 +172,14 @@ router.get('/', async (ctx) => {
       })
     } catch (err) {
       if (connectTimer) clearTimeout(connectTimer)
+      getServerTelemetry().emit(VIDEO_PROXY_RESPONSE, {
+        status: 502,
+        fetch_ms: Date.now() - fetchStart,
+        content_type: 'unknown',
+        is_range: !!clientRange,
+        is_cache_hit: false,
+        redirects,
+      })
       ctx.throw(502, `Upstream fetch failed: ${(err as Error).message}`)
       return // unreachable but satisfies TS
     }
@@ -216,6 +226,14 @@ router.get('/', async (ctx) => {
   }
 
   if (!res.ok && res.status !== 206) {
+    getServerTelemetry().emit(VIDEO_PROXY_RESPONSE, {
+      status: res.status,
+      fetch_ms: Date.now() - fetchStart,
+      content_type: 'unknown',
+      is_range: !!clientRange,
+      is_cache_hit: false,
+      redirects,
+    })
     ctx.throw(502, `Upstream returned ${res.status}`)
     return
   }
@@ -224,6 +242,14 @@ router.get('/', async (ctx) => {
   if (!isContentTypeAllowed(contentType)) {
     // Consume body to avoid dangling connection
     await res.body?.cancel()
+    getServerTelemetry().emit(VIDEO_PROXY_RESPONSE, {
+      status: 403,
+      fetch_ms: Date.now() - fetchStart,
+      content_type: contentType ?? 'unknown',
+      is_range: !!clientRange,
+      is_cache_hit: false,
+      redirects,
+    })
     ctx.throw(403, 'Upstream content type not allowed')
     return
   }
@@ -243,6 +269,14 @@ router.get('/', async (ctx) => {
         res.headers.get('content-range') || 'none',
       )
       await res.body?.cancel()
+      getServerTelemetry().emit(VIDEO_PROXY_RESPONSE, {
+        status: 413,
+        fetch_ms: Date.now() - fetchStart,
+        content_type: contentType ?? 'unknown',
+        is_range: !!clientRange,
+        is_cache_hit: false,
+        redirects,
+      })
       ctx.throw(413, 'Upstream resource too large')
       return
     }
@@ -288,6 +322,14 @@ router.get('/', async (ctx) => {
   }
 
   const fetchMs = Date.now() - fetchStart
+  getServerTelemetry().emit(VIDEO_PROXY_RESPONSE, {
+    status: res.status,
+    fetch_ms: fetchMs,
+    content_type: contentType ?? 'unknown',
+    is_range: !!clientRange,
+    is_cache_hit: false,
+    redirects,
+  })
   log.verbose('proxy %s %s → %d %s (%sMB) [range=%s] [%dms] %s',
     ctx.method,
     requestedUrl.slice(0, 120),

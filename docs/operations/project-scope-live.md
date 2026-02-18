@@ -76,6 +76,9 @@ Source: CLAUDE.md Known Issues + security audit (2026-02-12).
 
 ## 6. Roadmap (30/60/90 Day)
 
+Execution rubric: [reliability-hardening-execution-rubric.md](reliability-hardening-execution-rubric.md)
+
+
 ### 30 days (by 2026-03-19)
 - CI gates enforced on all PRs (typecheck, unit tests, smoke E2E)
 - Telemetry foundation live: Hydra eval, socket lifecycle, auth, queue
@@ -118,6 +121,7 @@ From [reliability-release-playbook.md](reliability-release-playbook.md) section 
 
 | Date | Change |
 |------|--------|
+| 2026-02-17 | Added reliability hardening execution rubric and scoring model |
 | 2026-02-17 | Initial living scope doc created |
 
 ---
