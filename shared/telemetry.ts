@@ -37,6 +37,19 @@ export const VIDEO_INIT_FRAME_READY = 'video_init_frame_ready'
 export const VIDEO_INIT_ERROR = 'video_init_error'
 export const VIDEO_PROXY_RESPONSE = 'video_proxy_response'
 
+// Session lifecycle pillar
+export const SESSION_START = 'session_start'
+export const SESSION_ERROR = 'session_error'
+
+// Performance pillar
+export const MEMORY_HEALTH_SAMPLE = 'memory_health_sample'
+
+// Queue correlation pillar
+export const QUEUE_CMD_SENT = 'queue_cmd_sent'
+
+// Permission pillar
+export const AUTH_PERMISSION_DENIED = 'auth_permission_denied'
+
 // --- Types ---
 
 export interface TelemetryEvent {
@@ -44,8 +57,8 @@ export interface TelemetryEvent {
   v: number
   /** Event name from constants above */
   event: string
-  /** Origin of the event */
-  source: 'client' | 'server'
+  /** Origin of the event: 'client' for local, 'client-relay' for server-ingested client events */
+  source: 'client' | 'server' | 'client-relay'
   /** ISO 8601 timestamp */
   timestamp: string
   /** Per-boot (server) or per-page-load (client) UUID */
@@ -137,6 +150,11 @@ export const RATE_LIMITS: Record<string, number> = {
   [VIDEO_INIT_FRAME_READY]: 1000,
   [VIDEO_INIT_ERROR]: 2000,
   [VIDEO_PROXY_RESPONSE]: 1000,
+  [SESSION_START]: 10000,
+  [SESSION_ERROR]: 5000,
+  [MEMORY_HEALTH_SAMPLE]: 60000,
+  [QUEUE_CMD_SENT]: 500,
+  [AUTH_PERMISSION_DENIED]: 5000,
 }
 
 /**

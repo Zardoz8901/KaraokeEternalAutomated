@@ -27,20 +27,20 @@ Targets from [reliability-release-playbook.md](reliability-release-playbook.md).
 
 | Pillar | SLO | Target | Current Status |
 |--------|-----|--------|----------------|
-| Hydra | Preset load success | >= 99.5% | Instrumented (`hydra_preset_eval_success` / `_error`; no dashboard yet) |
-| Hydra | First frame p95 | <= 2.0s | Instrumented (`hydra_preset_eval_start` → `_success` delta; no dashboard yet) |
-| Hydra | Crash-free sessions | >= 99.9% | Unknown (needs session lifecycle events) |
-| Hydra | Memory growth (100 switches) | <= 150MB | Unknown (needs soak test instrumentation) |
-| Queue | Command apply success | >= 99.99% | Instrumented (`queue_cmd_ack` / `_error`; no dashboard yet) |
-| Queue | Duplicate/lost commands | 0 | Unknown |
-| Queue | Reconnect p95 | <= 2.0s | Instrumented (`socket_reconnect`; no dashboard yet) |
-| Auth | Login success | >= 99.9% | Instrumented (`auth_login_success` / `auth_session_check_failure`; no dashboard yet) |
-| Auth | Token refresh success | >= 99.95% | Unknown |
-| Auth | Role/permission incidents | 0 | Unknown |
-| Streaming | Video init success | >= 99% | Instrumented (`video_init_start` → `video_init_frame_ready`; no dashboard yet) |
-| Streaming | Video init (Firefox) | >= 97% now, 99% target | Unknown |
-| Streaming | First frame p95 | <= 3.0s | Unknown |
-| Streaming | Proxy 413 rate | < 0.1% | Instrumented (`video_proxy_response` status field; no dashboard yet) |
+| Hydra | Preset load success | >= 99.5% | Measurable (`hydra_preset_eval_success` / `_error` via client-relay; no dashboard yet) |
+| Hydra | First frame p95 | <= 2.0s | Measurable (`hydra_preset_eval_success.duration_ms` via client-relay; no dashboard yet) |
+| Hydra | Crash-free sessions | >= 99.9% | Measurable (`session_start` / `session_error` via client-relay) |
+| Hydra | Memory growth (100 switches) | <= 150MB | Instrumented — needs soak (`memory_health_sample` via client-relay; needs extended data) |
+| Queue | Command apply success | >= 99.99% | Measurable (`queue_cmd_ack` / `_error` server-side; no dashboard yet) |
+| Queue | Duplicate/lost commands | 0 | Instrumented — needs soak (`queue_cmd_sent` with `cmd_id` via client-relay; needs correlation data) |
+| Queue | Reconnect p95 | <= 2.0s | Measurable (`socket_connect.reconnect_duration_ms` via client-relay) |
+| Auth | Login success | >= 99.9% | Measurable (`auth_guest_join_success` / `_failure` server-side + `auth_login_success` client-relay) |
+| Auth | Token refresh success | >= 99.95% | Blocked (no refresh mechanism exists; needs formal SLO definition review) |
+| Auth | Role/permission incidents | 0 | Measurable (`auth_permission_denied` server-side on 403 responses) |
+| Streaming | Video init success | >= 99% | Measurable (`video_init_frame_ready` / `_error` via client-relay) |
+| Streaming | Video init (Firefox) | >= 97% now, 99% target | Measurable (`video_init_frame_ready` / `_error` filtered by browser field) |
+| Streaming | First frame p95 | <= 3.0s | Measurable (`video_init_frame_ready.time_to_ready_ms` via client-relay) |
+| Streaming | Proxy 413 rate | < 0.1% | Measurable (`video_proxy_response` status field server-side; no dashboard yet) |
 
 ---
 
@@ -49,7 +49,7 @@ Targets from [reliability-release-playbook.md](reliability-release-playbook.md).
 | Epic | Status | Risk | Target |
 |------|--------|------|--------|
 | CI baseline (typecheck + test) | Complete | — | 2026-02-19 |
-| Structured telemetry foundation | In progress | Medium | 2026-02-21 |
+| Structured telemetry foundation | Complete | — | 2026-02-19 |
 | Playwright smoke E2E | In progress | Medium | 2026-02-24 |
 | Payload validation (H-1, H-2) | Complete | — | 2026-02-18 |
 | Socket rate limiting (KI-4) | Complete | — | 2026-02-18 |
@@ -127,6 +127,7 @@ From [reliability-release-playbook.md](reliability-release-playbook.md) section 
 
 | Date | Change |
 |------|--------|
+| 2026-02-19 | Client telemetry sink (POST /api/telemetry/ingest) operational; 5 new event types; SLO pipeline extended to 13 computed ratios; 12/15 SLOs now measurable; validation window runbook created |
 | 2026-02-19 | G4 flake rate proven (0.0%/20 runs); SLO evidence pipeline scripts added; all Phase 1 gates (G1-G4) pass |
 | 2026-02-18 | Week 3 scorecard (68.75/100); rollback drill completed; SLO dashboard wiring plan created; SLO status table updated with instrumented pillars |
 | 2026-02-18 | Closed KI-1 (admin demotion parser), KI-2 (bootstrap retry/backoff), M-1 (SSRF denylist completion); all Phase 1 reliability blockers now closed |

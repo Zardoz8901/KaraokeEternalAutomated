@@ -12,6 +12,7 @@ docs/analysis/*
 !docs/analysis/g4_flake_rate_proof_*.md
 !docs/analysis/slo_evidence_summary_*.md
 !docs/analysis/phase1_exit_readiness_*.md
+!docs/analysis/validation_window_runbook_*.md
 node_modules/
 .claude/
 

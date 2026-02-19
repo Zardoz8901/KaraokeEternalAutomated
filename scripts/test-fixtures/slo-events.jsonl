@@ -1,0 +1,72 @@
+{"v":1,"event":"queue_cmd_ack","source":"server","timestamp":"2026-02-19T10:00:00Z","session_id":"srv-001","cmd_type":"server/QUEUE_ADD"}
+{"v":1,"event":"queue_cmd_ack","source":"server","timestamp":"2026-02-19T10:00:01Z","session_id":"srv-001","cmd_type":"server/QUEUE_MOVE"}
+{"v":1,"event":"queue_cmd_ack","source":"server","timestamp":"2026-02-19T10:00:02Z","session_id":"srv-001","cmd_type":"server/QUEUE_REMOVE"}
+{"v":1,"event":"queue_cmd_ack","source":"server","timestamp":"2026-02-19T10:00:03Z","session_id":"srv-001","cmd_type":"server/QUEUE_ADD"}
+{"v":1,"event":"queue_cmd_ack","source":"server","timestamp":"2026-02-19T10:00:04Z","session_id":"srv-001","cmd_type":"server/QUEUE_ADD"}
+{"v":1,"event":"queue_cmd_error","source":"server","timestamp":"2026-02-19T10:00:05Z","session_id":"srv-001","cmd_type":"server/QUEUE_ADD","error":"room closed"}
+{"v":1,"event":"hydra_preset_eval_success","source":"client-relay","timestamp":"2026-02-19T10:01:00Z","session_id":"cli-001","duration_ms":150}
+{"v":1,"event":"hydra_preset_eval_success","source":"client-relay","timestamp":"2026-02-19T10:01:01Z","session_id":"cli-001","duration_ms":200}
+{"v":1,"event":"hydra_preset_eval_success","source":"client-relay","timestamp":"2026-02-19T10:01:02Z","session_id":"cli-001","duration_ms":300}
+{"v":1,"event":"hydra_preset_eval_success","source":"client-relay","timestamp":"2026-02-19T10:01:03Z","session_id":"cli-001","duration_ms":450}
+{"v":1,"event":"hydra_preset_eval_success","source":"client-relay","timestamp":"2026-02-19T10:01:04Z","session_id":"cli-001","duration_ms":180}
+{"v":1,"event":"hydra_preset_eval_success","source":"client-relay","timestamp":"2026-02-19T10:01:05Z","session_id":"cli-001","duration_ms":220}
+{"v":1,"event":"hydra_preset_eval_success","source":"client-relay","timestamp":"2026-02-19T10:01:06Z","session_id":"cli-001","duration_ms":190}
+{"v":1,"event":"hydra_preset_eval_success","source":"client-relay","timestamp":"2026-02-19T10:01:07Z","session_id":"cli-001","duration_ms":1500}
+{"v":1,"event":"hydra_preset_eval_success","source":"client-relay","timestamp":"2026-02-19T10:01:08Z","session_id":"cli-001","duration_ms":170}
+{"v":1,"event":"hydra_preset_eval_success","source":"client-relay","timestamp":"2026-02-19T10:01:09Z","session_id":"cli-001","duration_ms":160}
+{"v":1,"event":"hydra_preset_eval_success","source":"client-relay","timestamp":"2026-02-19T10:01:10Z","session_id":"cli-002","duration_ms":250}
+{"v":1,"event":"hydra_preset_eval_success","source":"client-relay","timestamp":"2026-02-19T10:01:11Z","session_id":"cli-002","duration_ms":280}
+{"v":1,"event":"hydra_preset_eval_success","source":"client-relay","timestamp":"2026-02-19T10:01:12Z","session_id":"cli-002","duration_ms":310}
+{"v":1,"event":"hydra_preset_eval_success","source":"client-relay","timestamp":"2026-02-19T10:01:13Z","session_id":"cli-002","duration_ms":180}
+{"v":1,"event":"hydra_preset_eval_success","source":"client-relay","timestamp":"2026-02-19T10:01:14Z","session_id":"cli-002","duration_ms":200}
+{"v":1,"event":"hydra_preset_eval_success","source":"client-relay","timestamp":"2026-02-19T10:01:15Z","session_id":"cli-002","duration_ms":190}
+{"v":1,"event":"hydra_preset_eval_success","source":"client-relay","timestamp":"2026-02-19T10:01:16Z","session_id":"cli-002","duration_ms":1800}
+{"v":1,"event":"hydra_preset_eval_success","source":"client-relay","timestamp":"2026-02-19T10:01:17Z","session_id":"cli-002","duration_ms":160}
+{"v":1,"event":"hydra_preset_eval_success","source":"client-relay","timestamp":"2026-02-19T10:01:18Z","session_id":"cli-002","duration_ms":170}
+{"v":1,"event":"hydra_preset_eval_success","source":"client-relay","timestamp":"2026-02-19T10:01:19Z","session_id":"cli-002","duration_ms":350}
+{"v":1,"event":"hydra_preset_eval_error","source":"client-relay","timestamp":"2026-02-19T10:01:20Z","session_id":"cli-001","error":"ReferenceError: foo is not defined"}
+{"v":1,"event":"video_init_frame_ready","source":"client-relay","timestamp":"2026-02-19T10:02:00Z","session_id":"cli-001","time_to_ready_ms":800,"browser":"Mozilla/5.0 Chrome/120"}
+{"v":1,"event":"video_init_frame_ready","source":"client-relay","timestamp":"2026-02-19T10:02:01Z","session_id":"cli-001","time_to_ready_ms":1200,"browser":"Mozilla/5.0 Chrome/120"}
+{"v":1,"event":"video_init_frame_ready","source":"client-relay","timestamp":"2026-02-19T10:02:02Z","session_id":"cli-001","time_to_ready_ms":900,"browser":"Mozilla/5.0 Chrome/120"}
+{"v":1,"event":"video_init_frame_ready","source":"client-relay","timestamp":"2026-02-19T10:02:03Z","session_id":"cli-001","time_to_ready_ms":2500,"browser":"Mozilla/5.0 Chrome/120"}
+{"v":1,"event":"video_init_frame_ready","source":"client-relay","timestamp":"2026-02-19T10:02:04Z","session_id":"cli-001","time_to_ready_ms":700,"browser":"Mozilla/5.0 Chrome/120"}
+{"v":1,"event":"video_init_frame_ready","source":"client-relay","timestamp":"2026-02-19T10:02:05Z","session_id":"cli-002","time_to_ready_ms":1500,"browser":"Mozilla/5.0 Firefox/121"}
+{"v":1,"event":"video_init_frame_ready","source":"client-relay","timestamp":"2026-02-19T10:02:06Z","session_id":"cli-002","time_to_ready_ms":1800,"browser":"Mozilla/5.0 Firefox/121"}
+{"v":1,"event":"video_init_frame_ready","source":"client-relay","timestamp":"2026-02-19T10:02:07Z","session_id":"cli-002","time_to_ready_ms":2200,"browser":"Mozilla/5.0 Firefox/121"}
+{"v":1,"event":"video_init_frame_ready","source":"client-relay","timestamp":"2026-02-19T10:02:08Z","session_id":"cli-002","time_to_ready_ms":1100,"browser":"Mozilla/5.0 Firefox/121"}
+{"v":1,"event":"video_init_frame_ready","source":"client-relay","timestamp":"2026-02-19T10:02:09Z","session_id":"cli-002","time_to_ready_ms":1300,"browser":"Mozilla/5.0 Firefox/121"}
+{"v":1,"event":"video_init_error","source":"client-relay","timestamp":"2026-02-19T10:02:10Z","session_id":"cli-003","error":"MediaError: format not supported","browser":"Mozilla/5.0 Firefox/121"}
+{"v":1,"event":"video_init_error","source":"client-relay","timestamp":"2026-02-19T10:02:11Z","session_id":"cli-001","error":"Network timeout","browser":"Mozilla/5.0 Chrome/120"}
+{"v":1,"event":"video_proxy_response","source":"server","timestamp":"2026-02-19T10:03:00Z","session_id":"srv-001","status":200}
+{"v":1,"event":"video_proxy_response","source":"server","timestamp":"2026-02-19T10:03:01Z","session_id":"srv-001","status":200}
+{"v":1,"event":"video_proxy_response","source":"server","timestamp":"2026-02-19T10:03:02Z","session_id":"srv-001","status":200}
+{"v":1,"event":"video_proxy_response","source":"server","timestamp":"2026-02-19T10:03:03Z","session_id":"srv-001","status":413}
+{"v":1,"event":"video_proxy_response","source":"server","timestamp":"2026-02-19T10:03:04Z","session_id":"srv-001","status":200}
+{"v":1,"event":"auth_guest_join_success","source":"server","timestamp":"2026-02-19T10:04:00Z","session_id":"srv-001","room_id":1,"user_id":10}
+{"v":1,"event":"auth_guest_join_success","source":"server","timestamp":"2026-02-19T10:04:01Z","session_id":"srv-001","room_id":1,"user_id":11}
+{"v":1,"event":"auth_guest_join_success","source":"server","timestamp":"2026-02-19T10:04:02Z","session_id":"srv-001","room_id":2,"user_id":12}
+{"v":1,"event":"auth_guest_join_failure","source":"server","timestamp":"2026-02-19T10:04:03Z","session_id":"srv-001","room_id":1}
+{"v":1,"event":"socket_connect","source":"client-relay","timestamp":"2026-02-19T10:05:00Z","session_id":"cli-001","transport":"websocket"}
+{"v":1,"event":"socket_connect","source":"client-relay","timestamp":"2026-02-19T10:05:01Z","session_id":"cli-002","transport":"websocket"}
+{"v":1,"event":"socket_connect","source":"client-relay","timestamp":"2026-02-19T10:05:02Z","session_id":"cli-001","transport":"websocket","reconnect_duration_ms":850}
+{"v":1,"event":"socket_connect","source":"client-relay","timestamp":"2026-02-19T10:05:03Z","session_id":"cli-002","transport":"websocket","reconnect_duration_ms":1200}
+{"v":1,"event":"socket_connect","source":"client-relay","timestamp":"2026-02-19T10:05:04Z","session_id":"cli-003","transport":"polling","reconnect_duration_ms":3500}
+{"v":1,"event":"socket_connect","source":"client-relay","timestamp":"2026-02-19T10:05:05Z","session_id":"cli-001","transport":"websocket","reconnect_duration_ms":600}
+{"v":1,"event":"session_start","source":"client-relay","timestamp":"2026-02-19T10:06:00Z","session_id":"cli-001"}
+{"v":1,"event":"session_start","source":"client-relay","timestamp":"2026-02-19T10:06:01Z","session_id":"cli-002"}
+{"v":1,"event":"session_start","source":"client-relay","timestamp":"2026-02-19T10:06:02Z","session_id":"cli-003"}
+{"v":1,"event":"session_start","source":"client-relay","timestamp":"2026-02-19T10:06:03Z","session_id":"cli-004"}
+{"v":1,"event":"session_start","source":"client-relay","timestamp":"2026-02-19T10:06:04Z","session_id":"cli-005"}
+{"v":1,"event":"session_error","source":"client-relay","timestamp":"2026-02-19T10:06:10Z","session_id":"cli-003","error_type":"uncaught","message":"Cannot read property of undefined"}
+{"v":1,"event":"queue_cmd_sent","source":"client-relay","timestamp":"2026-02-19T10:07:00Z","session_id":"cli-001","cmd_type":"server/QUEUE_ADD","cmd_id":"cmd-001"}
+{"v":1,"event":"queue_cmd_sent","source":"client-relay","timestamp":"2026-02-19T10:07:01Z","session_id":"cli-001","cmd_type":"server/QUEUE_MOVE","cmd_id":"cmd-002"}
+{"v":1,"event":"queue_cmd_sent","source":"client-relay","timestamp":"2026-02-19T10:07:02Z","session_id":"cli-001","cmd_type":"server/QUEUE_REMOVE","cmd_id":"cmd-003"}
+{"v":1,"event":"queue_cmd_sent","source":"client-relay","timestamp":"2026-02-19T10:07:03Z","session_id":"cli-002","cmd_type":"server/QUEUE_ADD","cmd_id":"cmd-004"}
+{"v":1,"event":"queue_cmd_sent","source":"client-relay","timestamp":"2026-02-19T10:07:04Z","session_id":"cli-002","cmd_type":"server/QUEUE_ADD","cmd_id":"cmd-005"}
+{"v":1,"event":"queue_cmd_sent","source":"client-relay","timestamp":"2026-02-19T10:07:05Z","session_id":"cli-002","cmd_type":"server/QUEUE_ADD","cmd_id":"cmd-006"}
+{"v":1,"event":"memory_health_sample","source":"client-relay","timestamp":"2026-02-19T10:08:00Z","session_id":"cli-001","used_js_heap_mb":45,"total_js_heap_mb":80,"heap_limit_mb":2048}
+{"v":1,"event":"memory_health_sample","source":"client-relay","timestamp":"2026-02-19T10:08:01Z","session_id":"cli-001","used_js_heap_mb":52,"total_js_heap_mb":85,"heap_limit_mb":2048}
+{"v":1,"event":"memory_health_sample","source":"client-relay","timestamp":"2026-02-19T10:08:02Z","session_id":"cli-002","used_js_heap_mb":38,"total_js_heap_mb":75,"heap_limit_mb":2048}
+{"v":1,"event":"memory_health_sample","source":"client-relay","timestamp":"2026-02-19T10:08:03Z","session_id":"cli-002","used_js_heap_mb":48,"total_js_heap_mb":82,"heap_limit_mb":2048}
+{"v":1,"event":"memory_health_sample","source":"client-relay","timestamp":"2026-02-19T10:08:04Z","session_id":"cli-003","used_js_heap_mb":120,"total_js_heap_mb":200,"heap_limit_mb":2048}
+{"v":1,"event":"auth_permission_denied","source":"server","timestamp":"2026-02-19T10:09:00Z","session_id":"srv-001","user_id":10,"path":"/api/rooms/1/prefs"}

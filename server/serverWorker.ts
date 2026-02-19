@@ -25,6 +25,7 @@ import roomsRouter from './Rooms/router.js'
 import userRouter from './User/router.js'
 import hydraPresetsRouter from './HydraPresets/router.js'
 import videoProxyRouter from './VideoProxy/router.js'
+import telemetryRouter from './Telemetry/router.js'
 import pushQueuesAndLibrary from './lib/pushQueuesAndLibrary.js'
 import { Server as SocketIO } from 'socket.io'
 import socketActions, { clearPendingCleanups } from './socket.js'
@@ -34,6 +35,8 @@ import IPCMediaActions from './Media/ipc.js'
 import { SCANNER_WORKER_EXITED, SERVER_WORKER_STATUS, SERVER_WORKER_ERROR } from '../shared/actionTypes.js'
 import User from './User/User.js'
 import Rooms from './Rooms/Rooms.js'
+import { getServerTelemetry } from './lib/Telemetry.js'
+import { AUTH_PERMISSION_DENIED } from '../shared/telemetry.js'
 import { createProxyValidator } from './lib/proxyValidator.js'
 import { isPublicApiPath } from './lib/publicPaths.js'
 import { setVideoCacheDir } from './VideoProxy/cache.js'
@@ -208,6 +211,14 @@ async function serverWorker ({ env, startScanner, stopScanner, shutdownHandlers 
       } else {
         ctx.body = err.message
       }
+      if (ctx.status === 403 && ctx.user?.userId) {
+        getServerTelemetry().emit(AUTH_PERMISSION_DENIED, {
+          user_id: ctx.user.userId,
+          room_id: ctx.user.roomId ?? undefined,
+          path: ctx.path,
+        })
+      }
+
       ctx.app.emit('error', err, ctx)
     }
   })
@@ -344,6 +355,7 @@ async function serverWorker ({ env, startScanner, stopScanner, shutdownHandlers 
   baseRouter.use(userRouter.routes())
   baseRouter.use(hydraPresetsRouter.routes())
   baseRouter.use(videoProxyRouter.routes())
+  baseRouter.use(telemetryRouter.routes())
   app.use(baseRouter.routes())
 
   // serve index.html with dynamic base tag at the main SPA routes

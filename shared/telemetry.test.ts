@@ -8,6 +8,11 @@ import {
   RATE_LIMITS,
   HYDRA_PRESET_EVAL_START,
   SOCKET_RECONNECT,
+  SESSION_START,
+  SESSION_ERROR,
+  MEMORY_HEALTH_SAMPLE,
+  QUEUE_CMD_SENT,
+  AUTH_PERMISSION_DENIED,
 } from './telemetry.js'
 
 describe('telemetry schema', () => {
@@ -18,6 +23,22 @@ describe('telemetry schema', () => {
   it('exports event name constants', () => {
     expect(HYDRA_PRESET_EVAL_START).toBe('hydra_preset_eval_start')
     expect(SOCKET_RECONNECT).toBe('socket_reconnect')
+  })
+
+  it('exports new event name constants for PR1 telemetry sink', () => {
+    expect(SESSION_START).toBe('session_start')
+    expect(SESSION_ERROR).toBe('session_error')
+    expect(MEMORY_HEALTH_SAMPLE).toBe('memory_health_sample')
+    expect(QUEUE_CMD_SENT).toBe('queue_cmd_sent')
+    expect(AUTH_PERMISSION_DENIED).toBe('auth_permission_denied')
+  })
+
+  it('defines rate limits for new event constants', () => {
+    expect(RATE_LIMITS[SESSION_START]).toBe(10000)
+    expect(RATE_LIMITS[SESSION_ERROR]).toBe(5000)
+    expect(RATE_LIMITS[MEMORY_HEALTH_SAMPLE]).toBe(60000)
+    expect(RATE_LIMITS[QUEUE_CMD_SENT]).toBe(500)
+    expect(RATE_LIMITS[AUTH_PERMISSION_DENIED]).toBe(5000)
   })
 })
 
