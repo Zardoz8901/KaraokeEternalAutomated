@@ -186,6 +186,7 @@ Review participants: maintainers owning each pillar
 
 | Date | Change |
 |---|---|
+| 2026-02-19 | G4 flake rate proven (0.0% over 20 runs); SLO evidence pipeline created; all Phase 1 gates (G1-G4) now pass |
 | 2026-02-18 | Added Week 3 scorecard (68.75); rollback drill completed; SLO dashboard wiring plan created |
 | 2026-02-18 | Closed KI-1, KI-2, M-1 in backlog; all Phase 1 reliability blockers now done |
 | 2026-02-18 | Added Week 2 scorecard (55.00); updated backlog done evidence for KI-3, KI-4, H-1, H-2, video telemetry |
@@ -353,13 +354,13 @@ To raise score into the 65-70 range:
 | G1: Instrumentation completeness | PASS | All five event families present and tested (hydra, video, queue, socket, auth). Correlation fields present. PII sanitization validated. |
 | G2: Reliability blockers closed | PASS | KI-1 through KI-4 fixed with regression tests. |
 | G3: Abuse and safety controls | PASS | WebRTC payload validation, Hydra size cap, proxy SSRF denylist all enforced. |
-| G4: CI and test gate minimums | PARTIAL | CI gates active. Flake rate < 2% not yet proven over rolling 20 runs. |
+| G4: CI and test gate minimums | PASS | CI gates active. Flake rate 0.0% over 20 consecutive vitest runs (`docs/analysis/g4_flake_rate_proof_2026_02_19.md`). |
 
 ### 13.6 Next-Week Uplift Targets
 
 To raise score toward the 80 threshold:
 
-1. Begin Phase A of SLO dashboard wiring — validate log query templates against real event data.
-2. Prove G4 flake rate < 2% over rolling 20 CI runs.
-3. Instrument client-side telemetry sink (beacon or socket relay) to capture Hydra/video events server-side.
-4. Start 7-day SLO validation window once dashboard queries are producing data.
+1. Implement client-side telemetry sink to move 6 SLOs from `instrumented_not_computable` to `measurable_now`.
+2. Enable server file logging and run SLO snapshot with real event data.
+3. Start 7-day SLO validation window once dashboards are producing data.
+4. Define events for 5 blocked SLOs (crash-free sessions, memory growth, duplicate commands, token refresh, role/permission incidents).

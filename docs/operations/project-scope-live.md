@@ -127,6 +127,7 @@ From [reliability-release-playbook.md](reliability-release-playbook.md) section 
 
 | Date | Change |
 |------|--------|
+| 2026-02-19 | G4 flake rate proven (0.0%/20 runs); SLO evidence pipeline scripts added; all Phase 1 gates (G1-G4) pass |
 | 2026-02-18 | Week 3 scorecard (68.75/100); rollback drill completed; SLO dashboard wiring plan created; SLO status table updated with instrumented pillars |
 | 2026-02-18 | Closed KI-1 (admin demotion parser), KI-2 (bootstrap retry/backoff), M-1 (SSRF denylist completion); all Phase 1 reliability blockers now closed |
 | 2026-02-18 | Closed KI-3/KI-4 (camera subscriber pinning, socket rate limiting), H-1/H-2 (payload validation); added video telemetry; updated KI-2 status (root cause fixed, hardening deferred) |
