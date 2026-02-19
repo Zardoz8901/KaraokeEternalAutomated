@@ -1,6 +1,6 @@
 # Project Scope — Living Document
 
-> Updated: 2026-02-18 | Review cadence: weekly (Monday)
+> Updated: 2026-02-19 | Review cadence: weekly (Monday)
 
 ---
 
@@ -48,7 +48,7 @@ Targets from [reliability-release-playbook.md](reliability-release-playbook.md).
 
 | Epic | Status | Risk | Target |
 |------|--------|------|--------|
-| CI baseline (typecheck + test) | In progress | Low | 2026-02-17 |
+| CI baseline (typecheck + test) | Complete | — | 2026-02-19 |
 | Structured telemetry foundation | In progress | Medium | 2026-02-21 |
 | Playwright smoke E2E | In progress | Medium | 2026-02-24 |
 | Payload validation (H-1, H-2) | Complete | — | 2026-02-18 |

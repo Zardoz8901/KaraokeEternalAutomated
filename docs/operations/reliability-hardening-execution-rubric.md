@@ -2,7 +2,7 @@
 
 > Status: Active Draft v1
 > Owner: Steph
-> Last Updated: 2026-02-18
+> Last Updated: 2026-02-19
 
 ---
 
@@ -307,7 +307,7 @@ To raise score into the 65-70 range:
 
 ---
 
-## 13. Week 3 Scorecard (2026-02-18)
+## 13. Week 3 Scorecard (2026-02-19)
 
 ### 13.1 Score Snapshot
 
@@ -322,7 +322,7 @@ To raise score into the 65-70 range:
 
 **Total Score:** **68.75 / 100** (up from 55.00)
 
-**Phase Decision:** **Stay in Phase 1 (Metric Hardening)** — below 80 threshold. G1-G3 are close to passing; G4 flake rate unproven over rolling 20 runs.
+**Phase Decision:** **Stay in Phase 1 (Metric Hardening)** — below 80 threshold. All Phase 1 gates (G1-G4) now pass; score must reach 80 to exit Phase 1.
 
 ### 13.2 Weekly Scorecard Entry
 
@@ -330,7 +330,7 @@ To raise score into the 65-70 range:
 |---|---:|---:|---:|---:|---:|---:|---:|---|
 | 2026-02-17 | 10.00 | 6.25 | 11.25 | 3.75 | 7.50 | 7.50 | 46.25 | Stay in Phase 1 |
 | 2026-02-18 | 15.00 | 6.25 | 11.25 | 7.50 | 7.50 | 7.50 | 55.00 | Stay in Phase 1 |
-| 2026-02-18 | 15.00 | 12.50 | 11.25 | 11.25 | 11.25 | 7.50 | 68.75 | Stay in Phase 1 |
+| 2026-02-19 | 15.00 | 12.50 | 11.25 | 11.25 | 11.25 | 7.50 | 68.75 | Stay in Phase 1 |
 
 ### 13.3 Evidence Used
 
