@@ -19,6 +19,7 @@ node_modules/
 *.sqlite3-wal
 *.tsbuildinfo
 result
+test-results/
 .hugo_build.lock
 .nova
 .vscode

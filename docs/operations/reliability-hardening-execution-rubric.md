@@ -186,6 +186,7 @@ Review participants: maintainers owning each pillar
 
 | Date | Change |
 |---|---|
+| 2026-02-18 | Added Week 3 scorecard (68.75); rollback drill completed; SLO dashboard wiring plan created |
 | 2026-02-18 | Closed KI-1, KI-2, M-1 in backlog; all Phase 1 reliability blockers now done |
 | 2026-02-18 | Added Week 2 scorecard (55.00); updated backlog done evidence for KI-3, KI-4, H-1, H-2, video telemetry |
 | 2026-02-17 | Added Week 1 baseline scoring and context |
@@ -301,4 +302,64 @@ To raise score into the 65-70 range:
 3. Run one rollback drill and document the result → Operability 2→3.
 4. Begin SLO dashboard wiring to move Measurement toward 4.
 
-**Outcome:** Items 1-2 completed on 2026-02-18. KI-1 closed (edge-case tests), KI-2 hardening closed (retry/backoff), M-1 closed (full denylist). All Phase 1 reliability blockers now done. Rollback drill and SLO dashboard wiring still pending.
+**Outcome:** Items 1-2 completed on 2026-02-18. KI-1 closed (edge-case tests), KI-2 hardening closed (retry/backoff), M-1 closed (full denylist). All Phase 1 reliability blockers now done. Rollback drill completed (see Week 3). SLO dashboard wiring plan created.
+
+---
+
+## 13. Week 3 Scorecard (2026-02-18)
+
+### 13.1 Score Snapshot
+
+| Category | Weight | Score (0-4) | Weighted Points | Rationale |
+|---|---:|---:|---:|---|
+| Measurement Completeness | 20 | 3 | 15.00 | No change from Week 2. All four pillars instrumented but dashboards still missing. SLO dashboard wiring plan created (`docs/analysis/slo_dashboard_plan_2026_02_18.md`). |
+| Reliability Outcomes | 25 | 2 | 12.50 | All KI/H/M blockers closed. No Sev-1 incidents. Still no 7-day SLO validation window to prove sustained attainment. |
+| Test and CI Strength | 15 | 3 | 11.25 | 85 test files, 1037 tests (up from 1024). CI gates active. No change in structure. |
+| Security and Abuse Resistance | 15 | 3 | 11.25 | All critical controls enforced: KI-1 (admin demotion parser), KI-2 (bootstrap retry), KI-3 (subscriber pinning), KI-4 (rate limiting), H-1/H-2 (payload validation), M-1 (SSRF denylist). DNS rebinding remains as known gap. |
+| Operability and Incident Readiness | 15 | 3 | 11.25 | Rollback drill completed and documented (`docs/analysis/rollback_drill_2026_02_18.md`). Clean revert of `a863baa2`: tsc pass, 85 files / 1024 tests pass, restore clean. G6 partial satisfaction. |
+| Delivery Discipline | 10 | 3 | 7.50 | No change from Week 2. |
+
+**Total Score:** **68.75 / 100** (up from 55.00)
+
+**Phase Decision:** **Stay in Phase 1 (Metric Hardening)** — below 80 threshold. G1-G3 are close to passing; G4 flake rate unproven over rolling 20 runs.
+
+### 13.2 Weekly Scorecard Entry
+
+| Week Of | Measurement (20) | Outcomes (25) | CI/Test (15) | Security (15) | Operability (15) | Discipline (10) | Total | Decision |
+|---|---:|---:|---:|---:|---:|---:|---:|---|
+| 2026-02-17 | 10.00 | 6.25 | 11.25 | 3.75 | 7.50 | 7.50 | 46.25 | Stay in Phase 1 |
+| 2026-02-18 | 15.00 | 6.25 | 11.25 | 7.50 | 7.50 | 7.50 | 55.00 | Stay in Phase 1 |
+| 2026-02-18 | 15.00 | 12.50 | 11.25 | 11.25 | 11.25 | 7.50 | 68.75 | Stay in Phase 1 |
+
+### 13.3 Evidence Used
+
+- All Phase 1 blockers closed: KI-1 (`server/Auth/oidc.ts`, 9 tests), KI-2 (`src/store/modules/user.ts`, retry/backoff + error classification), KI-3 (`server/Player/socket.ts`, subscriber pinning), KI-4 (`server/lib/socketRateLimit.ts`, token bucket), H-1/H-2 (`server/lib/payloadGuards.ts`, type guards + 64KB cap), M-1 (`server/VideoProxy/router.ts`, full private IP denylist)
+- Rollback drill: `git revert --no-commit a863baa2` → tsc pass, 85 files / 1024 tests pass, clean restore
+- SLO dashboard wiring plan: `docs/analysis/slo_dashboard_plan_2026_02_18.md` — maps all telemetry events to SLO formulas
+- Test suite: 85 test files, 1037 tests (13 added in latest commit)
+- No Sev-1 incidents during hardening period
+
+### 13.4 Delta from Week 2
+
+- **Outcomes** 1→2: All reliability blockers (KI-1, KI-2, M-1) closed in latest commit. No Sev-1. Score held at 2 (not 3) because no SLO validation window has run yet.
+- **Security** 2→3: M-1 SSRF denylist closed. All critical controls now enforced. DNS rebinding is the remaining known gap but is defense-in-depth, not a critical control.
+- **Operability** 2→3: Rollback drill completed and documented. Procedure validated: clean revert, tsc pass, tests pass, fast recovery (~17s local, ~3m with CI).
+- **Measurement, CI, Discipline:** No change.
+
+### 13.5 Gate Status
+
+| Gate | Status | Notes |
+|------|--------|-------|
+| G1: Instrumentation completeness | PASS | All five event families present and tested (hydra, video, queue, socket, auth). Correlation fields present. PII sanitization validated. |
+| G2: Reliability blockers closed | PASS | KI-1 through KI-4 fixed with regression tests. |
+| G3: Abuse and safety controls | PASS | WebRTC payload validation, Hydra size cap, proxy SSRF denylist all enforced. |
+| G4: CI and test gate minimums | PARTIAL | CI gates active. Flake rate < 2% not yet proven over rolling 20 runs. |
+
+### 13.6 Next-Week Uplift Targets
+
+To raise score toward the 80 threshold:
+
+1. Begin Phase A of SLO dashboard wiring — validate log query templates against real event data.
+2. Prove G4 flake rate < 2% over rolling 20 CI runs.
+3. Instrument client-side telemetry sink (beacon or socket relay) to capture Hydra/video events server-side.
+4. Start 7-day SLO validation window once dashboard queries are producing data.

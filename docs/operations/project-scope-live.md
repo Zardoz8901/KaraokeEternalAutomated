@@ -27,20 +27,20 @@ Targets from [reliability-release-playbook.md](reliability-release-playbook.md).
 
 | Pillar | SLO | Target | Current Status |
 |--------|-----|--------|----------------|
-| Hydra | Preset load success | >= 99.5% | Unknown (no telemetry) |
-| Hydra | First frame p95 | <= 2.0s | Unknown |
-| Hydra | Crash-free sessions | >= 99.9% | Unknown |
-| Hydra | Memory growth (100 switches) | <= 150MB | Unknown |
-| Queue | Command apply success | >= 99.99% | Unknown |
+| Hydra | Preset load success | >= 99.5% | Instrumented (`hydra_preset_eval_success` / `_error`; no dashboard yet) |
+| Hydra | First frame p95 | <= 2.0s | Instrumented (`hydra_preset_eval_start` → `_success` delta; no dashboard yet) |
+| Hydra | Crash-free sessions | >= 99.9% | Unknown (needs session lifecycle events) |
+| Hydra | Memory growth (100 switches) | <= 150MB | Unknown (needs soak test instrumentation) |
+| Queue | Command apply success | >= 99.99% | Instrumented (`queue_cmd_ack` / `_error`; no dashboard yet) |
 | Queue | Duplicate/lost commands | 0 | Unknown |
-| Queue | Reconnect p95 | <= 2.0s | Unknown |
-| Auth | Login success | >= 99.9% | Unknown |
+| Queue | Reconnect p95 | <= 2.0s | Instrumented (`socket_reconnect`; no dashboard yet) |
+| Auth | Login success | >= 99.9% | Instrumented (`auth_login_success` / `auth_session_check_failure`; no dashboard yet) |
 | Auth | Token refresh success | >= 99.95% | Unknown |
 | Auth | Role/permission incidents | 0 | Unknown |
-| Streaming | Video init success | >= 99% | Instrumented (telemetry emitting, no dashboard yet) |
+| Streaming | Video init success | >= 99% | Instrumented (`video_init_start` → `video_init_frame_ready`; no dashboard yet) |
 | Streaming | Video init (Firefox) | >= 97% now, 99% target | Unknown |
 | Streaming | First frame p95 | <= 3.0s | Unknown |
-| Streaming | Proxy 413 rate | < 0.1% | Unknown |
+| Streaming | Proxy 413 rate | < 0.1% | Instrumented (`video_proxy_response` status field; no dashboard yet) |
 
 ---
 
@@ -127,6 +127,7 @@ From [reliability-release-playbook.md](reliability-release-playbook.md) section 
 
 | Date | Change |
 |------|--------|
+| 2026-02-18 | Week 3 scorecard (68.75/100); rollback drill completed; SLO dashboard wiring plan created; SLO status table updated with instrumented pillars |
 | 2026-02-18 | Closed KI-1 (admin demotion parser), KI-2 (bootstrap retry/backoff), M-1 (SSRF denylist completion); all Phase 1 reliability blockers now closed |
 | 2026-02-18 | Closed KI-3/KI-4 (camera subscriber pinning, socket rate limiting), H-1/H-2 (payload validation); added video telemetry; updated KI-2 status (root cause fixed, hardening deferred) |
 | 2026-02-17 | Added reliability hardening execution rubric and scoring model |
