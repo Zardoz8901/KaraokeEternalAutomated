@@ -27,5 +27,9 @@ export default defineConfig({
     environmentMatchGlobs: [
       ['src/**/*.test.{ts,tsx}', 'jsdom'],
     ],
+    // JSON reporter for CI artifact collection (flake tracking)
+    reporters: process.env.CI
+      ? ['default', ['json', { outputFile: path.resolve(__dirname, '../test-results/vitest-results.json') }]]
+      : ['default'],
   },
 })
