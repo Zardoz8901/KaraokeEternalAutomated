@@ -240,7 +240,17 @@ export function applyVideoProxyOverride (
 
       // Create video element (mirrors hydra-source.js initVideo)
       const vid = document.createElement('video')
-      vid.crossOrigin = 'anonymous'
+      // Only set crossOrigin for direct cross-origin URLs.
+      // Same-origin (proxy/cached) videos don't need it, and Firefox
+      // may behave differently with crossOrigin on same-origin requests.
+      if (!isProxied) {
+        try {
+          const parsed = new URL(finalUrl, window.location.origin)
+          if (parsed.origin !== window.location.origin) {
+            vid.crossOrigin = 'anonymous'
+          }
+        } catch { /* relative URL = same-origin, no crossOrigin needed */ }
+      }
       vid.autoplay = true
       vid.loop = true
       vid.muted = true
@@ -258,11 +268,22 @@ export function applyVideoProxyOverride (
       let frameReady = false
       const hasStartTime = startTime !== undefined
 
+      // Derive route reason for telemetry
+      let routeReason: string
+      if (retryDirect) routeReason = 'retry-direct'
+      else if (retryProxy) routeReason = 'retry-proxy'
+      else if (!/^https?:\/\//i.test(url)) routeReason = 'relative-url'
+      else if (!isProxied) routeReason = 'same-origin'
+      else routeReason = 'proxied-cross-origin'
+
       telemetry.emit(VIDEO_INIT_START, {
         source_key: src,
         is_proxied: isProxied,
         is_retry: isRetry,
         has_start_time: hasStartTime,
+        has_cross_origin: vid.hasAttribute('crossorigin'),
+        route_reason: routeReason,
+        browser: typeof navigator !== 'undefined' && navigator.userAgent.includes('Firefox') ? 'firefox' : 'other',
       })
 
       // Phase 2 signal — dispatches the event that HydraVisualizer listens to

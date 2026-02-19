@@ -138,22 +138,37 @@ describe('videoProxyOverride', () => {
   })
 
   describe('video element setup', () => {
-    it('creates video with correct attributes', () => {
+    it('creates video with correct attributes for proxied URL (no crossOrigin)', () => {
       const videos = spyOnCreateElement()
       const source = makeSource()
       const globals: Record<string, unknown> = { s0: source }
       const overrides = new Map<string, unknown>()
 
       applyVideoProxyOverride(['s0'], globals, overrides)
+      // Cross-origin URL gets proxied → same-origin → no crossOrigin needed
       source.initVideo('https://example.com/video.mp4')
 
       const vid = videos[0]
-      expect(vid.crossOrigin).toBe('anonymous')
+      expect(vid.crossOrigin).toBeNull()
       expect(vid.autoplay).toBe(true)
       expect(vid.loop).toBe(true)
       expect(vid.muted).toBe(true)
       expect(vid.preload).toBe('auto')
       expect(vid.playsInline).toBe(true)
+    })
+
+    it('sets crossOrigin for direct cross-origin URL (CORS-capable host)', () => {
+      const videos = spyOnCreateElement()
+      const source = makeSource()
+      const globals: Record<string, unknown> = { s0: source }
+      const overrides = new Map<string, unknown>()
+
+      applyVideoProxyOverride(['s0'], globals, overrides)
+      // Same-origin URL (relative) → no crossOrigin
+      source.initVideo('/api/media/123.mp4')
+
+      const vid = videos[0]
+      expect(vid.crossOrigin).toBeNull()
     })
   })
 

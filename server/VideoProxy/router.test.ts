@@ -186,7 +186,7 @@ describe('VideoProxy', () => {
   })
 
   describe('MAX_CACHE_BYTES', () => {
-    it('is 500MB', () => {
+    it('defaults to 500MB when env var is not set', () => {
       expect(MAX_CACHE_BYTES).toBe(500 * 1024 * 1024)
     })
   })

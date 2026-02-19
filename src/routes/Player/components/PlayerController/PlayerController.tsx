@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useRef } from 'react'
 import { useAppDispatch, useAppSelector } from 'store/hooks'
 import { useCameraReceiver } from 'lib/webrtc/useCameraReceiver'
 import { VISUALIZER_HYDRA_CODE_REQ } from 'shared/actionTypes'
+import { STARTING_PRESET_APPLY_SUCCESS, STARTING_PRESET_APPLY_FAILURE } from 'shared/telemetry'
+import telemetry from 'lib/telemetry'
 import { fetchPresetById } from 'routes/Orchestrator/api/hydraPresetsApi'
 import { useRuntimeHydraPresets } from '../useRuntimeHydraPresets'
 import {
@@ -36,6 +38,8 @@ const PlayerController = (props: PlayerControllerProps) => {
   const nextQueueItem = queue.entities[queue.result[queue.result.indexOf(player.queueId) + 1]]
 
   const startingPresetAppliedRef = useRef(false)
+  const startingPresetPendingRef = useRef(false)
+  const startingPresetRetryCountRef = useRef(0)
   const pendingFolderDefaultSessionStartRef = useRef(false)
   const lastTransitionKeyRef = useRef<string | null>(null)
 
@@ -70,10 +74,13 @@ const PlayerController = (props: PlayerControllerProps) => {
     })
   }, [dispatch, runtimePresetPool])
 
-  const emitStartingPresetById = useCallback(async (presetId: number) => {
+  const emitStartingPresetById = useCallback(async (presetId: number): Promise<boolean> => {
     try {
       const preset = await fetchPresetById(presetId)
-      if (!preset?.code || !preset.code.trim()) return
+      if (!preset?.code || !preset.code.trim()) {
+        telemetry.emit(STARTING_PRESET_APPLY_FAILURE, { preset_id: presetId, reason: 'empty_code' })
+        return false
+      }
 
       const folderName = runtimePresetPool.folderId === preset.folderId
         ? runtimePresetPool.folderName
@@ -89,8 +96,13 @@ const PlayerController = (props: PlayerControllerProps) => {
           hydraPresetSource: 'folder',
         },
       })
+
+      telemetry.emit(STARTING_PRESET_APPLY_SUCCESS, { preset_id: presetId })
+      return true
     } catch {
       // Preset may have been removed after room prefs were saved.
+      telemetry.emit(STARTING_PRESET_APPLY_FAILURE, { preset_id: presetId, reason: 'fetch_error' })
+      return false
     }
   }, [dispatch, runtimePresetPool.folderId, runtimePresetPool.folderName])
 
@@ -146,9 +158,15 @@ const PlayerController = (props: PlayerControllerProps) => {
       nextQueueId: nextQueueItem.queueId,
       hasAppliedStartingPreset: startingPresetAppliedRef.current,
     })) {
-      startingPresetAppliedRef.current = true
-      pendingFolderDefaultSessionStartRef.current = false
+      startingPresetPendingRef.current = true
       void emitStartingPresetById(roomPrefs.startingPresetId as number)
+        .then(success => {
+          startingPresetPendingRef.current = false
+          if (success) {
+            startingPresetAppliedRef.current = true
+            pendingFolderDefaultSessionStartRef.current = false
+          }
+        })
     } else if (shouldApplyFolderDefaultAtSessionStart({
       startingPresetId: roomPrefs?.startingPresetId,
       currentQueueId: player.queueId,
@@ -221,6 +239,8 @@ const PlayerController = (props: PlayerControllerProps) => {
   useEffect(() => {
     if (player.queueId === -1 && player.historyJSON === '[]') {
       startingPresetAppliedRef.current = false
+      startingPresetPendingRef.current = false
+      startingPresetRetryCountRef.current = 0
       pendingFolderDefaultSessionStartRef.current = false
       lastTransitionKeyRef.current = null
     }
@@ -228,14 +248,35 @@ const PlayerController = (props: PlayerControllerProps) => {
 
   // Idle init: apply starting preset (or first folder preset) when player is idle.
   useEffect(() => {
+    if (startingPresetPendingRef.current) return
+
     if (shouldApplyStartingPresetOnIdle({
       startingPresetId: roomPrefs?.startingPresetId,
       queueId: player.queueId,
       hasAppliedStartingPreset: startingPresetAppliedRef.current,
     })) {
-      startingPresetAppliedRef.current = true
-      pendingFolderDefaultSessionStartRef.current = false
+      // Cap retries to prevent infinite loop on permanent failure (404, empty preset)
+      if (startingPresetRetryCountRef.current >= 3) {
+        startingPresetAppliedRef.current = true
+        pendingFolderDefaultSessionStartRef.current = false
+        // Fallback to folder default if available
+        if (runtimePresetPool.source === 'folder' && runtimePresetPool.presets.length > 0) {
+          emitHydraPresetByIndex(0)
+        }
+        return
+      }
+
+      startingPresetPendingRef.current = true
+      startingPresetRetryCountRef.current++
       void emitStartingPresetById(roomPrefs.startingPresetId as number)
+        .then(success => {
+          startingPresetPendingRef.current = false
+          if (success) {
+            startingPresetAppliedRef.current = true
+            pendingFolderDefaultSessionStartRef.current = false
+          }
+          // On failure: pendingRef cleared, next effect cycle retries (up to cap)
+        })
     } else if (shouldApplyFolderDefaultOnIdle({
       startingPresetId: roomPrefs?.startingPresetId,
       queueId: player.queueId,

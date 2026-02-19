@@ -51,6 +51,9 @@ const roomCameraPublishers = new Map<number, string>() // roomId → publisherSo
 // Track which socket is the pinned camera subscriber per room (KI-3)
 const roomCameraSubscribers = new Map<number, string>() // roomId → subscriberSocketId
 
+// Track last visualizer code per room for state replay to new connections
+const roomLastVisualizerCode = new Map<number, Record<string, unknown>>() // roomId → payload
+
 interface RoomControlSocket {
   id?: string
   user?: {
@@ -196,6 +199,20 @@ export function cleanupCameraPublisher (
 }
 
 /**
+ * Get the last visualizer code payload for a room (for state replay to new connections).
+ */
+export function getLastVisualizerCode (roomId: number): Record<string, unknown> | undefined {
+  return roomLastVisualizerCode.get(roomId)
+}
+
+/**
+ * Clear stored visualizer state for a room (called when room empties).
+ */
+export function clearVisualizerState (roomId: number): void {
+  roomLastVisualizerCode.delete(roomId)
+}
+
+/**
  * If the disconnecting socket was the pinned camera subscriber for this room,
  * clear the pin so a new subscriber can take over on the next offer cycle.
  */
@@ -284,10 +301,16 @@ const ACTION_HANDLERS = {
     const payloadObject = payload as Record<string, unknown>
     if (!(await canSendHydraCode(sock, payloadObject))) return
 
-    sock.server.to(Rooms.prefix(sock.user.roomId)).emit('action', {
+    const roomId = sock.user.roomId
+    sock.server.to(Rooms.prefix(roomId)).emit('action', {
       type: VISUALIZER_HYDRA_CODE,
       payload,
     })
+
+    // Store for replay to new connections (already validated above)
+    if (typeof roomId === 'number') {
+      roomLastVisualizerCode.set(roomId, payloadObject)
+    }
   },
   [VISUALIZER_STATE_SYNC_REQ]: async (sock, { payload }) => {
     if (!isValidPayloadSize(payload)) return

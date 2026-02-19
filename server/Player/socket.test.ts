@@ -32,7 +32,7 @@ vi.mock('../lib/Log.js', () => ({
 }))
 
 import Rooms from '../Rooms/Rooms.js'
-import handlers, { canManageRoom, cleanupCameraPublisher, cleanupCameraSubscriber } from './socket.js'
+import handlers, { canManageRoom, cleanupCameraPublisher, cleanupCameraSubscriber, getLastVisualizerCode, clearVisualizerState } from './socket.js'
 
 interface MockSocket {
   id: string
@@ -743,5 +743,122 @@ describe('Camera subscriber pinning (KI-3)', () => {
     await handlers[CAMERA_ANSWER_REQ](newSub, { payload: { sdp: 'answer2', type: 'answer' } })
 
     expect(newSubEmit).toHaveBeenCalled()
+  })
+})
+
+describe('Visualizer state tracking', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    // Clear any stored visualizer state between tests
+    clearVisualizerState(10)
+    clearVisualizerState(20)
+  })
+
+  function allowHydraCode (roomId: number) {
+    vi.mocked(Rooms.get).mockResolvedValue({
+      result: [roomId],
+      entities: {
+        [roomId]: {
+          ownerId: 999,
+          prefs: {
+            allowRoomCollaboratorsToSendVisualizer: true,
+          },
+        },
+      },
+    })
+  }
+
+  it('VISUALIZER_HYDRA_CODE_REQ stores last payload for the room', async () => {
+    allowHydraCode(10)
+    const { sock } = createMockSocket({ userId: 101, roomId: 10, isAdmin: false })
+
+    await handlers[VISUALIZER_HYDRA_CODE_REQ](sock, {
+      payload: { code: 'osc(10).out()', hydraPresetName: 'test' },
+    })
+
+    const stored = getLastVisualizerCode(10)
+    expect(stored).toEqual({ code: 'osc(10).out()', hydraPresetName: 'test' })
+  })
+
+  it('getLastVisualizerCode returns undefined for room with no state', () => {
+    expect(getLastVisualizerCode(999)).toBeUndefined()
+  })
+
+  it('successive broadcasts overwrite stored payload', async () => {
+    allowHydraCode(10)
+    const { sock } = createMockSocket({ userId: 101, roomId: 10, isAdmin: false })
+
+    await handlers[VISUALIZER_HYDRA_CODE_REQ](sock, {
+      payload: { code: 'osc(10).out()' },
+    })
+    await handlers[VISUALIZER_HYDRA_CODE_REQ](sock, {
+      payload: { code: 'noise(4).out()' },
+    })
+
+    expect(getLastVisualizerCode(10)).toEqual({ code: 'noise(4).out()' })
+  })
+
+  it('clearVisualizerState removes entry for room', async () => {
+    allowHydraCode(10)
+    const { sock } = createMockSocket({ userId: 101, roomId: 10, isAdmin: false })
+
+    await handlers[VISUALIZER_HYDRA_CODE_REQ](sock, {
+      payload: { code: 'osc(10).out()' },
+    })
+
+    clearVisualizerState(10)
+    expect(getLastVisualizerCode(10)).toBeUndefined()
+  })
+
+  it('state is scoped per room', async () => {
+    vi.mocked(Rooms.get).mockImplementation(async (roomId: number) => ({
+      result: [roomId],
+      entities: {
+        [roomId]: {
+          ownerId: 999,
+          prefs: { allowRoomCollaboratorsToSendVisualizer: true },
+        },
+      },
+    }))
+
+    const { sock: sockA } = createMockSocket({ userId: 101, roomId: 10, isAdmin: false })
+    const { sock: sockB } = createMockSocket({ userId: 102, roomId: 20, isAdmin: false })
+
+    await handlers[VISUALIZER_HYDRA_CODE_REQ](sockA, {
+      payload: { code: 'osc(10).out()' },
+    })
+    await handlers[VISUALIZER_HYDRA_CODE_REQ](sockB, {
+      payload: { code: 'noise(4).out()' },
+    })
+
+    expect(getLastVisualizerCode(10)).toEqual({ code: 'osc(10).out()' })
+    expect(getLastVisualizerCode(20)).toEqual({ code: 'noise(4).out()' })
+
+    clearVisualizerState(10)
+    expect(getLastVisualizerCode(10)).toBeUndefined()
+    expect(getLastVisualizerCode(20)).toEqual({ code: 'noise(4).out()' })
+  })
+
+  it('does not store payload when validation rejects it', async () => {
+    allowHydraCode(10)
+    const { sock } = createMockSocket({ userId: 101, roomId: 10, isAdmin: false })
+
+    // Missing code field — isValidHydraCode rejects
+    await handlers[VISUALIZER_HYDRA_CODE_REQ](sock, {
+      payload: { notCode: true },
+    })
+
+    expect(getLastVisualizerCode(10)).toBeUndefined()
+  })
+
+  it('does not store oversized payload', async () => {
+    allowHydraCode(10)
+    const { sock } = createMockSocket({ userId: 101, roomId: 10, isAdmin: false })
+
+    await handlers[VISUALIZER_HYDRA_CODE_REQ](sock, {
+      payload: { code: 'x'.repeat(100_000) },
+    })
+
+    expect(getLastVisualizerCode(10)).toBeUndefined()
   })
 })

@@ -12,7 +12,24 @@ const router = new KoaRouter({ prefix: '/api/video-proxy' })
 // Raised from 500MB to reduce false 413s for large MP4s.
 export const MAX_SIZE_BYTES = 5 * 1024 * 1024 * 1024 // 5 GB
 // Cache cap: keep disk usage bounded even if proxying larger media is allowed.
-export const MAX_CACHE_BYTES = 500 * 1024 * 1024 // 500 MB
+// Configurable via KES_VIDEO_CACHE_MAX_BYTES env var (default 500MB).
+// Accepts raw bytes (e.g. "5368709120") or human-readable (e.g. "5GB", "500MB").
+export const MAX_CACHE_BYTES = (() => {
+  const raw = (process.env.KES_VIDEO_CACHE_MAX_BYTES || '').trim().toUpperCase()
+  if (!raw) return 500 * 1024 * 1024
+
+  const match = /^(\d+(?:\.\d+)?)\s*(GB|MB|KB)?$/.exec(raw)
+  if (!match) return 500 * 1024 * 1024
+
+  const num = parseFloat(match[1])
+  const unit = match[2]
+  if (!Number.isFinite(num) || num <= 0) return 500 * 1024 * 1024
+
+  if (unit === 'GB') return Math.round(num * 1024 * 1024 * 1024)
+  if (unit === 'MB') return Math.round(num * 1024 * 1024)
+  if (unit === 'KB') return Math.round(num * 1024)
+  return Math.round(num) // raw bytes
+})()
 const CONNECT_TIMEOUT_MS = 15_000 // timeout for initial connection + headers
 const IDLE_TIMEOUT_MS = 120_000 // abort if no bytes arrive for this long
 const MAX_REDIRECTS = 5
@@ -362,6 +379,23 @@ router.get('/', async (ctx) => {
     !!res.body &&
     totalSizeBytes !== null &&
     totalSizeBytes <= MAX_CACHE_BYTES
+
+  // Log cache-skip for over-cap media (host only — URL may contain query secrets)
+  if (cacheDir && totalSizeBytes !== null && totalSizeBytes > MAX_CACHE_BYTES) {
+    try {
+      const host = new URL(requestedUrl).hostname
+      log.info('skipping cache (size %sMB > %sMB limit): host=%s',
+        (totalSizeBytes / 1_000_000).toFixed(1),
+        (MAX_CACHE_BYTES / 1_000_000).toFixed(0),
+        host,
+      )
+    } catch {
+      log.info('skipping cache (size %sMB > %sMB limit)',
+        (totalSizeBytes / 1_000_000).toFixed(1),
+        (MAX_CACHE_BYTES / 1_000_000).toFixed(0),
+      )
+    }
+  }
 
   if (canTeeToCache) {
     ctx.body = teeToCache(cacheDir, requestedUrl, res.body!, contentType!, MAX_CACHE_BYTES)

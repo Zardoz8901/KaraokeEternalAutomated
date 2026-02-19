@@ -6,7 +6,7 @@ import jsonWebToken from 'jsonwebtoken'
 import parseCookie from './lib/parseCookie.js'
 import Library from './Library/Library.js'
 import LibrarySocket from './Library/socket.js'
-import PlayerSocket, { cleanupCameraPublisher, cleanupCameraSubscriber } from './Player/socket.js'
+import PlayerSocket, { cleanupCameraPublisher, cleanupCameraSubscriber, getLastVisualizerCode, clearVisualizerState } from './Player/socket.js'
 import Prefs from './Prefs/Prefs.js'
 import PrefsSocket from './Prefs/socket.js'
 import Rooms from './Rooms/Rooms.js'
@@ -23,6 +23,7 @@ import {
   PLAYER_LEAVE,
   PREFS_PUSH,
   SOCKET_AUTH_ERROR,
+  VISUALIZER_HYDRA_CODE,
   _ERROR,
 } from '../shared/actionTypes.js'
 const log = getLogger('server')
@@ -184,6 +185,12 @@ export default function (io, jwtKey, validateProxySource: (ip: string) => boolea
         })
       }
 
+      // Clear stored visualizer state when room empties
+      const roomSizeCheck = io.sockets.adapter.rooms.get(Rooms.prefix(roomId))
+      if (!roomSizeCheck || roomSizeCheck.size === 0) {
+        clearVisualizerState(roomId)
+      }
+
       // Check if this is an ephemeral room that should be cleaned up
       try {
         const isEphemeral = await Rooms.isEphemeral(roomId)
@@ -327,6 +334,15 @@ export default function (io, jwtKey, validateProxySource: (ip: string) => boolea
 
         break
       }
+    }
+
+    // Replay last visualizer state so new connections show the current preset
+    const lastViz = getLastVisualizerCode(sock.user.roomId)
+    if (lastViz) {
+      io.to(sock.id).emit('action', {
+        type: VISUALIZER_HYDRA_CODE,
+        payload: lastViz,
+      })
     }
 
     log.verbose('%s (%s) joined room %s (%s in room)',

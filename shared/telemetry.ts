@@ -37,6 +37,10 @@ export const VIDEO_INIT_FRAME_READY = 'video_init_frame_ready'
 export const VIDEO_INIT_ERROR = 'video_init_error'
 export const VIDEO_PROXY_RESPONSE = 'video_proxy_response'
 
+// Preset lifecycle pillar
+export const STARTING_PRESET_APPLY_SUCCESS = 'starting_preset_apply_success'
+export const STARTING_PRESET_APPLY_FAILURE = 'starting_preset_apply_failure'
+
 // Session lifecycle pillar
 export const SESSION_START = 'session_start'
 export const SESSION_ERROR = 'session_error'
@@ -150,6 +154,8 @@ export const RATE_LIMITS: Record<string, number> = {
   [VIDEO_INIT_FRAME_READY]: 1000,
   [VIDEO_INIT_ERROR]: 2000,
   [VIDEO_PROXY_RESPONSE]: 1000,
+  [STARTING_PRESET_APPLY_SUCCESS]: 5000,
+  [STARTING_PRESET_APPLY_FAILURE]: 5000,
   [SESSION_START]: 10000,
   [SESSION_ERROR]: 5000,
   [MEMORY_HEALTH_SAMPLE]: 60000,

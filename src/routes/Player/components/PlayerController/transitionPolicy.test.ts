@@ -260,6 +260,34 @@ describe('transitionPolicy', () => {
     })
   })
 
+  describe('shouldApplyStartingPresetOnIdle retry path', () => {
+    it('returns true again after failure clears hasAppliedStartingPreset', () => {
+      // First call: policy says yes
+      expect(shouldApplyStartingPresetOnIdle({
+        startingPresetId: 42,
+        queueId: -1,
+        hasAppliedStartingPreset: false,
+      })).toBe(true)
+
+      // After failure, guard is NOT set (hasAppliedStartingPreset stays false)
+      // so the next call also returns true — enabling retry
+      expect(shouldApplyStartingPresetOnIdle({
+        startingPresetId: 42,
+        queueId: -1,
+        hasAppliedStartingPreset: false,
+      })).toBe(true)
+    })
+
+    it('returns false after success sets hasAppliedStartingPreset', () => {
+      // After success, guard IS set
+      expect(shouldApplyStartingPresetOnIdle({
+        startingPresetId: 42,
+        queueId: -1,
+        hasAppliedStartingPreset: true,
+      })).toBe(false)
+    })
+  })
+
   describe('shouldApplyFolderDefaultOnPoolReady', () => {
     it('returns true when pool becomes folder-backed during first song', () => {
       expect(shouldApplyFolderDefaultOnPoolReady({
