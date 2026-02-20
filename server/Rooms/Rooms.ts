@@ -321,9 +321,17 @@ class Rooms {
       INSERT INTO rooms (name, status, dateCreated, ownerId, lastActivity, data)
       VALUES (${name}, 'open', ${now}, ${userId}, ${now}, ${JSON.stringify(roomData)})
     `
-    const res = await db.run(String(query), query.parameters)
 
-    return res.lastID
+    try {
+      const res = await db.run(String(query), query.parameters)
+      return res.lastID
+    } catch (err: unknown) {
+      if (err instanceof Error && (err as NodeJS.ErrnoException).code === 'SQLITE_CONSTRAINT') {
+        const existing = await Rooms.getByOwnerId(userId)
+        if (existing) return existing.roomId
+      }
+      throw err
+    }
   }
 
   /**

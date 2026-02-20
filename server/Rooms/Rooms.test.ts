@@ -207,6 +207,50 @@ describe('Rooms.createEphemeral', () => {
   })
 })
 
+describe('Rooms.createEphemeral - duplicate prevention', () => {
+  let testUser: Awaited<ReturnType<typeof User.getOrCreateFromHeader>>
+
+  beforeEach(async () => {
+    await db.db?.run('DELETE FROM rooms')
+    await db.db?.run('DELETE FROM queue')
+    await db.db?.run('DELETE FROM users')
+    testUser = await User.getOrCreateFromHeader('dupeowner', false, false)
+  })
+
+  it('should return existing roomId when called twice for same user', async () => {
+    const roomId1 = await Rooms.createEphemeral(testUser.userId, 'Room 1')
+    const roomId2 = await Rooms.createEphemeral(testUser.userId, 'Room 2')
+
+    expect(roomId1).toBe(roomId2)
+  })
+
+  it('should create different rooms for different users', async () => {
+    const otherUser = await User.getOrCreateFromHeader('otherowner', false, false)
+
+    const roomId1 = await Rooms.createEphemeral(testUser.userId, 'Room A')
+    const roomId2 = await Rooms.createEphemeral(otherUser.userId, 'Room B')
+
+    expect(roomId1).not.toBe(roomId2)
+  })
+
+  it('should allow multiple rooms with ownerId = NULL (admin rooms)', async () => {
+    const now = Math.floor(Date.now() / 1000)
+
+    // Insert two admin rooms (ownerId IS NULL) — partial unique index should not block this
+    await db.db?.run(
+      'INSERT INTO rooms (name, status, dateCreated, data) VALUES (?, ?, ?, ?)',
+      ['Admin Room 1', 'open', now, '{}'],
+    )
+    await db.db?.run(
+      'INSERT INTO rooms (name, status, dateCreated, data) VALUES (?, ?, ?, ?)',
+      ['Admin Room 2', 'open', now, '{}'],
+    )
+
+    const rows = await db.db?.all('SELECT roomId FROM rooms WHERE ownerId IS NULL')
+    expect(rows?.length).toBeGreaterThanOrEqual(2)
+  })
+})
+
 describe('Rooms.getByInvitationToken', () => {
   beforeEach(async () => {
     // Clean up between tests
