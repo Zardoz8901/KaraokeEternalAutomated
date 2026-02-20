@@ -68,6 +68,8 @@ router.get('/join/validate', async (ctx) => {
 // GET /api/rooms/my - Get the current user's own room (for standard users)
 // IMPORTANT: Must be defined before /:roomId? to avoid being caught by that route
 router.get('/my', async (ctx) => {
+  ctx.set('Cache-Control', 'no-store')
+
   // Must be authenticated and not a guest
   if (!ctx.user.userId || ctx.user.isGuest) {
     ctx.throw(401)
@@ -200,11 +202,15 @@ router.put('/my/prefs', async (ctx) => {
     nextPrefs.restrictCollaboratorsToPartyPresetFolder = false
   }
 
-  await Rooms.set(room.roomId, {
+  const result = await Rooms.set(room.roomId, {
     name: room.name,
     status: room.status,
     prefs: nextPrefs,
   })
+
+  if (result.changes === 0) {
+    ctx.throw(404, 'Room not found')
+  }
 
   const sockets = await ctx.io.in(Rooms.prefix(room.roomId)).fetchSockets()
   for (const s of sockets) {
@@ -229,7 +235,9 @@ router.put('/my/prefs', async (ctx) => {
       status: room.status,
       invitationToken: updatedRoomData?.invitationToken ?? null,
       enrollmentUrl: buildEnrollmentUrl(updatedRoomData?.invitationToken ?? null),
-      prefs: sanitizeRoomPrefsForClient(nextPrefs),
+      prefs: sanitizeRoomPrefsForClient(updatedRoomData?.prefs && typeof updatedRoomData.prefs === 'object'
+        ? updatedRoomData.prefs as Record<string, unknown>
+        : {}),
     },
   }
 })
@@ -292,6 +300,7 @@ router.get('/join/:roomId/:inviteCode', async (ctx) => {
 
 // list rooms
 router.get('/:roomId?', async (ctx) => {
+  ctx.set('Cache-Control', 'no-store')
   const roomId = ctx.params.roomId ? parseInt(ctx.params.roomId, 10) : undefined
   const status = ctx.user.isAdmin ? STATUSES : undefined
   const res = await Rooms.get(roomId, { status })

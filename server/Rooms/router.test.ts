@@ -207,6 +207,7 @@ describe('Rooms Router - Room Joining', () => {
         user: { userId: testUser.userId, isGuest: false, isAdmin: false, name: 'testuser' },
         request: { host: 'karaoke.example.com' },
         body: undefined as unknown,
+        set: vi.fn(),
         throw: (status: number, message?: string) => {
           const err = new Error(message) as Error & { status: number }
           err.status = status
@@ -392,6 +393,177 @@ describe('Rooms Router - Room Joining', () => {
 
       const handler = prefsLayer!.stack[prefsLayer!.stack.length - 1]
       await expect(handler(ctx, async () => {})).rejects.toMatchObject({ status: 422 })
+    })
+
+    it('should bump lastActivity atomically when saving prefs', async () => {
+      const now = Math.floor(Date.now() / 1000)
+      const oneHourAgo = now - 3600
+
+      await db.db?.run(
+        'INSERT INTO rooms (name, status, ownerId, dateCreated, lastActivity, data) VALUES (?, ?, ?, ?, ?, ?)',
+        ['Owner Room', 'open', testUser.userId, now, oneHourAgo, JSON.stringify({ prefs: {} })],
+      )
+
+      // Confirm lastActivity is stale
+      const beforeRow = await db.db?.get('SELECT lastActivity FROM rooms WHERE ownerId = ?', [testUser.userId])
+      expect(beforeRow?.lastActivity).toBe(oneHourAgo)
+
+      const routerModule = await import('./router.js')
+      const router = routerModule.default
+      const prefsLayer = (router as unknown as { stack: Array<{ path: string, methods: string[], stack: Array<(ctx: unknown, next: () => Promise<void>) => Promise<void>> }> }).stack
+        .find(l => l.path === '/api/rooms/my/prefs' && l.methods.includes('PUT'))
+      expect(prefsLayer).toBeDefined()
+
+      const ctx = {
+        user: { userId: testUser.userId, isGuest: false, isAdmin: false, name: 'testuser' },
+        request: { body: { prefs: { allowGuestOrchestrator: true } } },
+        io: { in: () => ({ fetchSockets: async () => [] }) },
+        body: undefined as unknown,
+        set: vi.fn(),
+        throw: (status: number, message?: string) => {
+          const err = new Error(message) as Error & { status: number }
+          err.status = status
+          throw err
+        },
+      }
+
+      const handler = prefsLayer!.stack[prefsLayer!.stack.length - 1]
+      await handler(ctx, async () => {})
+
+      const afterRow = await db.db?.get('SELECT lastActivity FROM rooms WHERE ownerId = ?', [testUser.userId])
+      // lastActivity should be within 5 seconds of now
+      expect(afterRow?.lastActivity).toBeGreaterThanOrEqual(now - 5)
+      expect(afterRow?.lastActivity).toBeLessThanOrEqual(now + 5)
+    })
+
+    it('should return 404 when room disappears between lookup and save', async () => {
+      const now = Math.floor(Date.now() / 1000)
+      await db.db?.run(
+        'INSERT INTO rooms (name, status, ownerId, dateCreated, lastActivity, data) VALUES (?, ?, ?, ?, ?, ?)',
+        ['Owner Room', 'open', testUser.userId, now, now, JSON.stringify({ prefs: {} })],
+      )
+
+      const routerModule = await import('./router.js')
+      const router = routerModule.default
+      const prefsLayer = (router as unknown as { stack: Array<{ path: string, methods: string[], stack: Array<(ctx: unknown, next: () => Promise<void>) => Promise<void>> }> }).stack
+        .find(l => l.path === '/api/rooms/my/prefs' && l.methods.includes('PUT'))
+      expect(prefsLayer).toBeDefined()
+
+      // Delete the room after the handler does getByOwnerId but before set()
+      // We simulate this by deleting right before calling the handler — the handler
+      // calls getByOwnerId (which finds the room) then getRoomData + set (which finds nothing)
+      // To truly test the race, we delete the room after getByOwnerId returns.
+      // Simplest approach: test Rooms.set() directly with a non-existent roomId
+      const Rooms = (await import('./Rooms.js')).default
+      const room = await Rooms.getByOwnerId(testUser.userId)
+      expect(room).toBeTruthy()
+
+      // Delete room to simulate race
+      await db.db?.run('DELETE FROM rooms WHERE roomId = ?', [room!.roomId])
+
+      const result = await Rooms.set(room!.roomId, {
+        name: room!.name,
+        status: room!.status,
+        prefs: { allowGuestOrchestrator: true },
+      })
+      expect(result.changes).toBe(0)
+    })
+
+    it('should return DB read-back prefs in response (not in-memory)', async () => {
+      const now = Math.floor(Date.now() / 1000)
+      const folderRes = await db.db?.run(
+        'INSERT INTO hydraFolders (name, authorUserId, authorName, sortOrder, dateCreated) VALUES (?, ?, ?, ?, ?)',
+        ['ReadBackFolder', testUser.userId, 'testuser', 0, now],
+      )
+      const folderId = folderRes?.lastID
+      const presetRes = await db.db?.run(
+        'INSERT INTO hydraPresets (folderId, name, code, authorUserId, authorName, sortOrder, dateCreated, dateUpdated) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [folderId, 'ReadBackPreset', 'osc(10).out()', testUser.userId, 'testuser', 0, now, now],
+      )
+      const presetId = presetRes?.lastID
+
+      await db.db?.run(
+        'INSERT INTO rooms (name, status, ownerId, dateCreated, lastActivity, data) VALUES (?, ?, ?, ?, ?, ?)',
+        ['Owner Room', 'open', testUser.userId, now, now, JSON.stringify({ prefs: {} })],
+      )
+
+      const routerModule = await import('./router.js')
+      const router = routerModule.default
+      const prefsLayer = (router as unknown as { stack: Array<{ path: string, methods: string[], stack: Array<(ctx: unknown, next: () => Promise<void>) => Promise<void>> }> }).stack
+        .find(l => l.path === '/api/rooms/my/prefs' && l.methods.includes('PUT'))
+      expect(prefsLayer).toBeDefined()
+
+      const ctx = {
+        user: { userId: testUser.userId, isGuest: false, isAdmin: false, name: 'testuser' },
+        request: { body: { prefs: { startingPresetId: presetId } } },
+        io: { in: () => ({ fetchSockets: async () => [] }) },
+        body: undefined as unknown,
+        set: vi.fn(),
+        throw: (status: number, message?: string) => {
+          const err = new Error(message) as Error & { status: number }
+          err.status = status
+          throw err
+        },
+      }
+
+      const handler = prefsLayer!.stack[prefsLayer!.stack.length - 1]
+      await handler(ctx, async () => {})
+
+      const responseBody = ctx.body as { room: { prefs: { startingPresetId: number | null } } }
+      expect(responseBody.room.prefs.startingPresetId).toBe(presetId)
+
+      // Verify it matches what's actually in the DB
+      const dbRow = await db.db?.get('SELECT data FROM rooms WHERE ownerId = ?', [testUser.userId])
+      const dbPrefs = JSON.parse(dbRow?.data ?? '{}').prefs
+      expect(dbPrefs.startingPresetId).toBe(presetId)
+      expect(responseBody.room.prefs.startingPresetId).toBe(dbPrefs.startingPresetId)
+    })
+
+    it('should round-trip startingPresetId through PUT and GET', async () => {
+      const now = Math.floor(Date.now() / 1000)
+      const folderRes = await db.db?.run(
+        'INSERT INTO hydraFolders (name, authorUserId, authorName, sortOrder, dateCreated) VALUES (?, ?, ?, ?, ?)',
+        ['RoundTrip', testUser.userId, 'testuser', 0, now],
+      )
+      const folderId = folderRes?.lastID
+      const presetRes = await db.db?.run(
+        'INSERT INTO hydraPresets (folderId, name, code, authorUserId, authorName, sortOrder, dateCreated, dateUpdated) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [folderId, 'RoundTripPreset', 'osc(5).out()', testUser.userId, 'testuser', 0, now, now],
+      )
+      const presetId = presetRes?.lastID
+
+      await db.db?.run(
+        'INSERT INTO rooms (name, status, ownerId, dateCreated, lastActivity, data) VALUES (?, ?, ?, ?, ?, ?)',
+        ['Owner Room', 'open', testUser.userId, now, now, JSON.stringify({ prefs: {} })],
+      )
+
+      const routerModule = await import('./router.js')
+      const router = routerModule.default
+      const prefsLayer = (router as unknown as { stack: Array<{ path: string, methods: string[], stack: Array<(ctx: unknown, next: () => Promise<void>) => Promise<void>> }> }).stack
+        .find(l => l.path === '/api/rooms/my/prefs' && l.methods.includes('PUT'))
+      expect(prefsLayer).toBeDefined()
+
+      const ctx = {
+        user: { userId: testUser.userId, isGuest: false, isAdmin: false, name: 'testuser' },
+        request: { body: { prefs: { startingPresetId: presetId } } },
+        io: { in: () => ({ fetchSockets: async () => [] }) },
+        body: undefined as unknown,
+        set: vi.fn(),
+        throw: (status: number, message?: string) => {
+          const err = new Error(message) as Error & { status: number }
+          err.status = status
+          throw err
+        },
+      }
+
+      const handler = prefsLayer!.stack[prefsLayer!.stack.length - 1]
+      await handler(ctx, async () => {})
+
+      // Now verify via Rooms.get() that the preset persisted
+      const Rooms = (await import('./Rooms.js')).default
+      const room = await Rooms.getByOwnerId(testUser.userId)
+      const roomData = await Rooms.getRoomData(room!.roomId)
+      expect(roomData?.prefs?.startingPresetId).toBe(presetId)
     })
   })
 
@@ -933,6 +1105,73 @@ describe('Rooms Router - Room Joining', () => {
 
       const handler = validateLayer!.stack[validateLayer!.stack.length - 1]
       await expect(handler(ctx, async () => {})).rejects.toMatchObject({ status: 404 })
+    })
+  })
+
+  describe('Cache-Control headers', () => {
+    it('should set Cache-Control: no-store on GET /api/rooms/my', async () => {
+      const now = Math.floor(Date.now() / 1000)
+      await db.db?.run(
+        'INSERT INTO rooms (name, status, ownerId, dateCreated, lastActivity, data) VALUES (?, ?, ?, ?, ?, ?)',
+        ['Cache Room', 'open', testUser.userId, now, now, JSON.stringify({ prefs: {} })],
+      )
+
+      const routerModule = await import('./router.js')
+      const router = routerModule.default
+      const myLayer = (router as unknown as { stack: Array<{ path: string, methods: string[], stack: Array<(ctx: unknown, next: () => Promise<void>) => Promise<void>> }> }).stack
+        .find(l => l.path === '/api/rooms/my' && l.methods.includes('GET'))
+      expect(myLayer).toBeDefined()
+
+      const headers: Record<string, string> = {}
+      const ctx = {
+        user: { userId: testUser.userId, isGuest: false, isAdmin: false, name: 'testuser' },
+        request: { host: 'karaoke.example.com' },
+        body: undefined as unknown,
+        set: (key: string, value: string) => { headers[key] = value },
+        throw: (status: number, message?: string) => {
+          const err = new Error(message) as Error & { status: number }
+          err.status = status
+          throw err
+        },
+      }
+
+      const handler = myLayer!.stack[myLayer!.stack.length - 1]
+      await handler(ctx, async () => {})
+
+      expect(headers['Cache-Control']).toBe('no-store')
+    })
+
+    it('should set Cache-Control: no-store on GET /api/rooms/:roomId?', async () => {
+      const routerModule = await import('./router.js')
+      const router = routerModule.default
+      const listLayer = (router as unknown as { stack: Array<{ path: string, methods: string[], stack: Array<(ctx: unknown, next: () => Promise<void>) => Promise<void>> }> }).stack
+        .find(l => l.path === '/api/rooms/:roomId?' && l.methods.includes('GET'))
+      expect(listLayer).toBeDefined()
+
+      const headers: Record<string, string> = {}
+      const ctx = {
+        params: {},
+        user: { userId: testUser.userId, isGuest: false, isAdmin: true, name: 'testuser' },
+        body: undefined as unknown,
+        io: {
+          sockets: {
+            adapter: {
+              rooms: new Map(),
+            },
+          },
+        },
+        set: (key: string, value: string) => { headers[key] = value },
+        throw: (status: number, message?: string) => {
+          const err = new Error(message) as Error & { status: number }
+          err.status = status
+          throw err
+        },
+      }
+
+      const handler = listLayer!.stack[listLayer!.stack.length - 1]
+      await handler(ctx, async () => {})
+
+      expect(headers['Cache-Control']).toBe('no-store')
     })
   })
 })

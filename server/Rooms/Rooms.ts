@@ -100,7 +100,8 @@ class Rooms {
         SET name = ${name},
             ${passwordSql}
             status = ${status},
-            data = json_set(data, '$.prefs', json(${JSON.stringify(prefs)}))
+            data = json_set(data, '$.prefs', json(${JSON.stringify(prefs)})),
+            lastActivity = ${Math.floor(Date.now() / 1000)}
         WHERE roomId = ${roomId}
       `
     } else {
