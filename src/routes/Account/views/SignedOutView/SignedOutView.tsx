@@ -135,7 +135,7 @@ const SignedOutView = () => {
     data.append('newPassword', password)
     data.append('newPasswordConfirm', passwordConfirm)
     data.append('roomId', String(roomId))
-    data.append('roomPassword', password)
+    data.append('roomPassword', roomPassword)
     data.append('name', name.trim())
 
     if (typeof image !== 'undefined') {
@@ -147,7 +147,7 @@ const SignedOutView = () => {
     }
 
     dispatch(createAccount(data))
-  }, [dispatch, mode, password, roomId, username])
+  }, [dispatch, mode, password, roomId, roomPassword, username])
 
   const getAllowed = useCallback((roleName: string) => {
     const roleId = prefs.roles.result.find(id => prefs.roles.entities[id].name === roleName)

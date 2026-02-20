@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest'
 import fse from 'fs-extra'
+import bcrypt from '../lib/bcrypt.js'
 
 const TEST_DB_PATH = '/tmp/karaoke-eternal-test-rooms.sqlite'
 
@@ -260,5 +261,54 @@ describe('Rooms.getByInvitationToken', () => {
 
     const room = await Rooms.getByInvitationToken('12345678-1234-1234-1234-123456789012')
     expect(room).toBeNull()
+  })
+})
+
+describe('Rooms.validate - password', () => {
+  beforeEach(async () => {
+    await db.db?.run('DELETE FROM rooms')
+    await db.db?.run('DELETE FROM users')
+  })
+
+  it('should reject incorrect room password', async () => {
+    const now = Math.floor(Date.now() / 1000)
+    const hashed = await bcrypt.hash('correct-password', 12)
+
+    await db.db?.run(
+      'INSERT INTO rooms (name, password, status, dateCreated, data) VALUES (?, ?, ?, ?, ?)',
+      ['Password Room', hashed, 'open', now, '{}'],
+    )
+    const row = await db.db?.get('SELECT roomId FROM rooms WHERE name = ?', ['Password Room'])
+
+    await expect(Rooms.validate(row.roomId, 'wrong-password'))
+      .rejects.toThrow('Incorrect room password')
+  })
+
+  it('should accept correct room password', async () => {
+    const now = Math.floor(Date.now() / 1000)
+    const hashed = await bcrypt.hash('correct-password', 12)
+
+    await db.db?.run(
+      'INSERT INTO rooms (name, password, status, dateCreated, data) VALUES (?, ?, ?, ?, ?)',
+      ['Password Room', hashed, 'open', now, '{}'],
+    )
+    const row = await db.db?.get('SELECT roomId FROM rooms WHERE name = ?', ['Password Room'])
+
+    await expect(Rooms.validate(row.roomId, 'correct-password'))
+      .resolves.toBe(true)
+  })
+
+  it('should reject missing password when room requires one', async () => {
+    const now = Math.floor(Date.now() / 1000)
+    const hashed = await bcrypt.hash('room-secret', 12)
+
+    await db.db?.run(
+      'INSERT INTO rooms (name, password, status, dateCreated, data) VALUES (?, ?, ?, ?, ?)',
+      ['Password Room', hashed, 'open', now, '{}'],
+    )
+    const row = await db.db?.get('SELECT roomId FROM rooms WHERE name = ?', ['Password Room'])
+
+    await expect(Rooms.validate(row.roomId, undefined))
+      .rejects.toThrow('Room password is required')
   })
 })
