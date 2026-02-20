@@ -30,6 +30,7 @@ interface QueueItemProps {
   isSkippable: boolean
   isStarred: boolean
   isUpcoming: boolean
+  numStars: number
   pctPlayed: number
   queueId: number
   songId: number
@@ -58,6 +59,7 @@ const QueueItem = ({
   isSkippable,
   isStarred,
   isUpcoming,
+  numStars,
   onMoveClick,
   onRemoveUpcoming,
   pctPlayed,
@@ -168,7 +170,11 @@ const QueueItem = ({
             className={clsx(isStarred && styles.active)}
             icon='STAR_FULL'
             onClick={handleStarClick}
-          />
+          >
+            <div className={styles.starCount}>
+              {numStars || ''}
+            </div>
+          </Button>
           {isInfoable && (
             <Button
               className={styles.active}

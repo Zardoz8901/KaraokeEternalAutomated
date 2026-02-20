@@ -17,6 +17,7 @@ const QueueList = () => {
   const queue = useAppSelector(getRoundRobinQueue)
   const songs = useAppSelector(state => state.songs)
   const starredSongs = useAppSelector(state => ensureState(state.userStars).starredSongs)
+  const starredSongCounts = useAppSelector(state => state.starCounts.songs)
   const user = useAppSelector(state => state.user)
   const waits = useAppSelector(getWaits)
 
@@ -70,6 +71,7 @@ const QueueList = () => {
         isSkippable={isCurrent && (isOwner || user.isAdmin || isRoomOwner)}
         isStarred={starredSongs.includes(item.songId)}
         isUpcoming={isUpcoming}
+        numStars={starredSongCounts[item.songId] || 0}
         pctPlayed={isCurrent ? position / duration * 100 : 0}
         title={songs.entities[item.songId].title}
         wait={formatSeconds(waits[qId], true)} // fuzzy
