@@ -2,12 +2,13 @@ import React, { useEffect, useState, useRef } from 'react'
 import { Provider, useSelector } from 'react-redux'
 import store, { RootState } from 'store/store'
 import CoreLayout from './CoreLayout/CoreLayout'
+import GlobalErrorBoundary from './GlobalErrorBoundary'
 import Spinner from '../Spinner/Spinner'
 import RoomJoinPrompt from '../RoomJoinPrompt/RoomJoinPrompt'
 
 // Inner component that can use hooks to check bootstrap state
 const AppContent = () => {
-  const { isBootstrapping, isLoggingOut, roomId, isGuest, userId } = useSelector((state: RootState) => state.user)
+  const { isBootstrapping, isLoggingOut, roomId, isGuest, userId, bootstrapError } = useSelector((state: RootState) => state.user)
   const [targetRoomId, setTargetRoomId] = useState<number | null>(null)
   const [isRedirecting, setIsRedirecting] = useState(false)
   const enrollmentCheckDone = useRef(false)
@@ -84,16 +85,35 @@ const AppContent = () => {
     return <Spinner />
   }
 
+  if (bootstrapError) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', color: 'var(--text-color)', fontFamily: 'var(--font-family)', gap: 'var(--space-m)' }}>
+        <h2>Unable to Connect</h2>
+        <p style={{ color: 'var(--color-gray-5)' }}>
+          {bootstrapError === 'timeout' ? 'The server took too long to respond.' : 'Could not reach the server.'}
+        </p>
+        <button
+          onClick={() => { window.location.reload() }}
+          style={{ padding: 'var(--space-s) var(--space-m)', backgroundColor: 'var(--btn-bg-color)', color: 'var(--text-color)', border: 'none', borderRadius: 'var(--border-radius)', cursor: 'pointer', fontFamily: 'var(--font-family)', fontSize: 'var(--font-size-m)' }}
+        >
+          Retry
+        </button>
+      </div>
+    )
+  }
+
   return (
-    <React.Suspense fallback={<Spinner />}>
-      <CoreLayout />
-      {targetRoomId && (
-        <RoomJoinPrompt
-          roomId={targetRoomId}
-          onClose={handleCloseJoinPrompt}
-        />
-      )}
-    </React.Suspense>
+    <GlobalErrorBoundary>
+      <React.Suspense fallback={<Spinner />}>
+        <CoreLayout />
+        {targetRoomId && (
+          <RoomJoinPrompt
+            roomId={targetRoomId}
+            onClose={handleCloseJoinPrompt}
+          />
+        )}
+      </React.Suspense>
+    </GlobalErrorBoundary>
   )
 }
 

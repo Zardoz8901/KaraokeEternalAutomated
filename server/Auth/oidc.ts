@@ -25,13 +25,25 @@ export async function getOidcConfig (): Promise<client.Configuration> {
 
   log.info('Discovering OIDC configuration from %s', issuerUrl)
 
-  cachedConfig = await client.discovery(
-    new URL(issuerUrl),
-    clientId,
-    clientSecret,
-  )
+  const DISCOVERY_RETRY_DELAYS = [0, 1000, 2000]
+  let lastError: Error | null = null
 
-  return cachedConfig
+  for (const delay of DISCOVERY_RETRY_DELAYS) {
+    if (delay > 0) await new Promise(resolve => setTimeout(resolve, delay))
+    try {
+      cachedConfig = await client.discovery(
+        new URL(issuerUrl),
+        clientId,
+        clientSecret,
+      )
+      return cachedConfig
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err))
+      log.warn('OIDC discovery attempt failed: %s', lastError.message)
+    }
+  }
+
+  throw new Error(`OIDC discovery failed after ${DISCOVERY_RETRY_DELAYS.length} attempts: ${lastError?.message}`)
 }
 
 /**

@@ -4,6 +4,9 @@ import {
   FOOTER_HEIGHT_CHANGE,
   HEADER_HEIGHT_CHANGE,
   SHOW_ERROR_MESSAGE,
+  SOCKET_CONNECTED,
+  SOCKET_DISCONNECTED,
+  SOCKET_RECONNECT_FAILED,
   UI_WINDOW_RESIZE,
 } from 'shared/actionTypes'
 import { RootState } from 'store/store'
@@ -22,6 +25,8 @@ export interface UIState {
   innerWidth: number
   innerHeight: number
   contentWidth: number
+  isSocketConnected: boolean
+  socketReconnectFailed: boolean
 }
 
 const initialState: UIState = {
@@ -32,6 +37,8 @@ const initialState: UIState = {
   innerWidth: window.innerWidth,
   innerHeight: window.innerHeight,
   contentWidth: Math.min(window.innerWidth, MAX_CONTENT_WIDTH),
+  isSocketConnected: false,
+  socketReconnectFailed: false,
 }
 
 // Internal action creators for extraReducers (defined before slice)
@@ -39,6 +46,9 @@ const headerHeightChangeInternal = createAction<number>(HEADER_HEIGHT_CHANGE)
 const footerHeightChangeInternal = createAction<number>(FOOTER_HEIGHT_CHANGE)
 const showErrorInternal = createAction<string>(SHOW_ERROR_MESSAGE)
 const clearErrorInternal = createAction(CLEAR_ERROR_MESSAGE)
+const socketConnectedInternal = createAction(SOCKET_CONNECTED)
+const socketDisconnectedInternal = createAction(SOCKET_DISCONNECTED)
+const socketReconnectFailedInternal = createAction(SOCKET_RECONNECT_FAILED)
 const windowResizeInternal = createAction<{ innerWidth: number, innerHeight: number }>(UI_WINDOW_RESIZE)
 
 const uiSlice = createSlice({
@@ -59,6 +69,16 @@ const uiSlice = createSlice({
       })
       .addCase(clearErrorInternal, (state) => {
         state.isErrored = false
+      })
+      .addCase(socketConnectedInternal, (state) => {
+        state.isSocketConnected = true
+        state.socketReconnectFailed = false
+      })
+      .addCase(socketDisconnectedInternal, (state) => {
+        state.isSocketConnected = false
+      })
+      .addCase(socketReconnectFailedInternal, (state) => {
+        state.socketReconnectFailed = true
       })
       .addCase(windowResizeInternal, (state, action) => {
         state.innerWidth = action.payload.innerWidth

@@ -1,6 +1,20 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import type * as client from 'openid-client'
-import { extractUserClaims } from './oidc.js'
+import { extractUserClaims, getOidcConfig, clearOidcCache } from './oidc.js'
+
+vi.mock('../lib/Log.js', () => ({
+  default: () => ({
+    info: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
+    error: vi.fn(),
+  }),
+}))
+
+const mockDiscovery = vi.fn()
+vi.mock('openid-client', () => ({
+  discovery: (...args: unknown[]) => mockDiscovery(...args),
+}))
 
 /**
  * Minimal stub that satisfies the TokenEndpointResponse & TokenEndpointResponseHelpers
@@ -135,5 +149,50 @@ describe('extractUserClaims', () => {
     expect(result.groups).toEqual(['admin'])
     expect(result.isAdmin).toBe(true)
     expect(result.isGuest).toBe(false)
+  })
+})
+
+describe('getOidcConfig', () => {
+  const fakeConfig = { fake: 'config' } as unknown as client.Configuration
+
+  beforeEach(() => {
+    clearOidcCache()
+    mockDiscovery.mockReset()
+    vi.stubEnv('KES_OIDC_ISSUER_URL', 'https://auth.example.com')
+    vi.stubEnv('KES_OIDC_CLIENT_ID', 'test-client')
+    vi.stubEnv('KES_OIDC_CLIENT_SECRET', 'test-secret')
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  it('retries on transient failure then succeeds', async () => {
+    mockDiscovery
+      .mockRejectedValueOnce(new Error('ECONNREFUSED'))
+      .mockResolvedValueOnce(fakeConfig)
+
+    const result = await getOidcConfig()
+
+    expect(result).toBe(fakeConfig)
+    expect(mockDiscovery).toHaveBeenCalledTimes(2)
+  })
+
+  it('throws after exhausting retries', async () => {
+    mockDiscovery.mockRejectedValue(new Error('ECONNREFUSED'))
+
+    await expect(getOidcConfig()).rejects.toThrow('OIDC discovery failed after 3 attempts: ECONNREFUSED')
+    expect(mockDiscovery).toHaveBeenCalledTimes(3)
+  })
+
+  it('returns cached config on second call', async () => {
+    mockDiscovery.mockResolvedValueOnce(fakeConfig)
+
+    const result1 = await getOidcConfig()
+    const result2 = await getOidcConfig()
+
+    expect(result1).toBe(fakeConfig)
+    expect(result2).toBe(fakeConfig)
+    expect(mockDiscovery).toHaveBeenCalledTimes(1)
   })
 })

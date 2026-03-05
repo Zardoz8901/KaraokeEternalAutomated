@@ -12,6 +12,11 @@ import {
   SESSION_ERROR,
   MEMORY_HEALTH_SAMPLE,
 } from 'shared/telemetry'
+import {
+  SOCKET_CONNECTED,
+  SOCKET_DISCONNECTED,
+  SOCKET_RECONNECT_FAILED,
+} from 'shared/actionTypes'
 import AppRouter from 'lib/AppRouter'
 import { checkSession, connectSocket } from './store/modules/user'
 
@@ -30,6 +35,7 @@ socket.on('connect', () => {
     : undefined
   _reconnectStartTime = null
 
+  store.dispatch({ type: SOCKET_CONNECTED })
   telemetry.emit(SOCKET_CONNECT, {
     socket_id: socket.id ?? '',
     transport: socket.io?.engine?.transport?.name ?? '',
@@ -38,7 +44,12 @@ socket.on('connect', () => {
 })
 
 socket.on('disconnect', (reason: string) => {
+  store.dispatch({ type: SOCKET_DISCONNECTED })
   telemetry.emit(SOCKET_DISCONNECT, { socket_id: socket.id ?? '', reason })
+})
+
+socket.io.on('reconnect_failed', () => {
+  store.dispatch({ type: SOCKET_RECONNECT_FAILED })
 })
 
 socket.on('reconnect_attempt', () => {

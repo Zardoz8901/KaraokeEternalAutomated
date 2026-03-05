@@ -37,6 +37,25 @@ const CoreLayout = () => {
     <>
       {!isOrchestratorRoute && <Header ref={headerRef} />}
 
+      {ui.socketReconnectFailed && (
+        <div style={{
+          backgroundColor: 'var(--btn-danger-bg-color)',
+          color: '#fff',
+          textAlign: 'center',
+          padding: 'var(--space-s) var(--space-m)',
+          fontFamily: 'var(--font-family)',
+          fontSize: 'var(--font-size-s)',
+        }}>
+          Connection lost —{' '}
+          <button
+            onClick={() => window.location.reload()}
+            style={{ background: 'none', border: 'none', color: '#fff', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'var(--font-family)', fontSize: 'var(--font-size-s)', padding: 0 }}
+          >
+            Reload
+          </button>
+        </div>
+      )}
+
       <Routes />
 
       {!isPlayerRoute && !isOrchestratorRoute && <Navigation ref={navRef} />}
