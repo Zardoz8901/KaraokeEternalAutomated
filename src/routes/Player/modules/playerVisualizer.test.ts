@@ -5,7 +5,6 @@ import {
   PLAYER_LOAD,
   PLAYER_VISUALIZER_ERROR,
   VISUALIZER_HYDRA_CODE,
-  VISUALIZER_STATE_SYNC,
 } from 'shared/actionTypes'
 
 /**
@@ -397,54 +396,7 @@ describe('playerVisualizer cycleOnSongTransition', () => {
   })
 })
 
-describe('playerVisualizer state sync', () => {
-  it('should update injectionLevel via VISUALIZER_STATE_SYNC', async () => {
-    const { default: reducer } = await import('./playerVisualizer')
-    const state = reducer(undefined, { type: '@@INIT' })
-    const newState = reducer(state, {
-      type: VISUALIZER_STATE_SYNC,
-      payload: { injectionLevel: 'high' },
-    })
-    expect(newState.injectionLevel).toBe('high')
-  })
-
-  it('should update allowCamera via VISUALIZER_STATE_SYNC', async () => {
-    const { default: reducer } = await import('./playerVisualizer')
-    const state = reducer(undefined, { type: '@@INIT' })
-    const newState = reducer(state, {
-      type: VISUALIZER_STATE_SYNC,
-      payload: { allowCamera: true },
-    })
-    expect(newState.allowCamera).toBe(true)
-  })
-
-  it('should update presetCategory via VISUALIZER_STATE_SYNC', async () => {
-    const { default: reducer } = await import('./playerVisualizer')
-    const state = reducer(undefined, { type: '@@INIT' })
-    const newState = reducer(state, {
-      type: VISUALIZER_STATE_SYNC,
-      payload: { presetCategory: 'camera' },
-    })
-    expect(newState.presetCategory).toBe('camera')
-  })
-
-  it('should not overwrite unspecified fields in VISUALIZER_STATE_SYNC', async () => {
-    const { default: reducer } = await import('./playerVisualizer')
-    let state = reducer(undefined, { type: '@@INIT' })
-    state = reducer(state, {
-      type: VISUALIZER_STATE_SYNC,
-      payload: { injectionLevel: 'high', allowCamera: true },
-    })
-    // Only update presetCategory, injectionLevel and allowCamera should be preserved
-    const newState = reducer(state, {
-      type: VISUALIZER_STATE_SYNC,
-      payload: { presetCategory: 'feedback' },
-    })
-    expect(newState.injectionLevel).toBe('high')
-    expect(newState.allowCamera).toBe(true)
-    expect(newState.presetCategory).toBe('feedback')
-  })
-
+describe('playerVisualizer injectionLevel', () => {
   it('should update injectionLevel from VISUALIZER_HYDRA_CODE payload', async () => {
     const { default: reducer } = await import('./playerVisualizer')
     const state = reducer(undefined, { type: '@@INIT' })
@@ -459,8 +411,8 @@ describe('playerVisualizer state sync', () => {
     const { default: reducer } = await import('./playerVisualizer')
     let state = reducer(undefined, { type: '@@INIT' })
     state = reducer(state, {
-      type: VISUALIZER_STATE_SYNC,
-      payload: { injectionLevel: 'high' },
+      type: VISUALIZER_HYDRA_CODE,
+      payload: { code: 'noise(5).out()', injectionLevel: 'high' },
     })
     const newState = reducer(state, {
       type: VISUALIZER_HYDRA_CODE,

@@ -45,10 +45,6 @@ export const PLAYER_EMIT_LEAVE = 'server/PLAYER_EMIT_LEAVE'
 export const VISUALIZER_HYDRA_CODE_REQ = 'server/VISUALIZER_HYDRA_CODE'
 export const VISUALIZER_HYDRA_CODE = 'player/VISUALIZER_HYDRA_CODE'
 
-// Visualizer state sync (orchestrator → server → player)
-export const VISUALIZER_STATE_SYNC_REQ = 'server/VISUALIZER_STATE_SYNC'
-export const VISUALIZER_STATE_SYNC = 'player/VISUALIZER_STATE_SYNC'
-
 // Camera WebRTC signaling (orchestrator ↔ server ↔ player)
 export const CAMERA_OFFER_REQ = 'server/CAMERA_OFFER'
 export const CAMERA_OFFER = 'player/CAMERA_OFFER'

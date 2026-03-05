@@ -12,7 +12,6 @@ import {
   PLAYER_REQ_NEXT,
   VISUALIZER_HYDRA_CODE,
   VISUALIZER_HYDRA_CODE_REQ,
-  VISUALIZER_STATE_SYNC_REQ,
 } from '../../shared/actionTypes.js'
 
 vi.mock('../Rooms/Rooms.js', () => ({
@@ -495,14 +494,6 @@ describe('Payload validation', () => {
     expect(broadcastEmit).not.toHaveBeenCalled()
   })
 
-  // --- VISUALIZER_STATE_SYNC_REQ ---
-
-  it('VISUALIZER_STATE_SYNC_REQ rejects oversized payload', async () => {
-    allowAll(88)
-    const { sock, broadcastEmit } = createMockSocket({ userId: 101, roomId: 88, isAdmin: false })
-    await handlers[VISUALIZER_STATE_SYNC_REQ](sock, { payload: { data: 'x'.repeat(100_000) } })
-    expect(broadcastEmit).not.toHaveBeenCalled()
-  })
 })
 
 describe('Camera subscriber pinning (KI-3)', () => {

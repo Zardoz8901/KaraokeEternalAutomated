@@ -31,8 +31,6 @@ import {
   PLAYER_LEAVE,
   VISUALIZER_HYDRA_CODE_REQ,
   VISUALIZER_HYDRA_CODE,
-  VISUALIZER_STATE_SYNC_REQ,
-  VISUALIZER_STATE_SYNC,
   CAMERA_OFFER_REQ,
   CAMERA_OFFER,
   CAMERA_ANSWER_REQ,
@@ -117,11 +115,6 @@ async function getRoomControlAccess (sock: RoomControlSocket): Promise<RoomContr
 export async function canManageRoom (sock: RoomControlSocket): Promise<boolean> {
   const access = await getRoomControlAccess(sock)
   return access.hasRoom && access.canManage
-}
-
-async function canSendVisualizer (sock: RoomControlSocket): Promise<boolean> {
-  const access = await getRoomControlAccess(sock)
-  return access.hasRoom && (access.canManage || access.accessPrefs.allowRoomCollaboratorsToSendVisualizer)
 }
 
 function canCollaboratorSendHydraCodeForRoomPolicy (
@@ -232,7 +225,6 @@ const ACTION_HANDLERS = {
   [PLAYER_REQ_OPTIONS]: async (sock, { payload }) => {
     if (!(await canManageRoom(sock))) return
 
-    // @todo: emit to players only
     sock.server.to(Rooms.prefix(sock.user.roomId)).emit('action', {
       type: PLAYER_CMD_OPTIONS,
       payload,
@@ -241,7 +233,6 @@ const ACTION_HANDLERS = {
   [PLAYER_REQ_NEXT]: async (sock) => {
     if (!(await canManageRoom(sock))) return
 
-    // @todo: emit to players only
     sock.server.to(Rooms.prefix(sock.user.roomId)).emit('action', {
       type: PLAYER_CMD_NEXT,
     })
@@ -249,7 +240,6 @@ const ACTION_HANDLERS = {
   [PLAYER_REQ_PAUSE]: async (sock) => {
     if (!(await canManageRoom(sock))) return
 
-    // @todo: emit to players only
     sock.server.to(Rooms.prefix(sock.user.roomId)).emit('action', {
       type: PLAYER_CMD_PAUSE,
     })
@@ -257,7 +247,6 @@ const ACTION_HANDLERS = {
   [PLAYER_REQ_PLAY]: async (sock) => {
     if (!(await canManageRoom(sock))) return
 
-    // @todo: emit to players only
     sock.server.to(Rooms.prefix(sock.user.roomId)).emit('action', {
       type: PLAYER_CMD_PLAY,
     })
@@ -265,7 +254,6 @@ const ACTION_HANDLERS = {
   [PLAYER_REQ_REPLAY]: async (sock, { payload }) => {
     if (!(await canManageRoom(sock))) return
 
-    // @todo: emit to players only
     sock.server.to(Rooms.prefix(sock.user.roomId)).emit('action', {
       type: PLAYER_CMD_REPLAY,
       payload,
@@ -274,7 +262,6 @@ const ACTION_HANDLERS = {
   [PLAYER_REQ_VOLUME]: async (sock, { payload }) => {
     if (!(await canManageRoom(sock))) return
 
-    // @todo: emit to players only
     sock.server.to(Rooms.prefix(sock.user.roomId)).emit('action', {
       type: PLAYER_CMD_VOLUME,
       payload,
@@ -311,15 +298,6 @@ const ACTION_HANDLERS = {
     if (typeof roomId === 'number') {
       roomLastVisualizerCode.set(roomId, payloadObject)
     }
-  },
-  [VISUALIZER_STATE_SYNC_REQ]: async (sock, { payload }) => {
-    if (!isValidPayloadSize(payload)) return
-    if (!(await canSendVisualizer(sock))) return
-
-    sock.server.to(Rooms.prefix(sock.user.roomId)).emit('action', {
-      type: VISUALIZER_STATE_SYNC,
-      payload,
-    })
   },
   [CAMERA_OFFER_REQ]: async (sock, { payload }) => {
     if (!isValidCameraOffer(payload) || !isValidPayloadSize(payload)) return

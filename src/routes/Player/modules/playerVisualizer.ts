@@ -4,7 +4,6 @@ import {
   PLAYER_LOAD,
   PLAYER_VISUALIZER_ERROR,
   VISUALIZER_HYDRA_CODE,
-  VISUALIZER_STATE_SYNC,
 } from 'shared/actionTypes'
 import type { PlaybackOptions, VisualizerMode } from 'shared/types'
 import { getPresetLabel } from 'routes/Orchestrator/components/hydraPresets'
@@ -26,14 +25,6 @@ const hydraCodeReceived = createAction<{
 }>(VISUALIZER_HYDRA_CODE)
 export const playerLoad = createAction(PLAYER_LOAD)
 export const playerVisualizerError = createAction<string>(PLAYER_VISUALIZER_ERROR)
-
-interface VisualizerSyncPayload {
-  injectionLevel?: InjectionLevel
-  allowCamera?: boolean
-  presetCategory?: PresetCategory
-}
-
-const stateSync = createAction<VisualizerSyncPayload>(VISUALIZER_STATE_SYNC)
 
 // ------------------------------------
 // Reducer
@@ -122,18 +113,6 @@ const playerVisualizerReducer = createReducer(initialState, (builder) => {
       }
       if (payload.injectionLevel) {
         state.injectionLevel = payload.injectionLevel
-      }
-    })
-    .addCase(stateSync, (state, action) => {
-      const p = action.payload as VisualizerSyncPayload
-      if (p.injectionLevel) {
-        state.injectionLevel = p.injectionLevel
-      }
-      if (typeof p.allowCamera === 'boolean') {
-        state.allowCamera = p.allowCamera
-      }
-      if (p.presetCategory) {
-        state.presetCategory = p.presetCategory
       }
     })
     .addCase(playerVisualizerError, (state) => {

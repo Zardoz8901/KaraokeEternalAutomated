@@ -19,6 +19,13 @@ const router = new KoaRouter({ prefix: '/api/media' })
 
 const audioExts = Object.keys(fileTypes).filter(ext => fileTypes[ext].mimeType.startsWith('audio/'))
 
+/** Validate that a resolved file path stays within the base directory. */
+export function isWithinBasePath (file: string, basePath: string): boolean {
+  const resolvedFile = path.resolve(file)
+  const resolvedBase = path.resolve(basePath)
+  return resolvedFile === resolvedBase || resolvedFile.startsWith(resolvedBase + path.sep)
+}
+
 // stream a media file
 router.get('/:mediaId', async (ctx) => {
   const { type } = ctx.query
@@ -48,6 +55,11 @@ router.get('/:mediaId', async (ctx) => {
   const basePath = paths.entities[pathId].path
 
   let file = path.join(basePath, relPath)
+
+  if (!isWithinBasePath(file, basePath)) {
+    ctx.throw(403, 'Path traversal detected')
+  }
+
   let buffer
 
   if (getExt(file) === '.zip') {
