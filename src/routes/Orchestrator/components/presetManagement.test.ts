@@ -4,6 +4,8 @@ import type { PresetFolder } from './presetTree'
 import {
   getDefaultSaveFolderId,
   reorderByDirection,
+  reorderByDragIndices,
+  parseFolderIdFromDroppableId,
   toSortOrderUpdates,
 } from './presetManagement'
 
@@ -45,5 +47,42 @@ describe('presetManagement', () => {
   it('returns null when moving first item up or unknown item', () => {
     expect(reorderByDirection([1, 2, 3], 1, 'up')).toBeNull()
     expect(reorderByDirection([1, 2, 3], 999, 'down')).toBeNull()
+  })
+
+  describe('reorderByDragIndices', () => {
+    it('moves item forward', () => {
+      expect(reorderByDragIndices([1, 2, 3], 0, 2)).toEqual([2, 3, 1])
+    })
+
+    it('moves item backward', () => {
+      expect(reorderByDragIndices([1, 2, 3], 2, 0)).toEqual([3, 1, 2])
+    })
+
+    it('returns null when indices are the same', () => {
+      expect(reorderByDragIndices([1, 2, 3], 1, 1)).toBeNull()
+    })
+
+    it('returns null for single-item list with same index', () => {
+      expect(reorderByDragIndices([1], 0, 0)).toBeNull()
+    })
+  })
+
+  describe('parseFolderIdFromDroppableId', () => {
+    it('extracts folder id from valid droppableId', () => {
+      expect(parseFolderIdFromDroppableId('presets:folder:123')).toBe(123)
+    })
+
+    it('returns null for gallery droppableId', () => {
+      expect(parseFolderIdFromDroppableId('presets:gallery')).toBeNull()
+    })
+
+    it('returns null for folder-list droppableId', () => {
+      expect(parseFolderIdFromDroppableId('folder-list')).toBeNull()
+    })
+
+    it('returns null for malformed input', () => {
+      expect(parseFolderIdFromDroppableId('presets:folder:abc')).toBeNull()
+      expect(parseFolderIdFromDroppableId('')).toBeNull()
+    })
   })
 })

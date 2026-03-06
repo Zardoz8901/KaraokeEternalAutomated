@@ -42,6 +42,8 @@ describe('PresetTree', () => {
           onLoad={() => {}}
           onSend={() => {}}
           onDeletePreset={() => {}}
+          isDndEnabled={false}
+          onDragEnd={() => {}}
         />,
       )
     })
@@ -90,6 +92,8 @@ describe('PresetTree', () => {
           onToggleFolder={() => {}}
           onLoad={onLoad}
           onSend={() => {}}
+          isDndEnabled={false}
+          onDragEnd={() => {}}
         />,
       )
     })

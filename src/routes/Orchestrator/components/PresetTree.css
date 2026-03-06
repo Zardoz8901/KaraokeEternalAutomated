@@ -153,6 +153,31 @@
   padding: 6px 2px;
 }
 
+.dragHandle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  color: rgba(255, 255, 255, 0.35);
+  transition: color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.dragHandle:hover {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.folderDragging {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  border-color: rgba(78, 205, 196, 0.5);
+}
+
+.presetDragging {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  border-color: rgba(78, 205, 196, 0.5);
+  background: rgba(78, 205, 196, 0.12);
+}
+
 .presetRow {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

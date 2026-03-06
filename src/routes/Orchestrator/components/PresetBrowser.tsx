@@ -9,7 +9,8 @@ import PresetTree from './PresetTree'
 import { buildPresetTree, type PresetLeaf, type PresetTreeNode, type PresetFolder, type PresetItem } from './presetTree'
 import { scopePresetTreeForRoom } from './presetScope'
 import { buildPresetDraft } from './presetDraft'
-import { getDefaultSaveFolderId, reorderByDirection, toSortOrderUpdates, type MoveDirection } from './presetManagement'
+import type { DropResult } from '@hello-pangea/dnd'
+import { getDefaultSaveFolderId, reorderByDragIndices, parseFolderIdFromDroppableId, toSortOrderUpdates } from './presetManagement'
 import {
   fetchAllPresets,
   fetchFolders,
@@ -261,48 +262,52 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
     }
   }, [pendingRename, renameValue, renaming, refresh])
 
-  const handleMoveFolder = useCallback(async (folder: PresetTreeNode, direction: MoveDirection) => {
-    if (!folder.folderId) return
+  const handleDragEnd = useCallback(async (result: DropResult) => {
+    if (!result.destination) return
+    const { source, destination, type } = result
 
-    const orderedFolderIds = folders
-      .slice()
-      .sort((a, b) => a.sortOrder - b.sortOrder || a.folderId - b.folderId)
-      .map(item => item.folderId)
+    if (type === 'FOLDER') {
+      const orderedFolderIds = folders
+        .slice()
+        .sort((a, b) => a.sortOrder - b.sortOrder || a.folderId - b.folderId)
+        .map(item => item.folderId)
 
-    const reordered = reorderByDirection(orderedFolderIds, folder.folderId, direction)
-    if (!reordered) return
+      const reordered = reorderByDragIndices(orderedFolderIds, source.index, destination.index)
+      if (!reordered) return
 
-    try {
-      setError(null)
-      const updates = toSortOrderUpdates(reordered)
-      await reorderFolders(updates)
-      await refresh()
-    } catch (err) {
-      setError(toErrorMessage(err, 'Failed to reorder folders'))
+      try {
+        setError(null)
+        await reorderFolders(toSortOrderUpdates(reordered))
+        await refresh()
+      } catch (err) {
+        setError(toErrorMessage(err, 'Failed to reorder folders'))
+      }
     }
-  }, [folders, refresh])
 
-  const handleMovePreset = useCallback(async (preset: PresetLeaf, direction: MoveDirection) => {
-    if (!preset.presetId || !preset.folderId) return
+    if (type === 'PRESET') {
+      if (source.droppableId !== destination.droppableId) return
 
-    const orderedPresetIds = presets
-      .filter(item => item.folderId === preset.folderId)
-      .slice()
-      .sort((a, b) => a.sortOrder - b.sortOrder || a.presetId - b.presetId)
-      .map(item => item.presetId)
+      const folderId = parseFolderIdFromDroppableId(source.droppableId)
+      if (folderId === null) return
 
-    const reordered = reorderByDirection(orderedPresetIds, preset.presetId, direction)
-    if (!reordered) return
+      const orderedPresetIds = presets
+        .filter(item => item.folderId === folderId)
+        .slice()
+        .sort((a, b) => a.sortOrder - b.sortOrder || a.presetId - b.presetId)
+        .map(item => item.presetId)
 
-    try {
-      setError(null)
-      const updates = toSortOrderUpdates(reordered)
-      await reorderPresets(updates)
-      await refresh()
-    } catch (err) {
-      setError(toErrorMessage(err, 'Failed to reorder presets'))
+      const reordered = reorderByDragIndices(orderedPresetIds, source.index, destination.index)
+      if (!reordered) return
+
+      try {
+        setError(null)
+        await reorderPresets(toSortOrderUpdates(reordered))
+        await refresh()
+      } catch (err) {
+        setError(toErrorMessage(err, 'Failed to reorder presets'))
+      }
     }
-  }, [presets, refresh])
+  }, [folders, presets, refresh])
 
   const openSavePreset = useCallback((preset?: PresetLeaf) => {
     const draft = buildPresetDraft({ currentCode, preset })
@@ -541,6 +546,7 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
           selectedPresetId={selectedPresetId}
           startingPresetId={startingPresetId}
           playerPresetFolderId={playerPresetFolderId}
+          isDndEnabled={query === ''}
           onToggleFolder={toggleFolder}
           onLoad={handleLoad}
           onSend={handleSend}
@@ -549,8 +555,7 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
           onDeleteFolder={requestDeleteFolder}
           onRenamePreset={requestRenamePreset}
           onRenameFolder={requestRenameFolder}
-          onMovePreset={handleMovePreset}
-          onMoveFolder={handleMoveFolder}
+          onDragEnd={handleDragEnd}
           onSetStartingPreset={handleSetStartingPreset}
           onSetPlayerPresetFolder={handleSetPlayerPresetFolder}
           canDeletePreset={canDeletePreset}

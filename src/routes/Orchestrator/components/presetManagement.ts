@@ -30,6 +30,19 @@ export function reorderByDirection (ids: number[], id: number, direction: MoveDi
   return next
 }
 
+export function reorderByDragIndices (ids: number[], sourceIndex: number, destIndex: number): number[] | null {
+  if (sourceIndex === destIndex) return null
+  const result = [...ids]
+  const [removed] = result.splice(sourceIndex, 1)
+  result.splice(destIndex, 0, removed)
+  return result
+}
+
+export function parseFolderIdFromDroppableId (droppableId: string): number | null {
+  const match = droppableId.match(/^presets:folder:(\d+)$/)
+  return match ? parseInt(match[1], 10) : null
+}
+
 export function toSortOrderUpdates (ids: number[]): Array<{ id: number, sortOrder: number }> {
   return ids.map((id, index) => ({ id, sortOrder: index }))
 }
