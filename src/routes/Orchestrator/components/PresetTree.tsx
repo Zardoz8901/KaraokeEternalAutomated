@@ -23,6 +23,7 @@ interface PresetTreeProps {
   onDragEnd: (result: DropResult) => void
   onSetStartingPreset?: (preset: PresetLeaf) => void
   onSetPlayerPresetFolder?: (folder: PresetTreeNode) => void
+  onMoveToFolder?: (preset: PresetLeaf) => void
   canDeletePreset?: (preset: PresetLeaf) => boolean
   canDeleteFolder?: (node: PresetTreeNode) => boolean
   canManagePreset?: (preset: PresetLeaf) => boolean
@@ -49,6 +50,7 @@ function PresetTree ({
   onDragEnd,
   onSetStartingPreset,
   onSetPlayerPresetFolder,
+  onMoveToFolder,
   canDeletePreset,
   canDeleteFolder,
   canManagePreset,
@@ -317,6 +319,20 @@ function PresetTree ({
                                       }}
                                     >
                                       <span aria-hidden>{isStarting ? '★' : '☆'}</span>
+                                    </button>
+                                  )}
+                                  {!preset.isGallery && onMoveToFolder && presetManageAllowed && (
+                                    <button
+                                      type='button'
+                                      className={styles.actionButton}
+                                      aria-label='Move to folder'
+                                      title='Move to folder'
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        onMoveToFolder(preset)
+                                      }}
+                                    >
+                                      <Icon icon='FOLDER' size={14} />
                                     </button>
                                   )}
                                   {!preset.isGallery && onRenamePreset && presetManageAllowed && (

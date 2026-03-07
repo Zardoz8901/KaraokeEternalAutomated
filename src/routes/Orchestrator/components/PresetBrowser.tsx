@@ -86,9 +86,15 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
 
   const [updatingRoomPresetPolicy, setUpdatingRoomPresetPolicy] = useState(false)
 
-  const refresh = useCallback(async () => {
+  const [pendingMove, setPendingMove] = useState<PresetLeaf | null>(null)
+  const [moveFolderId, setMoveFolderId] = useState<number | ''>('')
+  const [moving, setMoving] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+
+  const refresh = useCallback(async ({ silent = false } = {}) => {
     try {
-      setLoading(true)
+      if (!silent) setLoading(true)
+      setRefreshing(true)
       setError(null)
       const [folderList, presetList] = await Promise.all([
         fetchFolders(),
@@ -99,7 +105,8 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
     } catch (err) {
       setError(toErrorMessage(err, 'Failed to load presets'))
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
+      setRefreshing(false)
     }
   }, [])
 
@@ -278,7 +285,7 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
       try {
         setError(null)
         await reorderFolders(toSortOrderUpdates(reordered))
-        await refresh()
+        await refresh({ silent: true })
       } catch (err) {
         setError(toErrorMessage(err, 'Failed to reorder folders'))
       }
@@ -302,7 +309,7 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
       try {
         setError(null)
         await reorderPresets(toSortOrderUpdates(reordered))
-        await refresh()
+        await refresh({ silent: true })
       } catch (err) {
         setError(toErrorMessage(err, 'Failed to reorder presets'))
       }
@@ -432,6 +439,35 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
     }
   }, [canManageRoomPolicy, playerPresetFolderId, dispatch])
 
+  const requestMoveToFolder = useCallback((preset: PresetLeaf) => {
+    if (!preset.presetId || preset.isGallery) return
+    setPendingMove(preset)
+    setMoveFolderId('')
+  }, [])
+
+  const confirmMoveToFolder = useCallback(async () => {
+    if (!pendingMove?.presetId || !moveFolderId || moving) return
+    try {
+      setMoving(true)
+      setError(null)
+      await updatePreset(pendingMove.presetId, { folderId: moveFolderId })
+      setPendingMove(null)
+      await refresh({ silent: true })
+    } catch (err) {
+      setError(toErrorMessage(err, 'Failed to move preset'))
+    } finally {
+      setMoving(false)
+    }
+  }, [pendingMove, moveFolderId, moving, refresh])
+
+  const movableFolders = useMemo(() => {
+    if (!pendingMove) return []
+    return folders.filter(f =>
+      f.folderId !== pendingMove.folderId &&
+      (user.isAdmin || f.authorUserId === user.userId)
+    )
+  }, [folders, pendingMove, user.isAdmin, user.userId])
+
   let savePresetBody: React.ReactNode
   if (folders.length === 0) {
     savePresetBody = <div className={styles.empty}>Create a folder first.</div>
@@ -546,7 +582,7 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
           selectedPresetId={selectedPresetId}
           startingPresetId={startingPresetId}
           playerPresetFolderId={playerPresetFolderId}
-          isDndEnabled={query === ''}
+          isDndEnabled={query === '' && !refreshing}
           onToggleFolder={toggleFolder}
           onLoad={handleLoad}
           onSend={handleSend}
@@ -558,6 +594,7 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
           onDragEnd={handleDragEnd}
           onSetStartingPreset={handleSetStartingPreset}
           onSetPlayerPresetFolder={handleSetPlayerPresetFolder}
+          onMoveToFolder={requestMoveToFolder}
           canDeletePreset={canDeletePreset}
           canDeleteFolder={canDeleteFolder}
           canManagePreset={canManagePreset}
@@ -672,6 +709,38 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
         )}
       >
         <div className={styles.confirmText}>{deleteModalText}</div>
+      </Modal>
+
+      <Modal
+        title='Move to Folder'
+        visible={pendingMove !== null}
+        onClose={() => setPendingMove(null)}
+        buttons={(
+          <>
+            <Button variant='default' onClick={() => setPendingMove(null)} disabled={moving}>Cancel</Button>
+            <Button variant='primary' onClick={confirmMoveToFolder} disabled={moving || !moveFolderId}>
+              {moving ? 'Moving...' : 'Move'}
+            </Button>
+          </>
+        )}
+      >
+        {movableFolders.length === 0
+          ? <div className={styles.empty}>No other folders available.</div>
+          : (
+            <label className={styles.modalLabel}>
+              Destination folder
+              <select
+                className={styles.modalSelect}
+                value={moveFolderId}
+                onChange={e => setMoveFolderId(Number(e.target.value))}
+              >
+                <option value='' disabled>Select a folder...</option>
+                {movableFolders.map(f => (
+                  <option key={f.folderId} value={f.folderId}>{f.name}</option>
+                ))}
+              </select>
+            </label>
+          )}
       </Modal>
     </div>
   )
