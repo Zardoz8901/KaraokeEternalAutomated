@@ -282,12 +282,19 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
       const reordered = reorderByDragIndices(orderedFolderIds, source.index, destination.index)
       if (!reordered) return
 
+      const updates = toSortOrderUpdates(reordered)
+      const sortMap = new Map(updates.map(u => [u.id, u.sortOrder]))
+      setFolders(prev => prev.map(f => {
+        const newSort = sortMap.get(f.folderId)
+        return newSort !== undefined ? { ...f, sortOrder: newSort } : f
+      }))
+
       try {
         setError(null)
-        await reorderFolders(toSortOrderUpdates(reordered))
-        await refresh({ silent: true })
+        await reorderFolders(updates)
       } catch (err) {
         setError(toErrorMessage(err, 'Failed to reorder folders'))
+        await refresh({ silent: true })
       }
     }
 
@@ -306,12 +313,19 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
       const reordered = reorderByDragIndices(orderedPresetIds, source.index, destination.index)
       if (!reordered) return
 
+      const updates = toSortOrderUpdates(reordered)
+      const sortMap = new Map(updates.map(u => [u.id, u.sortOrder]))
+      setPresets(prev => prev.map(p => {
+        const newSort = sortMap.get(p.presetId)
+        return newSort !== undefined ? { ...p, sortOrder: newSort } : p
+      }))
+
       try {
         setError(null)
-        await reorderPresets(toSortOrderUpdates(reordered))
-        await refresh({ silent: true })
+        await reorderPresets(updates)
       } catch (err) {
         setError(toErrorMessage(err, 'Failed to reorder presets'))
+        await refresh({ silent: true })
       }
     }
   }, [folders, presets, refresh])
