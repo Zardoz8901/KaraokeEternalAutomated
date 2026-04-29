@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { lookup } from 'node:dns/promises'
 import { Readable } from 'stream'
 import fs from 'fs/promises'
 import path from 'path'
@@ -9,8 +10,24 @@ vi.mock('../lib/Log.js', () => ({
   default: () => ({ verbose: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }),
 }))
 
-import { isUrlAllowed, isContentTypeAllowed, MAX_CACHE_BYTES, MAX_SIZE_BYTES } from './router.js'
+vi.mock('node:dns/promises', () => ({
+  lookup: vi.fn(async () => [{ address: '93.184.216.34', family: 4 }]),
+}))
+
+import { isUrlAllowed, isResolvedUrlAllowed, isContentTypeAllowed, MAX_CACHE_BYTES, MAX_SIZE_BYTES } from './router.js'
 import { setVideoCacheDir, getCachePath, getCacheMetaPath } from './cache.js'
+
+interface LookupMockAddress {
+  address: string
+  family: 4 | 6
+}
+
+interface LookupMock {
+  mockResolvedValue: (value: LookupMockAddress[]) => LookupMock
+  mockResolvedValueOnce: (value: LookupMockAddress[]) => LookupMock
+}
+
+const lookupMock = lookup as unknown as LookupMock
 
 /**
  * Helper to get the GET / handler from the router's internal stack.
@@ -80,6 +97,10 @@ function createUpstreamResponse (opts: {
 }
 
 describe('VideoProxy', () => {
+  beforeEach(() => {
+    lookupMock.mockResolvedValue([{ address: '93.184.216.34', family: 4 }])
+  })
+
   describe('isUrlAllowed', () => {
     it('allows https URLs with public hostnames', () => {
       expect(isUrlAllowed('https://archive.org/download/item/file.mp4')).toBe(true)
@@ -150,6 +171,16 @@ describe('VideoProxy', () => {
     it('rejects localhost', () => {
       expect(isUrlAllowed('https://localhost/video.mp4')).toBe(false)
       expect(isUrlAllowed('https://localhost:3000/video.mp4')).toBe(false)
+    })
+  })
+
+  describe('isResolvedUrlAllowed', () => {
+    it('normalizes public IPv6 literals before DNS lookup', async () => {
+      lookupMock.mockResolvedValueOnce([{ address: '2606:4700:4700::1111', family: 6 }])
+
+      await expect(isResolvedUrlAllowed('https://[2606:4700:4700::1111]/video.mp4')).resolves.toBe(true)
+
+      expect(lookup).toHaveBeenCalledWith('2606:4700:4700::1111', { all: true, verbatim: false })
     })
   })
 
@@ -249,6 +280,59 @@ describe('VideoProxy', () => {
       expect(fetchMock.mock.calls[0]?.[0]).toBe('https://example.com/video.mp4')
       expect(fetchMock.mock.calls[1]?.[0]).toBe('https://cdn.example.com/video.mp4')
       expect(ctx.body).toBeInstanceOf(Readable)
+    })
+  })
+
+  describe('DNS SSRF protection', () => {
+    let originalFetch: typeof globalThis.fetch
+
+    beforeEach(() => {
+      originalFetch = globalThis.fetch
+    })
+
+    afterEach(() => {
+      globalThis.fetch = originalFetch
+    })
+
+    it('rejects a public-looking hostname that resolves to a private IP before fetch', async () => {
+      lookupMock.mockResolvedValueOnce([{ address: '10.0.0.5', family: 4 }])
+      const fetchMock = vi.fn(async () => createUpstreamResponse({
+        status: 200,
+        ok: true,
+        headers: {
+          'content-type': 'video/mp4',
+          'content-length': '100',
+        },
+        body: 'video-data',
+      })) as typeof fetch
+      globalThis.fetch = fetchMock
+
+      const handler = await getHandler()
+      const ctx = createCtx({ url: 'https://evil.example.com/video.mp4' })
+
+      await expect(handler(ctx, async () => {})).rejects.toMatchObject({ status: 400 })
+      expect(fetchMock).not.toHaveBeenCalled()
+    })
+
+    it('rejects a redirect target that resolves to a private IP before following it', async () => {
+      lookupMock
+        .mockResolvedValueOnce([{ address: '93.184.216.34', family: 4 }])
+        .mockResolvedValueOnce([{ address: '10.0.0.5', family: 4 }])
+
+      const fetchMock = vi.fn(async () => createUpstreamResponse({
+        status: 302,
+        ok: false,
+        headers: {
+          location: 'https://evil.example.com/private.mp4',
+        },
+      })) as typeof fetch
+      globalThis.fetch = fetchMock
+
+      const handler = await getHandler()
+      const ctx = createCtx({ url: 'https://example.com/video.mp4' })
+
+      await expect(handler(ctx, async () => {})).rejects.toMatchObject({ status: 400 })
+      expect(fetchMock).toHaveBeenCalledTimes(1)
     })
   })
 

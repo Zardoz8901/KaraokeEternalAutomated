@@ -302,6 +302,7 @@ export function startBackgroundDownload (
   url: string,
   isUrlAllowed: (url: string) => boolean,
   maxSize: number,
+  isResolvedUrlAllowed?: (url: string) => Promise<boolean>,
 ): Promise<void> {
   // Synchronous guard checks — no await before these
   if (activeDownloads.has(url)) return activeDownloads.get(url)!
@@ -329,6 +330,10 @@ export function startBackgroundDownload (
 
     // Follow redirects manually to validate each hop
     while (true) {
+      if (isResolvedUrlAllowed && !(await isResolvedUrlAllowed(currentUrl))) {
+        throw new Error('URL not allowed')
+      }
+
       res = await fetch(currentUrl, {
         signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS),
         redirect: 'manual',

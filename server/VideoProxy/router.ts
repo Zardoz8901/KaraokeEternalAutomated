@@ -1,4 +1,5 @@
 import { Readable } from 'stream'
+import { lookup } from 'node:dns/promises'
 import KoaRouter from '@koa/router'
 import getLogger from '../lib/Log.js'
 import { getServerTelemetry } from '../lib/Telemetry.js'
@@ -94,6 +95,29 @@ export function isUrlAllowed (raw: string): boolean {
   if (isPrivateHost(parsed.hostname)) return false
 
   return true
+}
+
+/**
+ * Validate the URL syntax/hostname and confirm DNS does not resolve to a
+ * private or link-local address before making an outbound proxy request.
+ */
+export async function isResolvedUrlAllowed (raw: string): Promise<boolean> {
+  if (!isUrlAllowed(raw)) return false
+
+  let parsed: URL
+  try {
+    parsed = new URL(raw)
+  } catch {
+    return false
+  }
+
+  try {
+    const addresses = await lookup(parsed.hostname.replace(/^\[|\]$/g, ''), { all: true, verbatim: false })
+    return addresses.length > 0
+      && addresses.every(({ address }) => !isPrivateHost(address))
+  } catch {
+    return false
+  }
 }
 
 /**
@@ -194,6 +218,10 @@ router.get('/', async (ctx) => {
   const fetchStart = Date.now()
 
   while (true) {
+    if (!(await isResolvedUrlAllowed(currentUrl))) {
+      ctx.throw(400, redirects > 0 ? 'Upstream redirect URL disallowed' : 'Invalid or disallowed URL')
+    }
+
     try {
       res = await fetch(currentUrl, {
         signal: ac.signal,
@@ -372,13 +400,13 @@ router.get('/', async (ctx) => {
   )
 
   // Tee to cache on full 200 responses only (not Range/206 — those are partial)
-  const canTeeToCache =
-    !!cacheDir &&
-    res.status === 200 &&
-    !clientRange &&
-    !!res.body &&
-    totalSizeBytes !== null &&
-    totalSizeBytes <= MAX_CACHE_BYTES
+  const canTeeToCache
+    = !!cacheDir
+      && res.status === 200
+      && !clientRange
+      && !!res.body
+      && totalSizeBytes !== null
+      && totalSizeBytes <= MAX_CACHE_BYTES
 
   // Log cache-skip for over-cap media (host only — URL may contain query secrets)
   if (cacheDir && totalSizeBytes !== null && totalSizeBytes > MAX_CACHE_BYTES) {
@@ -404,7 +432,7 @@ router.get('/', async (ctx) => {
     // download so the next request is a cache hit served from disk.
     // Only do this for reasonably sized media so we don't fill disk on giant videos.
     if (totalSizeBytes !== null && totalSizeBytes <= MAX_CACHE_BYTES) {
-      startBackgroundDownload(cacheDir, requestedUrl, isUrlAllowed, MAX_CACHE_BYTES)
+      startBackgroundDownload(cacheDir, requestedUrl, isUrlAllowed, MAX_CACHE_BYTES, isResolvedUrlAllowed)
         .catch(() => {}) // fire-and-forget; errors logged inside
     }
     const streamLabel = `${requestedUrl.slice(0, 80)} range=${clientRange || 'none'} upstream=${res.status}`

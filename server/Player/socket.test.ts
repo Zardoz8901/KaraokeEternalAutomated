@@ -9,7 +9,11 @@ import {
   CAMERA_STOP,
   CAMERA_STOP_REQ,
   PLAYER_CMD_NEXT,
+  PLAYER_EMIT_FFT,
+  PLAYER_EMIT_STATUS,
+  PLAYER_FFT,
   PLAYER_REQ_NEXT,
+  PLAYER_STATUS,
   VISUALIZER_HYDRA_CODE,
   VISUALIZER_HYDRA_CODE_REQ,
 } from '../../shared/actionTypes.js'
@@ -216,6 +220,76 @@ describe('Player socket permissions', () => {
     expect(broadcastEmit).toHaveBeenCalledWith('action', {
       type: VISUALIZER_HYDRA_CODE,
       payload: { code: 'noise(4).out()' },
+    })
+  })
+
+  it('blocks player status emit from non-owner room member', async () => {
+    vi.mocked(Rooms.get).mockResolvedValue({
+      result: [77],
+      entities: {
+        77: { ownerId: 200 },
+      },
+    })
+
+    const { sock, broadcastEmit } = createMockSocket({ userId: 201, roomId: 77, isAdmin: false })
+
+    await handlers[PLAYER_EMIT_STATUS](sock, { payload: { queueId: 123, isPlaying: true } })
+
+    expect(broadcastEmit).not.toHaveBeenCalled()
+    expect((sock as MockSocket & { _lastPlayerStatus?: unknown })._lastPlayerStatus).toBeUndefined()
+  })
+
+  it('allows player status emit for room owner and stores replay state', async () => {
+    vi.mocked(Rooms.get).mockResolvedValue({
+      result: [77],
+      entities: {
+        77: { ownerId: 200 },
+      },
+    })
+
+    const payload = { queueId: 123, isPlaying: true }
+    const { sock, broadcastEmit } = createMockSocket({ userId: 200, roomId: 77, isAdmin: false })
+
+    await handlers[PLAYER_EMIT_STATUS](sock, { payload })
+
+    expect(broadcastEmit).toHaveBeenCalledWith('action', {
+      type: PLAYER_STATUS,
+      payload,
+    })
+    expect((sock as MockSocket & { _lastPlayerStatus?: unknown })._lastPlayerStatus).toBe(payload)
+  })
+
+  it('blocks player FFT emit from non-owner room member', async () => {
+    vi.mocked(Rooms.get).mockResolvedValue({
+      result: [77],
+      entities: {
+        77: { ownerId: 200 },
+      },
+    })
+
+    const { sock, broadcastEmit } = createMockSocket({ userId: 201, roomId: 77, isAdmin: false })
+
+    await handlers[PLAYER_EMIT_FFT](sock, { payload: { fft: [0.1], energy: 0.2 } })
+
+    expect(broadcastEmit).not.toHaveBeenCalled()
+  })
+
+  it('allows player FFT emit for room owner', async () => {
+    vi.mocked(Rooms.get).mockResolvedValue({
+      result: [77],
+      entities: {
+        77: { ownerId: 200 },
+      },
+    })
+
+    const payload = { fft: [0.1], energy: 0.2 }
+    const { sock, broadcastEmit } = createMockSocket({ userId: 200, roomId: 77, isAdmin: false })
+
+    await handlers[PLAYER_EMIT_FFT](sock, { payload })
+
+    expect(broadcastEmit).toHaveBeenCalledWith('action', {
+      type: PLAYER_FFT,
+      payload,
     })
   })
 
@@ -493,7 +567,6 @@ describe('Payload validation', () => {
     await handlers[VISUALIZER_HYDRA_CODE_REQ](sock, { payload: { code: 'x'.repeat(100_000) } })
     expect(broadcastEmit).not.toHaveBeenCalled()
   })
-
 })
 
 describe('Camera subscriber pinning (KI-3)', () => {
@@ -521,7 +594,7 @@ describe('Camera subscriber pinning (KI-3)', () => {
     await handlers[CAMERA_OFFER_REQ](pubSock, { payload: { sdp: 'offer', type: 'offer' } })
 
     // Subscriber sends answer
-    const { sock: subSock, serverTo } = createMockSocket({ userId: 60, roomId: 10, isAdmin: false }, 'sub-sock')
+    const { sock: subSock } = createMockSocket({ userId: 60, roomId: 10, isAdmin: false }, 'sub-sock')
     const subEmit = vi.fn()
     subSock.server.to = vi.fn(() => ({ emit: subEmit }))
 

@@ -268,12 +268,16 @@ const ACTION_HANDLERS = {
     })
   },
   [PLAYER_EMIT_FFT]: async (sock, { payload }) => {
+    if (!(await canManageRoom(sock))) return
+
     sock.server.to(Rooms.prefix(sock.user.roomId)).emit('action', {
       type: PLAYER_FFT,
       payload,
     })
   },
   [PLAYER_EMIT_STATUS]: async (sock, { payload }) => {
+    if (!(await canManageRoom(sock))) return
+
     // so we can tell the room when players leave and
     // relay last known player status on client join
     sock._lastPlayerStatus = payload

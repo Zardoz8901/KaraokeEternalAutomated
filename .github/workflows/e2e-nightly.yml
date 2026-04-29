@@ -1,8 +1,6 @@
 name: E2E Nightly (Firefox)
 
 on:
-  schedule:
-    - cron: '0 4 * * *'  # 4am UTC daily
   workflow_dispatch:      # manual trigger on demand
 
 permissions:

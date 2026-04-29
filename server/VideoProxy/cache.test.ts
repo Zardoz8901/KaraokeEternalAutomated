@@ -453,6 +453,18 @@ describe('startBackgroundDownload', () => {
     ).rejects.toThrow('URL not allowed')
   })
 
+  it('uses async resolved URL validation before fetch', async () => {
+    mockFetch('data')
+    const resolvedDeny = vi.fn(async () => false)
+
+    await expect(
+      startBackgroundDownload(tmpDir, 'https://evil.example.com/private.mp4', allow, maxSize, resolvedDeny),
+    ).resolves.toBeUndefined()
+
+    expect(resolvedDeny).toHaveBeenCalledWith('https://evil.example.com/private.mp4')
+    expect(globalThis.fetch).not.toHaveBeenCalled()
+  })
+
   it('skips download when already cached', async () => {
     const url = 'https://example.com/already.mp4'
     const filePath = getCachePath(tmpDir, url)
