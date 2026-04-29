@@ -111,7 +111,11 @@ function getState (ext: object): SourceState {
 function cleanupVideo (vid: HTMLVideoElement): void {
   vid.pause()
   vid.removeAttribute('src')
-  try { vid.load() } catch {}
+  try {
+    vid.load()
+  } catch {
+    // Ignore cleanup failures from detached media elements.
+  }
   if (typeof vid.remove === 'function') vid.remove()
 }
 
@@ -293,8 +297,14 @@ export function applyVideoProxyOverride (
         if (state.epoch !== epoch) return
         frameReady = true
 
-        if (state.seekTimer !== null) { clearTimeout(state.seekTimer); state.seekTimer = null }
-        if (state.pollTimer !== null) { clearInterval(state.pollTimer); state.pollTimer = null }
+        if (state.seekTimer !== null) {
+          clearTimeout(state.seekTimer)
+          state.seekTimer = null
+        }
+        if (state.pollTimer !== null) {
+          clearInterval(state.pollTimer)
+          state.pollTimer = null
+        }
 
         telemetry.emit(VIDEO_INIT_FRAME_READY, {
           source_key: src,
@@ -508,7 +518,10 @@ export function applyVideoProxyOverride (
         // Early exit: vid.error means decode/network failure — stop polling.
         // If not already a retry, trigger the flip-strategy retry once.
         if (vid.error) {
-          if (state.pollTimer !== null) { clearInterval(state.pollTimer); state.pollTimer = null }
+          if (state.pollTimer !== null) {
+            clearInterval(state.pollTimer)
+            state.pollTimer = null
+          }
           telemetry.emit(VIDEO_INIT_ERROR, {
             source_key: src,
             is_proxied: isProxied,
@@ -547,7 +560,10 @@ export function applyVideoProxyOverride (
         }
 
         if (frameReady || state.epoch !== epoch || pollAttempts >= READY_POLL_MAX_ATTEMPTS) {
-          if (state.pollTimer !== null) { clearInterval(state.pollTimer); state.pollTimer = null }
+          if (state.pollTimer !== null) {
+            clearInterval(state.pollTimer)
+            state.pollTimer = null
+          }
           if (!bound && pollAttempts >= READY_POLL_MAX_ATTEMPTS && isVideoProxyDebugEnabled()) {
             console.warn('[VideoProxy] video init failed — poll exhausted', {
               url: finalUrl,
@@ -575,7 +591,11 @@ export function applyVideoProxyOverride (
       }, READY_POLL_INTERVAL_MS)
 
       vid.src = finalUrl
-      try { vid.load() } catch {}
+      try {
+        vid.load()
+      } catch {
+        // Browser media loading may fail synchronously for synthetic test elements.
+      }
       vid.play()?.catch(() => {}) // trigger load immediately (helps Firefox)
     }
   }
@@ -608,8 +628,8 @@ export function patchHydraSourceTick (
     const origTick = proto.tick as (time: number) => void
     proto.tick = function (this: HydraExternalSource, time: number) {
       if (
-        this.src instanceof HTMLVideoElement &&
-        (this.src.readyState < 2 || this.src.videoWidth <= 0 || this.src.videoHeight <= 0)
+        this.src instanceof HTMLVideoElement
+        && (this.src.readyState < 2 || this.src.videoWidth <= 0 || this.src.videoHeight <= 0)
       ) {
         return
       }

@@ -33,7 +33,7 @@ describe('setMouseShims', () => {
     w.mouse = { x: 0.5, y: 0.8 }
     const vMouseX = w.vMouseX
     const vMouseY = w.vMouseY
-    // eslint-disable-next-line @typescript-eslint/no-base-to-string
+
     expect(+(vMouseX as number)).toBe(0.5)
     expect((vMouseX as number) + 0.1).toBeCloseTo(0.6)
     expect((vMouseY as number) + 0.2).toBeCloseTo(1.0)
@@ -58,7 +58,9 @@ describe('setMouseShims', () => {
 
   it('assignment is a no-op (does not throw in strict mode)', () => {
     setMouseShims()
-    expect(() => { w.vMouseX = 999 }).not.toThrow()
+    expect(() => {
+      w.vMouseX = 999
+    }).not.toThrow()
     // Value should still be a function (setter is no-op)
     expect(typeof w.vMouseX).toBe('function')
   })
@@ -189,7 +191,9 @@ describe('vMouseXSmooth / vMouseYSmooth (smoothed normalized 0-1)', () => {
     w.mouse = { x: 512, y: 384 }
     Object.defineProperty(window, 'innerWidth', { value: 1024, configurable: true })
     const fn = w.vMouseXSmooth as (factor?: unknown) => number
-    fn(); fn(); fn() // advance state
+    fn()
+    fn()
+    fn()
     clearMouseShims()
     setMouseShims()
     // State should be reset

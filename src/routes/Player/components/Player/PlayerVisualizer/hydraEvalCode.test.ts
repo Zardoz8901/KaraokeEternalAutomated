@@ -14,7 +14,7 @@ describe('getHydraEvalCode', () => {
   it('default patch uses safe __hydraAudio fallback', () => {
     expect(DEFAULT_PATCH).toContain('__hydraAudio')
     expect(DEFAULT_PATCH).toContain('globalThis.a')
-    expect(DEFAULT_PATCH).not.toMatch(/[^.]a\.fft/)  // no bare a.fft
+    expect(DEFAULT_PATCH).not.toMatch(/[^.]a\.fft/) // no bare a.fft
     expect(DEFAULT_PATCH).not.toContain('bass(')
     expect(DEFAULT_PATCH).not.toContain('mid(')
     expect(DEFAULT_PATCH).not.toContain('treble(')

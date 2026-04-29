@@ -66,25 +66,30 @@ test.describe('Player smoke', () => {
       canvas.height = 400
 
       // Patch getContext to inject preserveDrawingBuffer for WebGL
-      const origGetContext = canvas.getContext.bind(canvas)
-      canvas.getContext = ((type: string, attrs?: any) => {
+      const origGetContext = canvas.getContext.bind(canvas) as (
+        contextId: string,
+        options?: object,
+      ) => RenderingContext | null
+      canvas.getContext = ((type: string, attrs?: object) => {
         if (type === 'webgl' || type === 'webgl2') {
-          return origGetContext(type, { ...attrs, preserveDrawingBuffer: true })
+          return origGetContext(type, { ...(attrs ?? {}), preserveDrawingBuffer: true })
         }
         return origGetContext(type, attrs)
       }) as typeof canvas.getContext
 
       document.body.appendChild(canvas)
 
-      // eslint-disable-next-line no-new
-      new (window as any).Hydra({ canvas, makeGlobal: true, autoLoop: true })
+      const hydraWindow = window as Window & {
+        Hydra: new (options: { canvas: HTMLCanvasElement, makeGlobal: boolean, autoLoop: boolean }) => unknown
+      }
+      new hydraWindow.Hydra({ canvas, makeGlobal: true, autoLoop: true })
 
       // Apply the known test preset via Hydra's global API
       new Function(code)()
     }, TEST_PRESET_CODE)
 
     // Wait several animation frames for Hydra + SwiftShader to render
-    await page.evaluate(() => new Promise<void>(resolve => {
+    await page.evaluate(() => new Promise<void>((resolve) => {
       let frames = 0
       const tick = () => {
         if (++frames >= 10) return resolve()

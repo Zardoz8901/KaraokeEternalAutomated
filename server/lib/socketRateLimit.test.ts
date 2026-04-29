@@ -96,8 +96,6 @@ describe('socketRateLimit', () => {
 
     it('maintains independent buckets per action type', () => {
       const fftConfig = SOCKET_RATE_LIMITS[PLAYER_EMIT_FFT]
-      const statusConfig = SOCKET_RATE_LIMITS[PLAYER_EMIT_STATUS]
-
       // Exhaust FFT burst
       for (let i = 0; i < fftConfig.burst; i++) {
         checkRateLimit(state, PLAYER_EMIT_FFT)

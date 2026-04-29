@@ -33,7 +33,7 @@ describe('ServerTelemetry', () => {
   it('emit never throws even with bad input', () => {
     expect(() => tel.emit('test_event', { key: 'value' })).not.toThrow()
     expect(() => tel.emit('', {})).not.toThrow()
-    expect(() => (tel.emit as Function)(null, null)).not.toThrow()
+    expect(() => (tel.emit as (event: unknown, fields: unknown) => void)(null, null)).not.toThrow()
   })
 
   it('emits correct envelope structure', () => {

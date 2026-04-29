@@ -22,9 +22,10 @@ import { checkSession, connectSocket } from './store/modules/user'
 
 // ALWAYS validate session against server - SSO is the source of truth
 // This ensures the keToken cookie is set correctly before socket connects
-store.dispatch(checkSession()).finally(() => {
-  telemetry.emit(SESSION_START, {})
-})
+void store.dispatch(checkSession())
+  .finally(() => {
+    telemetry.emit(SESSION_START, {})
+  })
 
 // --- Reconnect duration tracking ---
 let _reconnectStartTime: number | null = null
@@ -81,7 +82,7 @@ window.addEventListener('unhandledrejection', (event) => {
 // --- Memory health sampler (Chrome only, graceful no-op) ---
 if (typeof performance !== 'undefined' && 'memory' in performance) {
   setInterval(() => {
-    const mem = (performance as unknown as { memory?: { usedJSHeapSize: number; totalJSHeapSize: number; jsHeapSizeLimit: number } }).memory
+    const mem = (performance as unknown as { memory?: { usedJSHeapSize: number, totalJSHeapSize: number, jsHeapSizeLimit: number } }).memory
     if (mem) {
       telemetry.emit(MEMORY_HEALTH_SAMPLE, {
         used_js_heap_mb: Math.round(mem.usedJSHeapSize / 1_048_576),

@@ -518,7 +518,9 @@ describe('videoProxyOverride', () => {
       const overrides = new Map<string, unknown>()
 
       let fired = false
-      target.addEventListener(HYDRA_VIDEO_READY_EVENT, () => { fired = true })
+      target.addEventListener(HYDRA_VIDEO_READY_EVENT, () => {
+        fired = true
+      })
 
       applyVideoProxyOverride(['s0'], globals, overrides)
       source.initVideo('https://example.com/video.mp4')
@@ -535,7 +537,9 @@ describe('videoProxyOverride', () => {
       const overrides = new Map<string, unknown>()
 
       let fired = false
-      target.addEventListener(HYDRA_VIDEO_READY_EVENT, () => { fired = true })
+      target.addEventListener(HYDRA_VIDEO_READY_EVENT, () => {
+        fired = true
+      })
 
       applyVideoProxyOverride(['s0'], globals, overrides)
       source.initVideo('https://example.com/video.mp4', { startTime: 42 })
@@ -559,7 +563,9 @@ describe('videoProxyOverride', () => {
       const overrides = new Map<string, unknown>()
 
       let fireCount = 0
-      target.addEventListener(HYDRA_VIDEO_READY_EVENT, () => { fireCount++ })
+      target.addEventListener(HYDRA_VIDEO_READY_EVENT, () => {
+        fireCount++
+      })
 
       applyVideoProxyOverride(['s0'], globals, overrides)
       source.initVideo('https://example.com/video1.mp4')
@@ -719,7 +725,7 @@ describe('videoProxyOverride', () => {
 
     it('poll stops after max attempts', () => {
       vi.useFakeTimers()
-      const videos = spyOnCreateElement()
+      spyOnCreateElement()
       const source = makeSource()
       const globals: Record<string, unknown> = { s0: source }
       const overrides = new Map<string, unknown>()
@@ -799,7 +805,9 @@ describe('videoProxyOverride', () => {
       const overrides = new Map<string, unknown>()
 
       let eventFired = false
-      target.addEventListener(HYDRA_VIDEO_READY_EVENT, () => { eventFired = true })
+      target.addEventListener(HYDRA_VIDEO_READY_EVENT, () => {
+        eventFired = true
+      })
 
       applyVideoProxyOverride(['s0'], globals, overrides)
       source.initVideo('https://example.com/video.mp4')
@@ -825,7 +833,9 @@ describe('videoProxyOverride', () => {
       const overrides = new Map<string, unknown>()
 
       let eventFired = false
-      target.addEventListener(HYDRA_VIDEO_READY_EVENT, () => { eventFired = true })
+      target.addEventListener(HYDRA_VIDEO_READY_EVENT, () => {
+        eventFired = true
+      })
 
       applyVideoProxyOverride(['s0'], globals, overrides)
       source.initVideo('https://example.com/video.mp4')
@@ -851,7 +861,9 @@ describe('videoProxyOverride', () => {
       const overrides = new Map<string, unknown>()
 
       let eventFired = false
-      target.addEventListener(HYDRA_VIDEO_READY_EVENT, () => { eventFired = true })
+      target.addEventListener(HYDRA_VIDEO_READY_EVENT, () => {
+        eventFired = true
+      })
 
       applyVideoProxyOverride(['s0'], globals, overrides)
       source.initVideo('https://example.com/video.mp4')
@@ -892,9 +904,7 @@ describe('videoProxyOverride', () => {
       const source = makeSource()
 
       // Make regl.texture throw when called with { data: ... }
-      let callCount = 0
       source.regl.texture = vi.fn((opts: Record<string, unknown>) => {
-        callCount++
         if ('data' in opts) throw new Error('texImage2D failed')
         return { ...opts }
       })
@@ -956,7 +966,9 @@ describe('videoProxyOverride', () => {
       const overrides = new Map<string, unknown>()
 
       let eventFired = false
-      target.addEventListener(HYDRA_VIDEO_READY_EVENT, () => { eventFired = true })
+      target.addEventListener(HYDRA_VIDEO_READY_EVENT, () => {
+        eventFired = true
+      })
 
       applyVideoProxyOverride(['s0'], globals, overrides)
       source.initVideo('https://example.com/video.mp4')
@@ -1066,7 +1078,9 @@ describe('videoProxyOverride', () => {
       const overrides = new Map<string, unknown>()
 
       let eventFired = false
-      target.addEventListener(HYDRA_VIDEO_READY_EVENT, () => { eventFired = true })
+      target.addEventListener(HYDRA_VIDEO_READY_EVENT, () => {
+        eventFired = true
+      })
 
       applyVideoProxyOverride(['s0'], globals, overrides)
       source.initVideo('https://example.com/video.mp4', { startTime: 42 })

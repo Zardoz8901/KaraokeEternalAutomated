@@ -30,7 +30,7 @@ describe('detectFatalPatterns', () => {
 
     it('returns null for Math.random in a string literal', () => {
       expect(detectFatalPatterns('"Math.random.afft[2]"')).toBeNull()
-      expect(detectFatalPatterns("'Math.random.afft[2]'")).toBeNull()
+      expect(detectFatalPatterns('\'Math.random.afft[2]\'')).toBeNull()
     })
 
     it('returns null for Math.random in a template literal', () => {
@@ -128,7 +128,7 @@ describe('detectFatalPatterns', () => {
 
     it('ignores setInterval(fn, 0) in a string literal', () => {
       expect(detectFatalPatterns('"setInterval(fn, 0)"')).toBeNull()
-      expect(detectFatalPatterns("'setInterval(fn, 0)'")).toBeNull()
+      expect(detectFatalPatterns('\'setInterval(fn, 0)\'')).toBeNull()
     })
   })
 })

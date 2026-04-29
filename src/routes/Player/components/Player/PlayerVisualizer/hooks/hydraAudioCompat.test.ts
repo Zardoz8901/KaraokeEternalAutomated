@@ -155,8 +155,8 @@ describe('hydraAudioCompat', () => {
 
     it('ignores external writes to fft (clobber protection)', () => {
       const compat = createHydraAudioCompat()
-      const before = compat.fft;
-      (compat as any).fft = undefined
+      const before = compat.fft
+      ;(compat as unknown as { fft: unknown }).fft = undefined
       expect(compat.fft).toBeDefined()
       expect(Array.isArray(compat.fft)).toBe(true)
       expect(compat.fft).toBe(before)
@@ -164,8 +164,8 @@ describe('hydraAudioCompat', () => {
 
     it('ignores assignment of non-empty array to fft', () => {
       const compat = createHydraAudioCompat()
-      const before = compat.fft;
-      (compat as any).fft = [1, 2, 3]
+      const before = compat.fft
+      ;(compat as unknown as { fft: unknown }).fft = [1, 2, 3]
       expect(compat.fft).toBe(before)
       expect(compat.fft.length).toBe(4)
     })
@@ -176,8 +176,8 @@ describe('hydraAudioCompat', () => {
     })
 
     it('setBins updates fft length via getter after accessor is in place', () => {
-      const compat = createHydraAudioCompat();
-      (compat as any).fft = undefined // attempt clobber
+      const compat = createHydraAudioCompat()
+      ;(compat as unknown as { fft: unknown }).fft = undefined // attempt clobber
       compat.setBins(8)
       expect(compat.fft.length).toBe(8)
       for (const v of compat.fft) {

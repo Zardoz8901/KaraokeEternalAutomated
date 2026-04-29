@@ -29,7 +29,9 @@ function createMouseShim (axis: 'x' | 'y'): MouseShimFn {
     return m?.[axis] ?? 0
   }
 
-  const shim = function mouseShim () { return getValue() } as MouseShimFn
+  const shim = function mouseShim () {
+    return getValue()
+  } as MouseShimFn
   shim.valueOf = getValue
   shim[Symbol.toPrimitive] = (hint: string) => {
     const v = getValue()

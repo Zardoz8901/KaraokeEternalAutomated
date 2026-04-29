@@ -40,7 +40,6 @@ describe('hydraUserTimers error containment', () => {
     installHydraTimerTracking(owner)
 
     return new Promise<void>((resolve) => {
-      const errorSpy = vi.fn()
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
       withHydraTimerOwner(owner, () => {

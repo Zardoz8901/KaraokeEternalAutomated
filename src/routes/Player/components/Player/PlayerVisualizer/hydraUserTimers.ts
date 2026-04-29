@@ -140,13 +140,13 @@ export function installHydraTimerTracking (
     }
 
     const wrappedHandler: TimerHandler = (typeof handler === 'function')
-      ? ((...cbArgs: unknown[]) => {
+      ? (...cbArgs: unknown[]) => {
           try {
             withHydraTimerOwner(activeOwner, () => (handler as (...a: unknown[]) => void)(...cbArgs))
           } catch (err) {
             handleTimerError(state, activeOwner, err)
           }
-        })
+        }
       : handler
 
     const id = state.nativeSetTimeout(wrappedHandler, timeout, ...(args as [])) as unknown as TimerId
@@ -161,13 +161,13 @@ export function installHydraTimerTracking (
     }
 
     const wrappedHandler: TimerHandler = (typeof handler === 'function')
-      ? ((...cbArgs: unknown[]) => {
+      ? (...cbArgs: unknown[]) => {
           try {
             withHydraTimerOwner(activeOwner, () => (handler as (...a: unknown[]) => void)(...cbArgs))
           } catch (err) {
             handleTimerError(state, activeOwner, err)
           }
-        })
+        }
       : handler
 
     const id = state.nativeSetInterval(wrappedHandler, timeout, ...(args as [])) as unknown as TimerId

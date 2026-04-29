@@ -160,12 +160,13 @@ const PlayerController = (props: PlayerControllerProps) => {
     })) {
       startingPresetPendingRef.current = true
       void emitStartingPresetById(roomPrefs.startingPresetId as number)
-        .then(success => {
+        .then((success) => {
           startingPresetPendingRef.current = false
           if (success) {
             startingPresetAppliedRef.current = true
             pendingFolderDefaultSessionStartRef.current = false
           }
+          return success
         })
     } else if (shouldApplyFolderDefaultAtSessionStart({
       startingPresetId: roomPrefs?.startingPresetId,
@@ -269,13 +270,14 @@ const PlayerController = (props: PlayerControllerProps) => {
       startingPresetPendingRef.current = true
       startingPresetRetryCountRef.current++
       void emitStartingPresetById(roomPrefs.startingPresetId as number)
-        .then(success => {
+        .then((success) => {
           startingPresetPendingRef.current = false
           if (success) {
             startingPresetAppliedRef.current = true
             pendingFolderDefaultSessionStartRef.current = false
           }
           // On failure: pendingRef cleared, next effect cycle retries (up to cap)
+          return success
         })
     } else if (shouldApplyFolderDefaultOnIdle({
       startingPresetId: roomPrefs?.startingPresetId,

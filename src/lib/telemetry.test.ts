@@ -13,7 +13,7 @@ describe('ClientTelemetry', () => {
   it('emit never throws even with bad input', () => {
     expect(() => telemetry.emit('test_event', { key: 'value' })).not.toThrow()
     expect(() => telemetry.emit('', {})).not.toThrow()
-    expect(() => (telemetry.emit as Function)(null, null)).not.toThrow()
+    expect(() => (telemetry.emit as (event: unknown, fields: unknown) => void)(null, null)).not.toThrow()
   })
 
   it('outputs [TEL] prefixed JSON to console.info', () => {
@@ -110,4 +110,3 @@ describe('ClientTelemetry', () => {
     expect(parsed.timestamp).not.toBe('1999-01-01T00:00:00Z')
   })
 })
-

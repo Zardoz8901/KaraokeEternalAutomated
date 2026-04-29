@@ -52,10 +52,14 @@ class ClientTelemetry {
 
     // Auto-flush on interval
     if (typeof window !== 'undefined' && this._enabled && this._flushUrl) {
-      this._flushTimer = setInterval(() => { this.flush() }, FLUSH_INTERVAL_MS)
+      this._flushTimer = setInterval(() => {
+        this.flush()
+      }, FLUSH_INTERVAL_MS)
 
       // Flush on page unload via sendBeacon (best-effort)
-      window.addEventListener('beforeunload', () => { this._flushBeacon() })
+      window.addEventListener('beforeunload', () => {
+        this._flushBeacon()
+      })
     }
   }
 
@@ -97,7 +101,7 @@ class ClientTelemetry {
       }
 
       // Bounded local logging — no network, no blocking async
-      // eslint-disable-next-line no-console
+
       console.info('[TEL]', JSON.stringify(entry))
 
       // Buffer for server flush

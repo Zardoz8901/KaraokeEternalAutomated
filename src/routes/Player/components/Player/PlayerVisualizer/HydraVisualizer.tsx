@@ -365,13 +365,14 @@ function HydraVisualizer ({
     }
 
     // Execute initial patch and render first frame immediately
-    executeHydraCode(hydra, codeRef.current, compatRef.current ?? undefined, timerOwnerRef.current)
-    withHydraTimerOwner(timerOwnerRef.current, () => hydra.tick(16.67))
+    const timerOwner = timerOwnerRef.current
+    executeHydraCode(hydra, codeRef.current, compatRef.current ?? undefined, timerOwner)
+    withHydraTimerOwner(timerOwner, () => hydra.tick(16.67))
 
     const cameraOverrides = cameraOverrideRef.current
     return () => {
       log('Destroying')
-      uninstallHydraTimerTracking(timerOwnerRef.current)
+      uninstallHydraTimerTracking(timerOwner)
       restoreRemoteCameraOverride(w, cameraOverrides)
       restoreVideoProxyOverride(w, videoProxyOverrides)
       cancelAnimationFrame(rafRef.current)

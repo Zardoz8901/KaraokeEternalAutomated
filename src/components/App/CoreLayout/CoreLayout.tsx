@@ -45,8 +45,10 @@ const CoreLayout = () => {
           padding: 'var(--space-s) var(--space-m)',
           fontFamily: 'var(--font-family)',
           fontSize: 'var(--font-size-s)',
-        }}>
-          Connection lost —{' '}
+        }}
+        >
+          Connection lost —
+          {' '}
           <button
             onClick={() => window.location.reload()}
             style={{ background: 'none', border: 'none', color: '#fff', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'var(--font-family)', fontSize: 'var(--font-size-s)', padding: 0 }}
