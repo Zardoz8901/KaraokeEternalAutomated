@@ -228,7 +228,7 @@ function PresetTree ({
                   type='PRESET'
                   isDropDisabled={node.isGallery || !isDndEnabled}
                 >
-                  {(presetListProvided) => (
+                  {presetListProvided => (
                     <div
                       ref={presetListProvided.innerRef}
                       {...presetListProvided.droppableProps}
@@ -397,7 +397,7 @@ function PresetTree ({
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <Droppable droppableId='folder-list' type='FOLDER'>
-        {(folderListProvided) => (
+        {folderListProvided => (
           <div
             ref={folderListProvided.innerRef}
             {...folderListProvided.droppableProps}

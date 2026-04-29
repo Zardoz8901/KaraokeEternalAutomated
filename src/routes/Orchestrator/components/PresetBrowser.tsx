@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react'
+import { flushSync } from 'react-dom'
 import Modal from 'components/Modal/Modal'
 import Button from 'components/Button/Button'
 import { useAppDispatch, useAppSelector } from 'store/hooks'
@@ -274,20 +275,29 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
     const { source, destination, type } = result
 
     if (type === 'FOLDER') {
+      // Gallery nodes occupy DnD indices but aren't in orderedFolderIds
+      const galleryCount = filteredTree.filter(n => n.isGallery).length
+      const srcIdx = source.index - galleryCount
+      const dstIdx = destination.index - galleryCount
+      if (srcIdx < 0 || dstIdx < 0) return
+
       const orderedFolderIds = folders
         .slice()
         .sort((a, b) => a.sortOrder - b.sortOrder || a.folderId - b.folderId)
         .map(item => item.folderId)
 
-      const reordered = reorderByDragIndices(orderedFolderIds, source.index, destination.index)
+      const reordered = reorderByDragIndices(orderedFolderIds, srcIdx, dstIdx)
       if (!reordered) return
 
       const updates = toSortOrderUpdates(reordered)
       const sortMap = new Map(updates.map(u => [u.id, u.sortOrder]))
-      setFolders(prev => prev.map(f => {
-        const newSort = sortMap.get(f.folderId)
-        return newSort !== undefined ? { ...f, sortOrder: newSort } : f
-      }))
+      // flushSync must be synchronous (before any await) so DnD sees updated DOM
+      flushSync(() => {
+        setFolders(prev => prev.map((f) => {
+          const newSort = sortMap.get(f.folderId)
+          return newSort !== undefined ? { ...f, sortOrder: newSort } : f
+        }))
+      })
 
       try {
         setError(null)
@@ -315,10 +325,13 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
 
       const updates = toSortOrderUpdates(reordered)
       const sortMap = new Map(updates.map(u => [u.id, u.sortOrder]))
-      setPresets(prev => prev.map(p => {
-        const newSort = sortMap.get(p.presetId)
-        return newSort !== undefined ? { ...p, sortOrder: newSort } : p
-      }))
+      // flushSync must be synchronous (before any await) so DnD sees updated DOM
+      flushSync(() => {
+        setPresets(prev => prev.map((p) => {
+          const newSort = sortMap.get(p.presetId)
+          return newSort !== undefined ? { ...p, sortOrder: newSort } : p
+        }))
+      })
 
       try {
         setError(null)
@@ -328,7 +341,7 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
         await refresh({ silent: true })
       }
     }
-  }, [folders, presets, refresh])
+  }, [folders, presets, filteredTree, refresh])
 
   const openSavePreset = useCallback((preset?: PresetLeaf) => {
     const draft = buildPresetDraft({ currentCode, preset })
@@ -477,8 +490,8 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
   const movableFolders = useMemo(() => {
     if (!pendingMove) return []
     return folders.filter(f =>
-      f.folderId !== pendingMove.folderId &&
-      (user.isAdmin || f.authorUserId === user.userId)
+      f.folderId !== pendingMove.folderId
+      && (user.isAdmin || f.authorUserId === user.userId),
     )
   }, [folders, pendingMove, user.isAdmin, user.userId])
 
@@ -741,20 +754,20 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
         {movableFolders.length === 0
           ? <div className={styles.empty}>No other folders available.</div>
           : (
-            <label className={styles.modalLabel}>
-              Destination folder
-              <select
-                className={styles.modalSelect}
-                value={moveFolderId}
-                onChange={e => setMoveFolderId(Number(e.target.value))}
-              >
-                <option value='' disabled>Select a folder...</option>
-                {movableFolders.map(f => (
-                  <option key={f.folderId} value={f.folderId}>{f.name}</option>
-                ))}
-              </select>
-            </label>
-          )}
+              <label className={styles.modalLabel}>
+                Destination folder
+                <select
+                  className={styles.modalSelect}
+                  value={moveFolderId}
+                  onChange={e => setMoveFolderId(Number(e.target.value))}
+                >
+                  <option value='' disabled>Select a folder...</option>
+                  {movableFolders.map(f => (
+                    <option key={f.folderId} value={f.folderId}>{f.name}</option>
+                  ))}
+                </select>
+              </label>
+            )}
       </Modal>
     </div>
   )
