@@ -1,5 +1,5 @@
 {
-  description = "Karaoke Eternal with Authentik Header Auth";
+  description = "Karaoke Hydra with app-managed Authentik OIDC";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -45,7 +45,7 @@
           '';
 
           meta = with pkgs.lib; {
-            description = "Karaoke Eternal with Authentik header auth";
+            description = "Karaoke Hydra with app-managed Authentik OIDC";
             homepage = "https://github.com/Zardoz8901/KaraokeEternalAutomated";
             license = licenses.isc;
           };

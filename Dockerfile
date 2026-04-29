@@ -1,4 +1,4 @@
-# Karaoke Eternal with Authentik Header Auth
+# Karaoke Hydra with app-managed Authentik OIDC
 # Multi-stage build for smaller final image
 
 # Build stage

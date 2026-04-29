@@ -3,7 +3,7 @@
 # Karaoke Hydra
 
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](LICENSE)
-[![Node.js](https://img.shields.io/badge/node-20%2B-brightgreen)](https://nodejs.org/)
+[![Node.js](https://img.shields.io/badge/node-24%2B-brightgreen)](https://nodejs.org/)
 [![Authentik](https://img.shields.io/badge/SSO-Authentik-fd4b2d)](https://goauthentik.io/)
 
 **Multi-tenant karaoke with live audio-reactive visuals, SSO, and QR guest enrollment.**
@@ -72,8 +72,10 @@ Full configuration: [docs/AUTHENTIK_SETUP.md](docs/AUTHENTIK_SETUP.md#4-environm
 ## Development
 
 ```bash
-npm run dev    # Development server
-npm test       # Run tests
+npm run dev        # Development server
+npm run lint       # Lint
+npm run typecheck  # TypeScript project check
+npm test           # Unit tests
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.

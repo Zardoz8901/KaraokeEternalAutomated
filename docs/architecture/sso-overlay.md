@@ -1,49 +1,40 @@
-# Architecture: SSO Integration Overlay
+# Architecture: App-Managed OIDC And Smart QR
 
-This document visualizes how the "Smart QR" system overlays onto the standard Forward Auth architecture.
+This document visualizes the current authentication shape. The app, not the reverse proxy, owns authentication and room-join decisions.
 
-## The Standard Flow (Strict Forward Auth)
-In a standard setup, the Proxy (Caddy) enforces authentication for 100% of requests.
+## Standard Account Flow
+The reverse proxy terminates TLS and forwards requests to the app. The app starts and completes OIDC with Authentik, then issues its own httpOnly `keToken` session cookie.
 
 ```mermaid
 graph TD
-    User((User)) -->|HTTPS| Caddy{Caddy Proxy}
-    Caddy -->|Check Auth| Authentik[Authentik Outpost]
-    
-    Authentik --"401 Unauthorized"--> Caddy
-    Caddy --"Redirect"--> Login[Login Page]
-    
-    Authentik --"200 OK + Headers"--> Caddy
-    Caddy --"Request + X-Headers"--> App[Karaoke App]
+    User((User)) -->|HTTPS| Proxy[Caddy / reverse proxy]
+    Proxy --> App[Karaoke App]
+    App -->|/api/auth/login| Authentik[Authentik OIDC]
+    Authentik -->|code + state| Callback["/api/auth/callback"]
+    Callback --> App
+    App -->|httpOnly keToken| User
 ```
 
-## The Overlay Flow (Smart QR Bypass)
-To support a unified entry point for Guests and Users, we poke a specific hole in the Proxy layer.
+## Smart QR Flow
+The QR endpoint is public, but the app validates UUID invitation tokens before setting room context or creating a guest session.
 
 ```mermaid
 graph TD
     User((User / Guest)) -->|Scan QR| URL["/api/rooms/join/..."]
-    URL --> Caddy{Caddy Proxy}
-    
-    subgraph "Infrastructure Layer"
-        Caddy -- "Path matches /join/* ?" --> Decision{Bypass?}
-    end
-    
-    Decision -- "YES (Bypass)" --> AppLogic[App: Join Handler]
-    Decision -- "NO (Default)" --> Authentik[Authentik Check]
-    
+    URL --> App[Karaoke App]
+
     subgraph "Application Logic"
-        AppLogic -- "Check Cookie" --> Session{Logged In?}
-        Session -- "YES" --> Join[Set Cookie & Join Room]
-        Session -- "NO" --> Redirect[Redirect to Authentik Enrollment]
+        App --> Validate[Validate room + invitation token]
+        Validate --> Session{Logged in?}
+        Session -- "Yes" --> Visit[Set keVisitedRoom cookie]
+        Session -- "No, login" --> Login["/api/auth/login"]
+        Session -- "No, guest" --> Guest["POST /api/guest/join"]
+        Guest --> Token[Create room-bound guest + keToken]
     end
-    
-    Authentik -->|Auth OK| App[App: Protected Routes]
-    Redirect --> AuthentikEnroll[Authentik Guest Flow]
-    AuthentikEnroll -->|Success| App
 ```
 
-## Why this is necessary
-1.  **Context Awareness:** The *Proxy* doesn't know if the user intends to "Join a Room" or "Hack the Admin Panel". It just sees "Not Logged In".
-2.  **The App Knows:** The *App* knows that `/join/123/abc` is a special intent. It can make the intelligent decision to send guests to a specific *Enrollment Flow* (for that room) rather than a generic Login Page.
-3.  **Friction Reduction:** Existing users (who have a cookie) skip the Authentik check entirely for this specific action, preventing "User Already Exists" errors from the enrollment flow.
+## Why The App Owns This
+1. **Security boundary:** Protected APIs return `401` unless the signed `keToken` is valid.
+2. **Room context:** `keVisitedRoom` is only accepted after server-side room validation.
+3. **Guest isolation:** Guests are bound to their enrollment room and cannot mutate presets or folders.
+4. **Proxy simplicity:** Caddy no longer needs `forward_auth` bypass rules for app routes, sockets, or guest QR flows.

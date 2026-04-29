@@ -1,12 +1,7 @@
-# Karaoke Hydra with Authentik Header Auth
+# Karaoke Hydra with app-managed Authentik OIDC
 #
-# This setup assumes Authentik is already running and configured.
-# The karaoke service should be behind Authentik's forward auth proxy
-# which adds the X-Authentik-Username header.
-#
-# Example Traefik/nginx proxy config needed to:
-# 1. Route to Authentik for authentication
-# 2. Pass X-Authentik-Username header to this service
+# This setup assumes Authentik is already running as an OIDC provider.
+# The karaoke service should sit behind a simple HTTPS reverse proxy.
 
 services:
   karaoke:
@@ -28,6 +23,12 @@ services:
       - KES_PORT=3000
       - KES_PATH_DATA=/data
       - KES_PATH_MEDIA=/media
+      # OIDC configuration
+      # - KES_OIDC_ISSUER_URL=https://auth.example.com/application/o/karaoke-eternal/
+      # - KES_OIDC_CLIENT_ID=your-client-id
+      # - KES_OIDC_CLIENT_SECRET=your-client-secret
+      # - KES_PUBLIC_URL=https://karaoke.example.com
+      # - KES_REQUIRE_PROXY=true
       # Uncomment to rotate JWT key on restart
       # - KES_ROTATE_KEY=1
     labels:
@@ -37,8 +38,6 @@ services:
       - "traefik.http.routers.karaoke.rule=Host(`karaoke.example.com`)"
       - "traefik.http.routers.karaoke.entrypoints=websecure"
       - "traefik.http.routers.karaoke.tls.certresolver=letsencrypt"
-      # Forward auth middleware (configure this in Traefik for Authentik)
-      - "traefik.http.routers.karaoke.middlewares=authentik@docker"
       - "traefik.http.services.karaoke.loadbalancer.server.port=3000"
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]

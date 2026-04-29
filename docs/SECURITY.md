@@ -18,10 +18,10 @@ Primary threats:
 
 | Risk | Mitigation |
 |------|------------|
-| Direct port access | Never expose app port; always use reverse proxy |
+| Direct port access | Never expose app port; enforce trusted reverse proxy sources in production |
 | Cookie theft | `httpOnly`, `Secure`, `SameSite=Lax` flags |
 | OIDC state tampering | PKCE (code verifier) + state parameter validation |
-| Guest persistence | 7-day auto-expiration via Authentik policy |
+| Guest persistence | 24-hour app-issued guest session plus room-bound guest role |
 | SSO logout loop | Redirect to IdP signout before clearing client state |
 
 ## Configuration Hardening
@@ -45,36 +45,35 @@ Secure cookies require HTTPS. The reverse proxy should:
 - Terminate TLS
 - Set `X-Forwarded-Proto: https`
 
-### Bypass Endpoints
+### Public Endpoints
 
-Only these endpoints bypass Authentik authentication:
+Authentication is enforced by the app. Only these API paths are public before a `keToken` session exists:
 
 | Endpoint | Purpose | Risk Level |
 |----------|---------|------------|
-| `/join*` | Landing page | Low — shows room name only |
-| `/api/rooms/join/*/*` | QR validation | Low — validates UUID tokens |
+| `/api/auth/login` | Start OIDC login | Low — redirects to configured IdP |
+| `/api/auth/callback` | OIDC callback | Medium — protected by state + PKCE |
+| `/api/guest/join` | App-managed guest session creation | Medium — validates room token and rate limits |
+| `/api/rooms/join/*` | QR join/validation | Low — validates UUID tokens |
+| `/api/prefs/public` | Public login/config hints | Low — no secrets |
 
-Both endpoints validate input before any action.
+The SPA `/join` route is public UI. Protected API routes return `401` when no valid signed session cookie is present.
 
 ## Session Management
 
 - **Session cookie**: `keToken` (httpOnly, Secure, SameSite=Lax)
-- **Room cookie**: `kfRoomId` (tracks current room)
+- **Room visitation cookie**: `keVisitedRoom` (httpOnly; validated server-side before room context changes)
 - **Logout flow**: Client → IdP signout → Clear local state
 
 See [security_audit_oidc_signout_2026_01_26.md](analysis/security_audit_oidc_signout_2026_01_26.md) for logout security details.
 
 ## Guest Account Lifecycle
 
-1. Guest scans QR code
-2. Server creates/validates Authentik invitation
-3. Authentik enrollment creates user with:
-   - `karaoke_room_id` attribute (room binding)
-   - 7-day expiration (via `set-guest-expiry-and-room` policy)
-4. Guest session ends when:
-   - User logs out
-   - Account expires (7 days)
-   - Admin revokes access
+1. Guest scans QR code.
+2. Server validates the room invitation token.
+3. `/api/guest/join` creates a guest user bound to that room and issues a 24-hour `keToken`.
+4. Guests cannot switch rooms and cannot mutate presets or folders.
+5. Guest session ends when the cookie expires, the user logs out, or access is revoked.
 
 ## Audit Logs
 

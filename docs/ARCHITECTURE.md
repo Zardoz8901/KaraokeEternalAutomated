@@ -41,11 +41,13 @@ flowchart TD
     LoggedIn -->|No| Landing["/join?itoken=xxx"]
     Landing --> Choice{User choice}
 
-    Choice -->|Login with Account| Outpost[Authentik Outpost]
-    Outpost --> Landing
+    Choice -->|Login with Account| Login["/api/auth/login"]
+    Login --> Authentik[Authentik OIDC]
+    Authentik --> Callback["/api/auth/callback"]
+    Callback --> Landing
 
-    Choice -->|Join as Guest| Enroll[Authentik Enrollment]
-    Enroll --> Landing
+    Choice -->|Join as Guest| Guest["/api/guest/join"]
+    Guest --> Landing
 ```
 
 ## Authentication
@@ -57,7 +59,7 @@ The app uses app-managed OIDC with Authentik:
 | `preferred_username` | User identity |
 | `groups` | Role assignment (admin/standard/guest) |
 
-Guest room assignment is handled via invitation tokens, not headers.
+Standard users authenticate through Authentik OIDC. Guest room assignment is handled by app-issued sessions created from validated room invitation tokens, not by proxy headers.
 
 ## Components
 
@@ -65,7 +67,7 @@ Guest room assignment is handled via invitation tokens, not headers.
 - **Koa** — HTTP framework
 - **Socket.io** — Real-time queue updates
 - **SQLite** — Embedded database
-- **better-sqlite3** — Sync SQLite driver
+- **sqlite/sqlite3** — SQLite driver
 
 ### Client Stack
 - **React** — UI framework

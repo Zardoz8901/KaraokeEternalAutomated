@@ -90,41 +90,23 @@ That's it. The app handles authentication directly with Authentik via OIDC.
 |----------|-------------|---------|
 | `KES_REQUIRE_PROXY` | Enable secure cookies | `true` |
 
-### Guest Enrollment (Authentik API)
+### Guest Join
 
-For guest QR enrollment, the app needs Authentik API access:
+Guest sessions are app-managed. Authentik API access is not required for QR guest join. Guests are created through `/api/guest/join` after the app validates a room invitation token.
 
-| Variable | Description |
-|----------|-------------|
-| `KES_AUTHENTIK_URL` | Internal API URL (e.g., `http://authentik:9000`) |
-| `KES_AUTHENTIK_PUBLIC_URL` | Public URL for redirects |
-| `KES_AUTHENTIK_API_TOKEN` | API token with invitation permissions |
-| `KES_AUTHENTIK_ENROLLMENT_FLOW` | Flow slug (default: `karaoke-guest-enrollment`) |
-
-## 5. Guest Enrollment Flow
-
-Create an enrollment flow (`karaoke-guest-enrollment`) with these stages:
-
-| Stage | Purpose |
-|-------|---------|
-| **Invitation** | Validates `itoken` (continue without invitation enabled) |
-| **Prompt** | Captures `guest_name` (pre-filled from URL param) |
-| **User Write** | Creates user with policy `set-guest-expiry-and-room` |
-| **Login** | Issues session cookie |
-| **Redirect** | Returns to `/` to complete room join |
-
-### Guest Join Flow
+## 5. Guest Join Flow
 
 ```
 Guest scans QR → /api/rooms/join/{roomId}/{itoken}
-  → Redirects to /join?itoken=xxx&guest_name=RedPenguin
+  → Redirects to /join?itoken=xxx&guest_name=GuestName
   → Landing page: "Login with Account" or "Join as Guest"
-  → Guest clicks join → Redirect to Authentik enrollment
-  → Account created → Redirect to /
-  → OIDC callback → Session established → Room joined
+  → Guest clicks join → POST /api/guest/join
+  → App creates a room-bound guest user
+  → App sets httpOnly keToken for 24 hours
+  → Guest lands in the room
 ```
 
-See [invitation_fix_2026_01_25.md](analysis/invitation_fix_2026_01_25.md) for implementation details.
+The Authentik policy mentioned in older analysis notes is only relevant to the deprecated Authentik-managed guest enrollment path.
 
 ## Troubleshooting
 
