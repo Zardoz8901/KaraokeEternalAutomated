@@ -1,24 +1,20 @@
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs'
 
-function hash (myPlaintextPassword, saltRounds) {
-  return new Promise(function (resolve, reject) {
-    bcrypt.hash(myPlaintextPassword, saltRounds, function (err, hash) {
-      if (err) return reject(err)
-      return resolve(hash)
-    })
-  })
+async function hash (myPlaintextPassword: string, saltRounds: number) {
+  return await bcrypt.hash(myPlaintextPassword, saltRounds)
 }
 
-function compare (data, hash) {
-  return new Promise(function (resolve, reject) {
-    bcrypt.compare(data, hash, function (err, matched) {
-      if (err) return reject(err)
-      return resolve(matched)
-    })
-  })
+async function compare (data: string, hash: string) {
+  if (!hash) return false
+  return await bcrypt.compare(data, hash)
+}
+
+function isLegacy (hashStr: string) {
+  return typeof hashStr === 'string' && hashStr.startsWith('$2')
 }
 
 export default {
   hash,
   compare,
+  isLegacy,
 }
