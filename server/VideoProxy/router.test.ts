@@ -14,7 +14,14 @@ vi.mock('node:dns/promises', () => ({
   lookup: vi.fn(async () => [{ address: '93.184.216.34', family: 4 }]),
 }))
 
-import { isUrlAllowed, isResolvedUrlAllowed, isContentTypeAllowed, MAX_CACHE_BYTES, MAX_SIZE_BYTES } from './router.js'
+import {
+  isUrlAllowed,
+  isResolvedUrlAllowed,
+  isContentTypeAllowed,
+  MAX_CACHE_BYTES,
+  MAX_SIZE_BYTES,
+  setVideoProxyFetchForTests,
+} from './router.js'
 import { setVideoCacheDir, getCachePath, getCacheMetaPath } from './cache.js'
 
 interface LookupMockAddress {
@@ -99,6 +106,11 @@ function createUpstreamResponse (opts: {
 describe('VideoProxy', () => {
   beforeEach(() => {
     lookupMock.mockResolvedValue([{ address: '93.184.216.34', family: 4 }])
+    setVideoProxyFetchForTests((url, init) => fetch(url, init as RequestInit) as Promise<Response>)
+  })
+
+  afterEach(() => {
+    setVideoProxyFetchForTests()
   })
 
   describe('isUrlAllowed', () => {

@@ -1,13 +1,21 @@
 import { Readable } from 'stream'
-import { lookup } from 'node:dns/promises'
 import KoaRouter from '@koa/router'
 import getLogger from '../lib/Log.js'
 import { getServerTelemetry } from '../lib/Telemetry.js'
 import { VIDEO_PROXY_RESPONSE } from '../../shared/telemetry.js'
 import { getVideoCacheDir, isCached, teeToCache, serveCachedFile, startBackgroundDownload } from './cache.js'
+import {
+  DisallowedProxyUrlError,
+  fetchResolvedUrl,
+  isResolvedUrlAllowed,
+  isUrlAllowed,
+  type ResolvedFetch,
+  type ResolvedFetchResponse,
+} from './resolvedFetch.js'
 
 const log = getLogger('VideoProxy')
 const router = new KoaRouter({ prefix: '/api/video-proxy' })
+let proxyFetch: ResolvedFetch = fetchResolvedUrl
 
 // Proxy cap: prevents the server from proxying arbitrarily large upstream media.
 // Raised from 500MB to reduce false 413s for large MP4s.
@@ -35,89 +43,10 @@ const CONNECT_TIMEOUT_MS = 15_000 // timeout for initial connection + headers
 const IDLE_TIMEOUT_MS = 120_000 // abort if no bytes arrive for this long
 const MAX_REDIRECTS = 5
 
-const PRIVATE_IP_PATTERNS = [
-  /^127\./, // 127.0.0.0/8
-  /^10\./, // 10.0.0.0/8
-  /^192\.168\./, // 192.168.0.0/16
-  /^0\.0\.0\.0$/, // 0.0.0.0
-  /^169\.254\./, // 169.254.0.0/16 (link-local, cloud metadata)
-]
+export { isResolvedUrlAllowed, isUrlAllowed }
 
-/**
- * Check if a hostname is a private/loopback IP or localhost (SSRF prevention).
- */
-function isPrivateHost (hostname: string): boolean {
-  if (hostname === 'localhost' || hostname === '[::1]') return true
-  // Strip brackets for IPv6
-  const bare = hostname.replace(/^\[|\]$/g, '')
-  if (bare === '::1') return true
-
-  for (const pattern of PRIVATE_IP_PATTERNS) {
-    if (pattern.test(bare)) return true
-  }
-
-  // 172.16.0.0 – 172.31.255.255
-  const m172 = /^172\.(\d+)\./.exec(bare)
-  if (m172) {
-    const second = parseInt(m172[1], 10)
-    if (second >= 16 && second <= 31) return true
-  }
-
-  // 100.64.0.0 – 100.127.255.255 (CGNAT / Tailscale)
-  const m100 = /^100\.(\d+)\./.exec(bare)
-  if (m100) {
-    const second = parseInt(m100[1], 10)
-    if (second >= 64 && second <= 127) return true
-  }
-
-  // IPv6 ULA fc00::/7 (fc00:: – fdff::)
-  if (/^f[cd]/i.test(bare)) return true
-  // IPv6 link-local fe80::/10 (fe80:: – febf::)
-  if (/^fe[89ab]/i.test(bare)) return true
-
-  return false
-}
-
-/**
- * Validate that a URL is allowed to be proxied.
- * Exported for unit testing.
- */
-export function isUrlAllowed (raw: string): boolean {
-  let parsed: URL
-  try {
-    parsed = new URL(raw)
-  } catch {
-    return false
-  }
-
-  if (parsed.protocol !== 'https:') return false
-  if (!parsed.hostname) return false
-  if (isPrivateHost(parsed.hostname)) return false
-
-  return true
-}
-
-/**
- * Validate the URL syntax/hostname and confirm DNS does not resolve to a
- * private or link-local address before making an outbound proxy request.
- */
-export async function isResolvedUrlAllowed (raw: string): Promise<boolean> {
-  if (!isUrlAllowed(raw)) return false
-
-  let parsed: URL
-  try {
-    parsed = new URL(raw)
-  } catch {
-    return false
-  }
-
-  try {
-    const addresses = await lookup(parsed.hostname.replace(/^\[|\]$/g, ''), { all: true, verbatim: false })
-    return addresses.length > 0
-      && addresses.every(({ address }) => !isPrivateHost(address))
-  } catch {
-    return false
-  }
+export function setVideoProxyFetchForTests (fetcher?: ResolvedFetch) {
+  proxyFetch = fetcher ?? fetchResolvedUrl
 }
 
 /**
@@ -214,7 +143,7 @@ router.get('/', async (ctx) => {
 
   let currentUrl = requestedUrl
   let redirects = 0
-  let res: Response | null = null
+  let res: ResolvedFetchResponse | null = null
   const fetchStart = Date.now()
 
   while (true) {
@@ -223,7 +152,7 @@ router.get('/', async (ctx) => {
     }
 
     try {
-      res = await fetch(currentUrl, {
+      res = await proxyFetch(currentUrl, {
         signal: ac.signal,
         redirect: 'manual',
         headers: fetchHeaders,
@@ -238,6 +167,9 @@ router.get('/', async (ctx) => {
         is_cache_hit: false,
         redirects,
       })
+      if (err instanceof DisallowedProxyUrlError) {
+        ctx.throw(400, redirects > 0 ? 'Upstream redirect URL disallowed' : 'Invalid or disallowed URL')
+      }
       ctx.throw(502, `Upstream fetch failed: ${(err as Error).message}`)
       return // unreachable but satisfies TS
     }
@@ -432,7 +364,7 @@ router.get('/', async (ctx) => {
     // download so the next request is a cache hit served from disk.
     // Only do this for reasonably sized media so we don't fill disk on giant videos.
     if (totalSizeBytes !== null && totalSizeBytes <= MAX_CACHE_BYTES) {
-      startBackgroundDownload(cacheDir, requestedUrl, isUrlAllowed, MAX_CACHE_BYTES, isResolvedUrlAllowed)
+      startBackgroundDownload(cacheDir, requestedUrl, isUrlAllowed, MAX_CACHE_BYTES, isResolvedUrlAllowed, fetchResolvedUrl)
         .catch(() => {}) // fire-and-forget; errors logged inside
     }
     const streamLabel = `${requestedUrl.slice(0, 80)} range=${clientRange || 'none'} upstream=${res.status}`

@@ -5,6 +5,7 @@ import path from 'path'
 import { PassThrough, Readable } from 'stream'
 import { pipeline } from 'stream/promises'
 import getLogger from '../lib/Log.js'
+import type { ResolvedFetch, ResolvedFetchResponse } from './resolvedFetch.js'
 
 const log = getLogger('VideoProxy:cache')
 
@@ -303,6 +304,7 @@ export function startBackgroundDownload (
   isUrlAllowed: (url: string) => boolean,
   maxSize: number,
   isResolvedUrlAllowed?: (url: string) => Promise<boolean>,
+  fetchUrl: ResolvedFetch = fetch as ResolvedFetch,
 ): Promise<void> {
   // Synchronous guard checks — no await before these
   if (activeDownloads.has(url)) return activeDownloads.get(url)!
@@ -326,7 +328,7 @@ export function startBackgroundDownload (
 
     let currentUrl = url
     let redirects = 0
-    let res: Response | null = null
+    let res: ResolvedFetchResponse | null = null
 
     // Follow redirects manually to validate each hop
     while (true) {
@@ -334,7 +336,7 @@ export function startBackgroundDownload (
         throw new Error('URL not allowed')
       }
 
-      res = await fetch(currentUrl, {
+      res = await fetchUrl(currentUrl, {
         signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS),
         redirect: 'manual',
       })
