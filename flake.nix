@@ -21,7 +21,7 @@
           src = ./.;
 
           inherit nodejs;
-          npmDepsHash = "sha256-tTgOMoMPPATZX9uEUKLiPt32eW19jVByw2OZ248pQ1E=";
+          npmDepsHash = "sha256-rQuDOhHmjxO8BdBXIkemGxigi69Hi/w2ANUpYPJidy8=";
 
           nativeBuildInputs = with pkgs; [ python3 gnumake gcc ];
 
