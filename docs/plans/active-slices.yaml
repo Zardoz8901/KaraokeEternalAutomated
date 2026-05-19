@@ -39,13 +39,13 @@
     - review
 
 - id: hydra-control-boundary
-  status: in_progress
+  status: merged_to_main
   owner: codex
   branch: phase-2-hydra-control-boundary
   base: main
   worktree:
-    path: /home/steph/projects/KaraokeEternalAutomated-hydra-control-boundary
-    state: present
+    path: null
+    state: not_required
   merge_order: 20
   goal: Enforce the Hydra room control boundary so collaborators can only broadcast server-validated saved presets while owners/admins retain live-code control.
   write_scope:
@@ -81,9 +81,9 @@
     - "Authority decision locked 2026-05-19: preset-limited collaborators, arbitrary code only for owner/admin."
     - Gallery presets are client-bundled and remain owner/admin-only until a server-validatable gallery source exists.
     - High-risk visualizer runtime policy change; follow AGENTS.md high-risk and red-team protocols.
+    - Merged to main on 2026-05-19.
   next:
-    - implementation
-    - review
+    - cleanup
 
 - id: rollback-2026-02-12-cleanup
   status: merged_to_main
