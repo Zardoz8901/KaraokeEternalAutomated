@@ -86,13 +86,13 @@
     - cleanup
 
 - id: orchestrator-synthesis-style-guide
-  status: in_progress
+  status: merged_to_main
   owner: codex
   branch: docs/orchestrator-synthesis-style-guide
   base: main
   worktree:
-    path: /home/steph/projects/KaraokeEternalAutomated-orchestrator-synthesis-style-guide
-    state: present
+    path: null
+    state: not_required
   merge_order: 30
   goal: Document Orchestrator-first synthesis UI style guidance grounded in NN/g heuristics, progressive disclosure, complex-app UX, and accessible synthesis controls.
   write_scope:
@@ -125,9 +125,9 @@
   notes:
     - "User decision locked 2026-05-19: Orchestrator-first repo style guide using progressive synth UI."
     - Docs-only slice; no production-code TDD target.
+    - Merged to main on 2026-05-19.
   next:
-    - implementation
-    - review
+    - cleanup
 
 - id: rollback-2026-02-12-cleanup
   status: merged_to_main
