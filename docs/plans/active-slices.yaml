@@ -1,0 +1,89 @@
+- id: redux-modernization
+  status: blocked
+  owner: unassigned
+  branch: refactor/redux-modernization
+  base: main
+  worktree:
+    path: /home/steph/projects/KaraokeEternalAutomated-redux-modernization
+    state: missing
+  merge_order: 10
+  goal: Modernize Orchestrator API/editor/reference flows while preserving Hydra visualizer behavior.
+  write_scope:
+    - src/routes/Orchestrator/components/
+    - src/routes/Orchestrator/views/
+    - src/routes/Player/components/Player/PlayerVisualizer/
+  protected_paths:
+    - server/
+    - src/routes/Queue/
+    - src/routes/Account/
+    - docs/plans/
+    - .github/workflows/
+  verification:
+    - npm test -- src/routes/Orchestrator/components/ApiReference.test.tsx src/routes/Orchestrator/components/CodeEditor.test.tsx src/routes/Player/components/Player/PlayerVisualizer/hydraEvalCode.test.ts
+    - npm run typecheck
+    - npm run lint
+  acceptance:
+    - Existing Orchestrator code editor and Hydra visualizer behavior remains covered by focused tests.
+    - Branch has a dedicated worktree before review or implementation resumes.
+    - Branch is rebased or reconciled with main before merge because it is behind main.
+  non_goals:
+    - Do not change queue, room, auth, guest, or video proxy behavior.
+    - Do not alter server socket action contracts.
+    - Do not modify repo work-control files from this feature branch.
+  notes:
+    - Branch exists locally and on origin but no dedicated worktree is currently checked out.
+    - Branch is not contained in main.
+    - Touches high-risk Player visualizer files; follow AGENTS.md high-risk protocol before code changes.
+  next:
+    - implementation
+    - review
+
+- id: rollback-2026-02-12-cleanup
+  status: merged_to_main
+  owner: unassigned
+  branch: rollback/2026-02-12
+  base: main
+  worktree:
+    path: null
+    state: not_required
+  merge_order: 900
+  goal: Track cleanup for the already-merged rollback branch.
+  write_scope: []
+  protected_paths: []
+  verification:
+    - git merge-base --is-ancestor rollback/2026-02-12 main
+  acceptance:
+    - Local and remote rollback branches are deleted after maintainers confirm cleanup.
+  non_goals:
+    - Do not change application code.
+    - Do not recreate the rollback branch.
+  notes:
+    - Branch is contained in main.
+    - No worktree is required for cleanup.
+  next:
+    - cleanup
+
+- id: style-branch-cleanup
+  status: merged_to_main
+  owner: unassigned
+  branch: style
+  base: main
+  worktree:
+    path: null
+    state: not_required
+  merge_order: 901
+  goal: Track cleanup for the already-merged style branch.
+  write_scope: []
+  protected_paths: []
+  verification:
+    - git merge-base --is-ancestor style main
+  acceptance:
+    - Local and remote style branches are deleted after maintainers confirm cleanup.
+  non_goals:
+    - Do not change application code.
+    - Do not recreate the style branch.
+  notes:
+    - Branch is contained in main.
+    - No worktree is required for cleanup.
+  next:
+    - cleanup

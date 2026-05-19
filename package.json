@@ -25,6 +25,7 @@
     "dev": "NODE_ENV=development tsx watch server/main.ts -p 3000",
     "lint": "eslint .",
     "lint:fix": "npm run lint -- --fix",
+    "slices:check": "node scripts/check-active-slices.mjs",
     "test": "vitest run --config config/vitest.config.ts",
     "test:e2e": "playwright test --config config/playwright.config.ts",
     "typecheck": "tsc -b --noEmit",
@@ -182,6 +183,7 @@
     "webpack-cli": "^6.0.1",
     "webpack-dev-middleware": "^7.4.5",
     "webpack-hot-middleware": "^2.26.1",
-    "webpack-node-externals": "^3.0.0"
+    "webpack-node-externals": "^3.0.0",
+    "yaml": "^1.10.2"
   }
 }
