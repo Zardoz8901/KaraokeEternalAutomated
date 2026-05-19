@@ -85,6 +85,50 @@
   next:
     - cleanup
 
+- id: orchestrator-synthesis-style-guide
+  status: planned
+  owner: codex
+  branch: docs/orchestrator-synthesis-style-guide
+  base: main
+  worktree:
+    path: /home/steph/projects/KaraokeEternalAutomated-orchestrator-synthesis-style-guide
+    state: missing
+  merge_order: 30
+  goal: Document Orchestrator-first synthesis UI style guidance grounded in NN/g heuristics, progressive disclosure, complex-app UX, and accessible synthesis controls.
+  write_scope:
+    - docs/plans/active-slices.yaml
+    - docs/ARCHITECTURE.md
+    - docs/architecture/
+    - docs/analysis/current_state_2026_03_05.md
+  protected_paths:
+    - src/
+    - server/
+    - shared/
+    - package.json
+    - package-lock.json
+    - flake.nix
+    - .github/workflows/
+  verification:
+    - rg -n "orchestrator-synthesis-ui-style-guide|Orchestrator Synthesis UI Style Guide" docs
+    - npm run slices:check
+    - npm run typecheck
+    - npm run lint
+  acceptance:
+    - Style guide is discoverable from architecture docs.
+    - Guide defines Orchestrator-first progressive synthesis UI principles.
+    - Guide records owner/admin live-code vs collaborator preset-only UX authority.
+    - Current state tracker references the completed docs artifact.
+  non_goals:
+    - Do not change runtime UI behavior in this slice.
+    - Do not alter server socket contracts or room-policy enforcement.
+    - Do not redesign the whole app-wide visual system yet.
+  notes:
+    - "User decision locked 2026-05-19: Orchestrator-first repo style guide using progressive synth UI."
+    - Docs-only slice; no production-code TDD target.
+  next:
+    - implementation
+    - review
+
 - id: rollback-2026-02-12-cleanup
   status: merged_to_main
   owner: unassigned
