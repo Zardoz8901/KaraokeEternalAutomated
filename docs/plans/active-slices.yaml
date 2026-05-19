@@ -39,13 +39,13 @@
     - review
 
 - id: hydra-control-boundary
-  status: planned
+  status: in_progress
   owner: codex
   branch: phase-2-hydra-control-boundary
   base: main
   worktree:
     path: /home/steph/projects/KaraokeEternalAutomated-hydra-control-boundary
-    state: missing
+    state: present
   merge_order: 20
   goal: Enforce the Hydra room control boundary so collaborators can only broadcast server-validated saved presets while owners/admins retain live-code control.
   write_scope:
