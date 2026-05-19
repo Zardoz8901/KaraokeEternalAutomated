@@ -38,6 +38,53 @@
     - implementation
     - review
 
+- id: hydra-control-boundary
+  status: planned
+  owner: codex
+  branch: phase-2-hydra-control-boundary
+  base: main
+  worktree:
+    path: /home/steph/projects/KaraokeEternalAutomated-hydra-control-boundary
+    state: missing
+  merge_order: 20
+  goal: Enforce the Hydra room control boundary so collaborators can only broadcast server-validated saved presets while owners/admins retain live-code control.
+  write_scope:
+    - docs/plans/active-slices.yaml
+    - docs/analysis/
+    - server/Player/
+    - server/socket.ts
+    - server/serverWorker.ts
+    - server/Rooms/router.ts
+  protected_paths:
+    - src/routes/Orchestrator/
+    - src/routes/Player/components/Player/PlayerVisualizer/
+    - server/VideoProxy/
+    - server/lib/Database.ts
+    - server/lib/bcrypt.ts
+    - flake.nix
+  verification:
+    - npm test -- server/Player/socket.test.ts
+    - npm run slices:check
+    - npm run typecheck
+    - npm run lint
+    - npm test
+  acceptance:
+    - Owner/admin sockets can still broadcast arbitrary Hydra code.
+    - Collaborator and guest sockets cannot broadcast arbitrary Hydra code.
+    - Collaborator and guest sockets can broadcast only server-loaded DB presets allowed by room policy.
+    - Visualizer replay state is attributed and cleared on room lifecycle cleanup.
+  non_goals:
+    - Do not change Orchestrator UI behavior in this slice.
+    - Do not alter Hydra browser execution isolation.
+    - Do not change video proxy, auth crypto, database wrapper, queue, or Nix behavior.
+  notes:
+    - "Authority decision locked 2026-05-19: preset-limited collaborators, arbitrary code only for owner/admin."
+    - Gallery presets are client-bundled and remain owner/admin-only until a server-validatable gallery source exists.
+    - High-risk visualizer runtime policy change; follow AGENTS.md high-risk and red-team protocols.
+  next:
+    - implementation
+    - review
+
 - id: rollback-2026-02-12-cleanup
   status: merged_to_main
   owner: unassigned
