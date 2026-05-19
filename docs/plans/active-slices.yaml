@@ -86,13 +86,13 @@
     - cleanup
 
 - id: orchestrator-synthesis-style-guide
-  status: planned
+  status: in_progress
   owner: codex
   branch: docs/orchestrator-synthesis-style-guide
   base: main
   worktree:
     path: /home/steph/projects/KaraokeEternalAutomated-orchestrator-synthesis-style-guide
-    state: missing
+    state: present
   merge_order: 30
   goal: Document Orchestrator-first synthesis UI style guidance grounded in NN/g heuristics, progressive disclosure, complex-app UX, and accessible synthesis controls.
   write_scope:
