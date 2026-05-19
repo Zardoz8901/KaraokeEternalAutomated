@@ -48,5 +48,5 @@ Pre-change savepoint command was run in the clean feature worktree; no local cha
 After merge, rollback with:
 
 ```sh
-git revert 46d56fe9
+git revert c50912d7
 ```
