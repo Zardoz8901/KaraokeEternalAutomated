@@ -117,7 +117,7 @@
     - Style guide is discoverable from architecture docs.
     - Guide defines Orchestrator-first progressive synthesis UI principles.
     - Guide records owner/admin live-code vs collaborator preset-only UX authority.
-    - Current state tracker references the completed docs artifact.
+    - Slice record tracks completion without force-adding ignored analysis tracker files.
   non_goals:
     - Do not change runtime UI behavior in this slice.
     - Do not alter server socket contracts or room-policy enforcement.

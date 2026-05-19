@@ -1,0 +1,177 @@
+# Orchestrator Synthesis UI Style Guide
+
+This guide governs Orchestrator-first UI work for Karaoke Hydra. It is a product and implementation guide for interfaces that drive synthesis engines: Hydra visual code, saved presets, camera sources, live preview, and future VST-like parameter surfaces.
+
+The goal is not to make the Orchestrator look like a plugin rack. The goal is to make live visual control safe, legible, fast, and learnable while preserving expert depth.
+
+## Source Principles
+
+This guide adapts these references:
+
+- Nielsen Norman Group, [10 Usability Heuristics for User Interface Design](https://www.nngroup.com/articles/ten-usability-heuristics/)
+- Nielsen Norman Group, [Menu Design: Checklist of 15 UX Guidelines](https://www.nngroup.com/articles/menu-design/)
+- Nielsen Norman Group, [Progressive Disclosure](https://www.nngroup.com/articles/progressive-disclosure/)
+- Nielsen Norman Group, [Complex Application Design](https://www.nngroup.com/articles/complex-application-design/)
+- W3C WAI-ARIA Authoring Practices, [Slider Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/slider/)
+- Ethan Schoonover, [Solarized](https://ethanschoonover.com/solarized/)
+
+## Product Model
+
+The Orchestrator has three user modes:
+
+1. **Host mode:** owner/admin users can live-code, save/manage presets, configure room visual policy, and broadcast arbitrary Hydra code.
+2. **Party operator mode:** collaborators and guests can browse and send server-valid saved presets allowed by room policy.
+3. **Player mode:** the display receives visualizer state, renders it, and should not require editing knowledge.
+
+Design work must show the current mode clearly. Do not rely on server rejection as the main user experience. If a control is unavailable because of room policy or authority, hide it when the absence is obvious, or show it disabled with a short policy reason when discovery matters.
+
+## Core UX Rules
+
+- **Make state visible.** Distinguish local preview, unsent edits, sending, synced, rejected, remote update available, camera binding, and player-applied visual state.
+- **Match synthesis language.** Use terms that map to the domain: preset, source, buffer, stage, preview, send, live, synced, camera, sensitivity, mode.
+- **Keep user control explicit.** Randomize, format, load, save, send, and camera activation must be separate actions. Loading a preset into the editor must not silently broadcast it.
+- **Prefer recognition over recall.** Show presets, snippets, parameter names, defaults, and valid ranges near the control. Do not require users to memorize Hydra syntax before they can operate visuals.
+- **Prevent high-impact mistakes.** Destructive preset actions require confirmation. Broadcast actions must communicate audience and authority.
+- **Support expert speed.** Keyboard shortcuts, search, command-like snippets, and dense lists are appropriate when visible controls still exist for discovery.
+- **Reduce clutter by sequencing.** Use progressive disclosure for advanced APIs, generated code, automation, and low-frequency management actions.
+
+## Color System
+
+Pin Orchestrator color work to Solarized. Use Solarized Dark as the default synthesis workspace because the Orchestrator is a live visual, code, and stage-control surface. Use Solarized Light only for documentation, print-like views, or long-form text panels where light reading is intentional.
+
+Canonical palette:
+
+| Token | Hex | Use |
+|-------|-----|-----|
+| `base03` | `#002b36` | Primary dark app background |
+| `base02` | `#073642` | Raised panels, editor gutters, selected dark surfaces |
+| `base01` | `#586e75` | Muted text, disabled labels |
+| `base00` | `#657b83` | Secondary text |
+| `base0` | `#839496` | Primary text on dark surfaces |
+| `base1` | `#93a1a1` | High-emphasis text on dark surfaces |
+| `base2` | `#eee8d5` | Light panel background |
+| `base3` | `#fdf6e3` | Primary light background |
+| `yellow` | `#b58900` | Warning, pending, caution |
+| `orange` | `#cb4b16` | Active edit, unsent, destructive-adjacent caution |
+| `red` | `#dc322f` | Error, destructive confirmation |
+| `magenta` | `#d33682` | Special state, rare accent |
+| `violet` | `#6c71c4` | Reference/API accent |
+| `blue` | `#268bd2` | Primary action, link, focus |
+| `cyan` | `#2aa198` | Synced, camera/live signal |
+| `green` | `#859900` | Success, valid, ready |
+
+Color rules:
+
+- Do not introduce new palette families for Orchestrator surfaces without updating this guide.
+- Replace ad hoc aqua/glass/neon colors with Solarized tokens as UI work touches those components.
+- Use blue for primary actions, cyan for live/synced signal, green for ready/success, yellow/orange for pending or caution, and red only for error or destructive action.
+- Do not use color as the only status signal. Pair color with text, icon shape, placement, or control state.
+- Keep live preview visuals visually separate from UI chrome. UI chrome should remain Solarized even when the Hydra output is bright or arbitrary.
+- Preserve contrast. If Solarized token combinations are too low-contrast at a given size, adjust weight, surface, or label placement before adding a new color.
+
+## Progressive Synth UI
+
+The default Orchestrator surface should answer three questions without explanation:
+
+1. What is on stage now?
+2. What can I send next?
+3. Am I allowed to edit live code or only send presets?
+
+Use this hierarchy:
+
+- **Stage first:** preview and live state stay prominent.
+- **Preset second:** party-safe selection and send workflows stay one action away.
+- **Code third:** live editing is available to host/admin users and advanced workflows, not required for basic operation.
+- **API/reference last:** reference material appears in a stable panel or tab, not as blocking onboarding text.
+
+Advanced controls should be disclosed when they are relevant: show camera binding controls when code uses a camera source, show room preset policy affordances to room managers, and show code diagnostics when sending or editing.
+
+## Menuing And Navigation
+
+Desktop Orchestrator should use visible navigation for primary work areas. Mobile may use stable tabs, but each tab must keep its purpose obvious:
+
+- **Stage:** preview, camera state, buffer/source status, and current live/pending state.
+- **Code:** editor, lint/send state, format/random/camera actions, and live-send controls for users with authority.
+- **Presets:** search, folders, send/load actions, and management actions when permitted.
+
+Menu guidance:
+
+- Put primary actions in visible controls, not overflow menus.
+- Use tabs for switching major views, segmented controls for modes, menus for finite option sets, and disclosure for advanced or infrequent actions.
+- Keep labels stable. Avoid renaming the same action across surfaces.
+- Group actions by intent: audition, edit, send, manage, configure.
+- Do not hide destructive or policy-changing actions beside casual playback controls.
+
+## Synthesis Controls
+
+Future synthesis-engine controls must be designed as parameter controls, not decorative knobs.
+
+- Use **sliders** for continuous values such as sensitivity, mix, speed, gain, threshold, and crossfade. Include min/max semantics, current value, unit when meaningful, keyboard control, and accessible labels.
+- Use **steppers or numeric inputs** when exact values matter.
+- Use **toggles** for binary state such as camera allowed, visualizer enabled, auto-reactive on/off.
+- Use **segmented controls** for mutually exclusive modes such as preview buffer or source mode.
+- Use **menus/selects** for large finite sets such as source, preset folder, or device.
+- Use **buttons** for commands with side effects such as Send, Save, Random, Format, Start Camera, Stop Camera.
+- Avoid unlabeled knob banks. Dense controls are acceptable only when each parameter has a readable label, value, and reset/default behavior.
+
+Parameter controls should preserve these VST-style expectations:
+
+- show the active value while dragging;
+- support reset to default where useful;
+- avoid accidental large jumps on touch;
+- keep related parameters spatially grouped;
+- make automation or live-reactive behavior visible if present.
+
+## Presets And Authority
+
+The backend now enforces a clear authority boundary. The UI must mirror it:
+
+- Owner/admin users may broadcast arbitrary live Hydra code.
+- Collaborators and guests may send only saved DB presets that the server validates against room policy.
+- Gallery presets are host/admin-only for broadcast until gallery entries become server-validatable.
+- Collaborators should not see arbitrary-code send affordances as usable controls.
+- A rejected send must produce visible feedback, not a silent timeout.
+
+Preset rows should make source and capability legible:
+
+- gallery vs saved folder;
+- selected vs currently live when available;
+- camera-using presets;
+- starting preset;
+- party/player preset folder eligibility;
+- actions available to the current user.
+
+## Feedback And Failure States
+
+Every live-control surface must make the system status visible:
+
+- **Preview state:** local-only, unsent edits, debounced preview.
+- **Broadcast state:** sending, synced, failed, resend available.
+- **Remote state:** update available, apply, dismiss, count of missed updates.
+- **Camera state:** idle, connecting, active, error, missing source binding.
+- **Policy state:** not allowed, restricted to party folder, preset unavailable.
+
+Use color, text, and placement together. Color alone is not enough. Status text should be short and tied to the control that caused it.
+
+## Accessibility And Input
+
+- All interactive controls need visible focus states.
+- Icon-only controls need accessible names and hover/focus titles when helpful.
+- Tree, tab, menu, and slider controls must follow expected keyboard behavior.
+- Touch targets should be at least 44px in mobile Orchestrator surfaces.
+- Keep text readable over live visuals; do not depend on low-contrast overlays.
+- Preserve keyboard access for expert workflows: send, search, navigate presets, undo/redo, format, and completion navigation.
+
+## Implementation Checklist
+
+Before merging Orchestrator UI work, verify:
+
+- The screen answers stage/current state, next action, and authority mode.
+- Primary actions are visible and grouped by intent.
+- Advanced controls are progressively disclosed without blocking expert access.
+- Preset send behavior matches server authority.
+- Local preview and room broadcast state cannot be confused.
+- Failure states are visible and recoverable.
+- Keyboard and touch interactions are covered.
+- Labels, values, units, and defaults are visible for synthesis parameters.
+- The change preserves mobile Stage/Code/Presets navigation.
