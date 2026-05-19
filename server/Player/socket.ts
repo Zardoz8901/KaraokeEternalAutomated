@@ -1,4 +1,5 @@
 import Rooms from '../Rooms/Rooms.js'
+import HydraPresets from '../HydraPresets/HydraPresets.js'
 import { resolveRoomAccessPrefs } from '../../shared/roomAccess.js'
 import getLogger from '../lib/Log.js'
 import {
@@ -49,8 +50,20 @@ const roomCameraPublishers = new Map<number, string>() // roomId → publisherSo
 // Track which socket is the pinned camera subscriber per room (KI-3)
 const roomCameraSubscribers = new Map<number, string>() // roomId → subscriberSocketId
 
-// Track last visualizer code per room for state replay to new connections
-const roomLastVisualizerCode = new Map<number, Record<string, unknown>>() // roomId → payload
+interface HydraBroadcastPayload extends Record<string, unknown> {
+  code: string
+}
+
+export interface RoomVisualizerState {
+  roomId: number
+  authorUserId: number | null
+  authorName: string
+  updatedAt: number
+  payload: HydraBroadcastPayload
+}
+
+// Track last visualizer state per room for replay to new connections
+const roomVisualizerStates = new Map<number, RoomVisualizerState>() // roomId → state
 
 interface RoomControlSocket {
   id?: string
@@ -58,7 +71,9 @@ interface RoomControlSocket {
     userId?: number
     roomId?: number
     isAdmin?: boolean
+    isGuest?: boolean
     name?: string
+    username?: string
   }
 }
 
@@ -117,37 +132,72 @@ export async function canManageRoom (sock: RoomControlSocket): Promise<boolean> 
   return access.hasRoom && access.canManage
 }
 
-function canCollaboratorSendHydraCodeForRoomPolicy (
-  access: RoomControlAccess,
-  payload: Record<string, unknown> | undefined,
-): boolean {
-  if (access.canManage) return true
-
-  if (access.accessPrefs.restrictCollaboratorsToPartyPresetFolder !== true) {
-    return true
-  }
-
-  const allowedFolderId = access.accessPrefs.partyPresetFolderId
-  if (typeof allowedFolderId !== 'number' || allowedFolderId <= 0) {
-    return false
-  }
-
-  const payloadFolderId = payload?.hydraPresetFolderId
-  return typeof payloadFolderId === 'number'
-    && Number.isInteger(payloadFolderId)
-    && payloadFolderId === allowedFolderId
-}
-
-async function canSendHydraCode (sock: RoomControlSocket, payload: Record<string, unknown> | undefined): Promise<boolean> {
-  const access = await getRoomControlAccess(sock)
-  if (!access.hasRoom) return false
-  if (!access.canManage && !access.accessPrefs.allowRoomCollaboratorsToSendVisualizer) return false
-  return canCollaboratorSendHydraCodeForRoomPolicy(access, payload)
-}
-
 async function canRelayCamera (sock: RoomControlSocket): Promise<boolean> {
   const access = await getRoomControlAccess(sock)
   return access.hasRoom && (access.canManage || access.accessPrefs.allowGuestCameraRelay)
+}
+
+function getSocketUserName (sock: RoomControlSocket): string {
+  return sock.user?.name ?? sock.user?.username ?? 'Unknown'
+}
+
+function toVisualizerBroadcastPayload (state: RoomVisualizerState): Record<string, unknown> {
+  return {
+    ...state.payload,
+    visualizerAuthorUserId: state.authorUserId,
+    visualizerAuthorName: state.authorName,
+    visualizerUpdatedAt: state.updatedAt,
+  }
+}
+
+function storeVisualizerState (
+  roomId: number,
+  sock: RoomControlSocket,
+  payload: HydraBroadcastPayload,
+): void {
+  roomVisualizerStates.set(roomId, {
+    roomId,
+    authorUserId: typeof sock.user?.userId === 'number' ? sock.user.userId : null,
+    authorName: getSocketUserName(sock),
+    updatedAt: Math.floor(Date.now() / 1000),
+    payload,
+  })
+}
+
+async function resolveHydraBroadcastPayload (
+  access: RoomControlAccess,
+  payload: Record<string, unknown>,
+): Promise<HydraBroadcastPayload | null> {
+  if (!access.hasRoom) return null
+
+  if (access.canManage) {
+    if (!isValidHydraCode(payload)) return null
+    return { ...payload, code: payload.code as string }
+  }
+
+  if (!access.accessPrefs.allowGuestOrchestrator) return null
+  if (!access.accessPrefs.allowRoomCollaboratorsToSendVisualizer) return null
+
+  const presetId = payload.hydraPresetId
+  if (!Number.isInteger(presetId)) return null
+
+  const preset = await HydraPresets.getById(presetId as number)
+  if (!preset?.code?.trim()) return null
+
+  if (access.accessPrefs.restrictCollaboratorsToPartyPresetFolder === true) {
+    const allowedFolderId = access.accessPrefs.partyPresetFolderId
+    if (typeof allowedFolderId !== 'number' || preset.folderId !== allowedFolderId) {
+      return null
+    }
+  }
+
+  return {
+    code: preset.code,
+    hydraPresetId: preset.presetId,
+    hydraPresetFolderId: preset.folderId,
+    hydraPresetName: preset.name,
+    hydraPresetSource: 'folder',
+  }
 }
 
 function emitCameraRelay (sock: RoomControlSocket, type: string, payload: unknown): void {
@@ -195,14 +245,22 @@ export function cleanupCameraPublisher (
  * Get the last visualizer code payload for a room (for state replay to new connections).
  */
 export function getLastVisualizerCode (roomId: number): Record<string, unknown> | undefined {
-  return roomLastVisualizerCode.get(roomId)
+  const state = roomVisualizerStates.get(roomId)
+  return state ? toVisualizerBroadcastPayload(state) : undefined
+}
+
+/**
+ * Get the full attributed visualizer state for a room.
+ */
+export function getVisualizerState (roomId: number): RoomVisualizerState | undefined {
+  return roomVisualizerStates.get(roomId)
 }
 
 /**
  * Clear stored visualizer state for a room (called when room empties).
  */
 export function clearVisualizerState (roomId: number): void {
-  roomLastVisualizerCode.delete(roomId)
+  roomVisualizerStates.delete(roomId)
 }
 
 /**
@@ -288,20 +346,23 @@ const ACTION_HANDLERS = {
     })
   },
   [VISUALIZER_HYDRA_CODE_REQ]: async (sock, { payload }) => {
-    if (!isValidHydraCode(payload) || !isValidPayloadSize(payload)) return
+    if (!isValidPayloadSize(payload)) return
     const payloadObject = payload as Record<string, unknown>
-    if (!(await canSendHydraCode(sock, payloadObject))) return
+    const access = await getRoomControlAccess(sock)
+    const broadcastPayload = await resolveHydraBroadcastPayload(access, payloadObject)
+    if (!broadcastPayload) return
 
     const roomId = sock.user.roomId
+    if (typeof roomId === 'number') {
+      storeVisualizerState(roomId, sock, broadcastPayload)
+    }
+
     sock.server.to(Rooms.prefix(roomId)).emit('action', {
       type: VISUALIZER_HYDRA_CODE,
-      payload,
+      payload: typeof roomId === 'number'
+        ? getLastVisualizerCode(roomId)
+        : broadcastPayload,
     })
-
-    // Store for replay to new connections (already validated above)
-    if (typeof roomId === 'number') {
-      roomLastVisualizerCode.set(roomId, payloadObject)
-    }
   },
   [CAMERA_OFFER_REQ]: async (sock, { payload }) => {
     if (!isValidCameraOffer(payload) || !isValidPayloadSize(payload)) return

@@ -29,6 +29,7 @@ import telemetryRouter from './Telemetry/router.js'
 import pushQueuesAndLibrary from './lib/pushQueuesAndLibrary.js'
 import { Server as SocketIO } from 'socket.io'
 import socketActions, { clearPendingCleanups } from './socket.js'
+import { clearVisualizerState } from './Player/socket.js'
 import IPC from './lib/IPCBridge.js'
 import IPCLibraryActions from './Library/ipc.js'
 import IPCMediaActions from './Media/ipc.js'
@@ -133,6 +134,7 @@ async function serverWorker ({ env, startScanner, stopScanner, shutdownHandlers 
         for (const room of idleRooms) {
           log.info(`Cleaning up idle ephemeral room: ${room.roomId} (${room.name})`)
           await Rooms.delete(room.roomId)
+          clearVisualizerState(room.roomId)
         }
         if (idleRooms.length > 0) {
           log.info(`Cleaned up ${idleRooms.length} idle ephemeral room(s)`)

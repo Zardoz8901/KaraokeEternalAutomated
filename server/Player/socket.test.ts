@@ -25,6 +25,12 @@ vi.mock('../Rooms/Rooms.js', () => ({
   },
 }))
 
+vi.mock('../HydraPresets/HydraPresets.js', () => ({
+  default: {
+    getById: vi.fn(),
+  },
+}))
+
 vi.mock('../lib/Log.js', () => ({
   default: () => ({
     verbose: () => {},
@@ -35,7 +41,8 @@ vi.mock('../lib/Log.js', () => ({
 }))
 
 import Rooms from '../Rooms/Rooms.js'
-import handlers, { canManageRoom, cleanupCameraPublisher, cleanupCameraSubscriber, getLastVisualizerCode, clearVisualizerState } from './socket.js'
+import HydraPresets from '../HydraPresets/HydraPresets.js'
+import handlers, { canManageRoom, cleanupCameraPublisher, cleanupCameraSubscriber, getLastVisualizerCode, getVisualizerState, clearVisualizerState } from './socket.js'
 
 interface MockSocket {
   id: string
@@ -43,6 +50,8 @@ interface MockSocket {
     userId: number
     roomId: number
     isAdmin: boolean
+    isGuest?: boolean
+    name?: string
   }
   to: ReturnType<typeof vi.fn>
   server: {
@@ -108,7 +117,7 @@ describe('Player socket permissions', () => {
     expect(broadcastEmit).not.toHaveBeenCalled()
   })
 
-  it('allows hydra code broadcast when collaborator send is enabled', async () => {
+  it('blocks arbitrary collaborator hydra code when collaborator send is enabled', async () => {
     vi.mocked(Rooms.get).mockResolvedValue({
       result: [55],
       entities: {
@@ -125,13 +134,10 @@ describe('Player socket permissions', () => {
 
     await handlers[VISUALIZER_HYDRA_CODE_REQ](sock, { payload: { code: 'osc(10).out()' } })
 
-    expect(broadcastEmit).toHaveBeenCalledWith('action', {
-      type: VISUALIZER_HYDRA_CODE,
-      payload: { code: 'osc(10).out()' },
-    })
+    expect(broadcastEmit).not.toHaveBeenCalled()
   })
 
-  it('blocks collaborator hydra send when room is restricted to a different party folder', async () => {
+  it('blocks collaborator preset send when room is restricted to a different party folder', async () => {
     vi.mocked(Rooms.get).mockResolvedValue({
       result: [55],
       entities: {
@@ -145,15 +151,26 @@ describe('Player socket permissions', () => {
         },
       },
     })
+    vi.mocked(HydraPresets.getById).mockResolvedValue({
+      presetId: 22,
+      folderId: 2,
+      name: 'Wrong Folder Preset',
+      code: 'osc(22).out()',
+      authorUserId: 500,
+      authorName: 'Preset Author',
+      sortOrder: 0,
+      dateCreated: 1,
+      dateUpdated: 1,
+    })
 
     const { sock, broadcastEmit } = createMockSocket({ userId: 101, roomId: 55, isAdmin: false })
 
-    await handlers[VISUALIZER_HYDRA_CODE_REQ](sock, { payload: { code: 'osc(10).out()', hydraPresetFolderId: 2 } })
+    await handlers[VISUALIZER_HYDRA_CODE_REQ](sock, { payload: { code: 'forged().out()', hydraPresetId: 22, hydraPresetFolderId: 1 } })
 
     expect(broadcastEmit).not.toHaveBeenCalled()
   })
 
-  it('allows collaborator hydra send when room is restricted and payload folder matches', async () => {
+  it('blocks collaborator hydra send with forged matching folder metadata but no preset id', async () => {
     vi.mocked(Rooms.get).mockResolvedValue({
       result: [55],
       entities: {
@@ -172,20 +189,99 @@ describe('Player socket permissions', () => {
 
     await handlers[VISUALIZER_HYDRA_CODE_REQ](sock, {
       payload: {
-        code: 'osc(10).out()',
+        code: 'forged().out()',
         hydraPresetFolderId: 2,
-        hydraPresetName: 'Working Standards / ws_a',
+      },
+    })
+
+    expect(broadcastEmit).not.toHaveBeenCalled()
+    expect(HydraPresets.getById).not.toHaveBeenCalled()
+  })
+
+  it('allows collaborator hydra preset send when room is restricted and DB preset folder matches', async () => {
+    vi.mocked(Rooms.get).mockResolvedValue({
+      result: [55],
+      entities: {
+        55: {
+          ownerId: 999,
+          prefs: {
+            allowGuestOrchestrator: true,
+            allowRoomCollaboratorsToSendVisualizer: true,
+            restrictCollaboratorsToPartyPresetFolder: true,
+            partyPresetFolderId: 2,
+          },
+        },
+      },
+    })
+    vi.mocked(HydraPresets.getById).mockResolvedValue({
+      presetId: 22,
+      folderId: 2,
+      name: 'Working Standards',
+      code: 'osc(22).out()',
+      authorUserId: 500,
+      authorName: 'Preset Author',
+      sortOrder: 0,
+      dateCreated: 1,
+      dateUpdated: 1,
+    })
+
+    const { sock, broadcastEmit } = createMockSocket({ userId: 101, roomId: 55, isAdmin: false, name: 'Guest VJ' })
+
+    await handlers[VISUALIZER_HYDRA_CODE_REQ](sock, {
+      payload: {
+        code: 'forged().out()',
+        hydraPresetId: 22,
+        hydraPresetFolderId: 999,
+        hydraPresetName: 'Forged Name',
       },
     })
 
     expect(broadcastEmit).toHaveBeenCalledWith('action', {
       type: VISUALIZER_HYDRA_CODE,
-      payload: {
-        code: 'osc(10).out()',
+      payload: expect.objectContaining({
+        code: 'osc(22).out()',
+        hydraPresetId: 22,
         hydraPresetFolderId: 2,
-        hydraPresetName: 'Working Standards / ws_a',
+        hydraPresetName: 'Working Standards',
+        hydraPresetSource: 'folder',
+        visualizerAuthorUserId: 101,
+        visualizerAuthorName: 'Guest VJ',
+      }),
+    })
+  })
+
+  it('blocks collaborator preset send when orchestrator access is disabled', async () => {
+    vi.mocked(Rooms.get).mockResolvedValue({
+      result: [55],
+      entities: {
+        55: {
+          ownerId: 999,
+          prefs: {
+            allowGuestOrchestrator: false,
+            allowRoomCollaboratorsToSendVisualizer: true,
+          },
+        },
       },
     })
+    vi.mocked(HydraPresets.getById).mockResolvedValue({
+      presetId: 22,
+      folderId: 2,
+      name: 'Working Standards',
+      code: 'osc(22).out()',
+      authorUserId: 500,
+      authorName: 'Preset Author',
+      sortOrder: 0,
+      dateCreated: 1,
+      dateUpdated: 1,
+    })
+
+    const { sock, broadcastEmit } = createMockSocket({ userId: 101, roomId: 55, isAdmin: false })
+
+    await handlers[VISUALIZER_HYDRA_CODE_REQ](sock, {
+      payload: { code: 'forged().out()', hydraPresetId: 22 },
+    })
+
+    expect(broadcastEmit).not.toHaveBeenCalled()
   })
 
   it('allows player next command for room owner', async () => {
@@ -219,7 +315,10 @@ describe('Player socket permissions', () => {
 
     expect(broadcastEmit).toHaveBeenCalledWith('action', {
       type: VISUALIZER_HYDRA_CODE,
-      payload: { code: 'noise(4).out()' },
+      payload: expect.objectContaining({
+        code: 'noise(4).out()',
+        visualizerAuthorUserId: 200,
+      }),
     })
   })
 
@@ -834,14 +933,39 @@ describe('Visualizer state tracking', () => {
 
   it('VISUALIZER_HYDRA_CODE_REQ stores last payload for the room', async () => {
     allowHydraCode(10)
-    const { sock } = createMockSocket({ userId: 101, roomId: 10, isAdmin: false })
+    const { sock } = createMockSocket({ userId: 999, roomId: 10, isAdmin: false, name: 'Room Owner' })
 
     await handlers[VISUALIZER_HYDRA_CODE_REQ](sock, {
       payload: { code: 'osc(10).out()', hydraPresetName: 'test' },
     })
 
     const stored = getLastVisualizerCode(10)
-    expect(stored).toEqual({ code: 'osc(10).out()', hydraPresetName: 'test' })
+    expect(stored).toEqual(expect.objectContaining({
+      code: 'osc(10).out()',
+      hydraPresetName: 'test',
+      visualizerAuthorUserId: 999,
+      visualizerAuthorName: 'Room Owner',
+    }))
+    expect(typeof stored?.visualizerUpdatedAt).toBe('number')
+  })
+
+  it('stores attributed visualizer state for replay auditing', async () => {
+    allowHydraCode(10)
+    const { sock } = createMockSocket({ userId: 999, roomId: 10, isAdmin: false, name: 'Room Owner' })
+
+    await handlers[VISUALIZER_HYDRA_CODE_REQ](sock, {
+      payload: { code: 'osc(10).out()', hydraPresetName: 'test' },
+    })
+
+    expect(getVisualizerState(10)).toEqual(expect.objectContaining({
+      roomId: 10,
+      authorUserId: 999,
+      authorName: 'Room Owner',
+      payload: expect.objectContaining({
+        code: 'osc(10).out()',
+        hydraPresetName: 'test',
+      }),
+    }))
   })
 
   it('getLastVisualizerCode returns undefined for room with no state', () => {
@@ -850,7 +974,7 @@ describe('Visualizer state tracking', () => {
 
   it('successive broadcasts overwrite stored payload', async () => {
     allowHydraCode(10)
-    const { sock } = createMockSocket({ userId: 101, roomId: 10, isAdmin: false })
+    const { sock } = createMockSocket({ userId: 999, roomId: 10, isAdmin: false })
 
     await handlers[VISUALIZER_HYDRA_CODE_REQ](sock, {
       payload: { code: 'osc(10).out()' },
@@ -859,12 +983,12 @@ describe('Visualizer state tracking', () => {
       payload: { code: 'noise(4).out()' },
     })
 
-    expect(getLastVisualizerCode(10)).toEqual({ code: 'noise(4).out()' })
+    expect(getLastVisualizerCode(10)).toEqual(expect.objectContaining({ code: 'noise(4).out()' }))
   })
 
   it('clearVisualizerState removes entry for room', async () => {
     allowHydraCode(10)
-    const { sock } = createMockSocket({ userId: 101, roomId: 10, isAdmin: false })
+    const { sock } = createMockSocket({ userId: 999, roomId: 10, isAdmin: false })
 
     await handlers[VISUALIZER_HYDRA_CODE_REQ](sock, {
       payload: { code: 'osc(10).out()' },
@@ -872,6 +996,7 @@ describe('Visualizer state tracking', () => {
 
     clearVisualizerState(10)
     expect(getLastVisualizerCode(10)).toBeUndefined()
+    expect(getVisualizerState(10)).toBeUndefined()
   })
 
   it('state is scoped per room', async () => {
@@ -885,8 +1010,8 @@ describe('Visualizer state tracking', () => {
       },
     }))
 
-    const { sock: sockA } = createMockSocket({ userId: 101, roomId: 10, isAdmin: false })
-    const { sock: sockB } = createMockSocket({ userId: 102, roomId: 20, isAdmin: false })
+    const { sock: sockA } = createMockSocket({ userId: 999, roomId: 10, isAdmin: false })
+    const { sock: sockB } = createMockSocket({ userId: 999, roomId: 20, isAdmin: false })
 
     await handlers[VISUALIZER_HYDRA_CODE_REQ](sockA, {
       payload: { code: 'osc(10).out()' },
@@ -895,17 +1020,17 @@ describe('Visualizer state tracking', () => {
       payload: { code: 'noise(4).out()' },
     })
 
-    expect(getLastVisualizerCode(10)).toEqual({ code: 'osc(10).out()' })
-    expect(getLastVisualizerCode(20)).toEqual({ code: 'noise(4).out()' })
+    expect(getLastVisualizerCode(10)).toEqual(expect.objectContaining({ code: 'osc(10).out()' }))
+    expect(getLastVisualizerCode(20)).toEqual(expect.objectContaining({ code: 'noise(4).out()' }))
 
     clearVisualizerState(10)
     expect(getLastVisualizerCode(10)).toBeUndefined()
-    expect(getLastVisualizerCode(20)).toEqual({ code: 'noise(4).out()' })
+    expect(getLastVisualizerCode(20)).toEqual(expect.objectContaining({ code: 'noise(4).out()' }))
   })
 
   it('does not store payload when validation rejects it', async () => {
     allowHydraCode(10)
-    const { sock } = createMockSocket({ userId: 101, roomId: 10, isAdmin: false })
+    const { sock } = createMockSocket({ userId: 999, roomId: 10, isAdmin: false })
 
     // Missing code field — isValidHydraCode rejects
     await handlers[VISUALIZER_HYDRA_CODE_REQ](sock, {
@@ -917,7 +1042,7 @@ describe('Visualizer state tracking', () => {
 
   it('does not store oversized payload', async () => {
     allowHydraCode(10)
-    const { sock } = createMockSocket({ userId: 101, roomId: 10, isAdmin: false })
+    const { sock } = createMockSocket({ userId: 999, roomId: 10, isAdmin: false })
 
     await handlers[VISUALIZER_HYDRA_CODE_REQ](sock, {
       payload: { code: 'x'.repeat(100_000) },

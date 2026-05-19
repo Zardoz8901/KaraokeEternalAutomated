@@ -5,6 +5,7 @@ import Rooms, { STATUSES } from '../Rooms/Rooms.js'
 import { ValidationError } from '../lib/Errors.js'
 import HydraFolders from '../HydraPresets/HydraFolders.js'
 import HydraPresets from '../HydraPresets/HydraPresets.js'
+import { clearVisualizerState } from '../Player/socket.js'
 
 interface RequestWithBody {
   body: Record<string, unknown>
@@ -388,6 +389,7 @@ router.delete('/:roomId', async (ctx) => {
 
   // Use deleteWithCleanup for explicit admin delete (cleans up Authentik resources)
   await Rooms.deleteWithCleanup(roomId)
+  clearVisualizerState(roomId)
 
   log.verbose('%s deleted roomId %s', ctx.user.name, roomId)
 
