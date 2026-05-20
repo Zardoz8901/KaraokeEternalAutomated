@@ -28,6 +28,7 @@ interface PresetTreeProps {
   canDeleteFolder?: (node: PresetTreeNode) => boolean
   canManagePreset?: (preset: PresetLeaf) => boolean
   canManageFolder?: (node: PresetTreeNode) => boolean
+  canSendPreset?: (preset: PresetLeaf) => boolean
   canSetStartingPreset?: (preset: PresetLeaf) => boolean
   canSetPlayerPresetFolder?: (folder: PresetTreeNode) => boolean
 }
@@ -55,6 +56,7 @@ function PresetTree ({
   canDeleteFolder,
   canManagePreset,
   canManageFolder,
+  canSendPreset,
   canSetStartingPreset,
   canSetPlayerPresetFolder,
 }: PresetTreeProps) {
@@ -110,7 +112,9 @@ function PresetTree ({
 
     if (event.key === ' ') {
       event.preventDefault()
-      onSend(preset)
+      if (canSendPreset?.(preset) ?? true) {
+        onSend(preset)
+      }
       return
     }
 
@@ -124,7 +128,7 @@ function PresetTree ({
       event.preventDefault()
       focusByOffset(event.currentTarget, -1)
     }
-  }, [focusByOffset, onLoad, onSend])
+  }, [canSendPreset, focusByOffset, onLoad, onSend])
 
   const droppableId = useCallback((node: PresetTreeNode) => {
     if (node.isGallery) return 'presets:gallery'
@@ -242,6 +246,7 @@ function PresetTree ({
                         const isStarting = typeof preset.presetId === 'number' && preset.presetId === startingPresetId
                         const presetManageAllowed = !preset.isGallery && (canManagePreset?.(preset) ?? true)
                         const presetDragDisabled = !isDndEnabled || preset.isGallery || !presetManageAllowed
+                        const presetSendAllowed = canSendPreset?.(preset) ?? true
 
                         return (
                           <Draggable
@@ -299,9 +304,11 @@ function PresetTree ({
                                     type='button'
                                     className={clsx(styles.actionButton, styles.actionPrimary)}
                                     aria-label='Send preset'
-                                    title='Send preset'
+                                    title={presetSendAllowed ? 'Send preset' : 'Send unavailable for this preset'}
+                                    disabled={!presetSendAllowed}
                                     onClick={(e) => {
                                       e.stopPropagation()
+                                      if (!presetSendAllowed) return
                                       onSend(preset)
                                     }}
                                   >

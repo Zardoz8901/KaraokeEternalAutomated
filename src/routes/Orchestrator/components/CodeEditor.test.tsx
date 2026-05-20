@@ -220,4 +220,42 @@ describe('CodeEditor', () => {
       root.unmount()
     })
   })
+
+  it('disables raw code send and resend when canSend is false', async () => {
+    const container = document.createElement('div')
+    const root = createRoot(container)
+    const onSend = vi.fn()
+    const onResend = vi.fn()
+
+    await act(async () => {
+      root.render(
+        <CodeEditor
+          code='osc(10).out()'
+          onCodeChange={() => {}}
+          onSend={onSend}
+          sendStatus='error'
+          onResend={onResend}
+          onRandomize={() => {}}
+          canSend={false}
+        />,
+      )
+    })
+
+    const sendButton = findButtonByText(container, 'Send')
+    const resendButton = findButtonByText(container, 'Resend')
+    expect(sendButton?.disabled).toBe(true)
+    expect(resendButton?.disabled).toBe(true)
+
+    await act(async () => {
+      sendButton?.click()
+      resendButton?.click()
+    })
+
+    expect(onSend).not.toHaveBeenCalled()
+    expect(onResend).not.toHaveBeenCalled()
+
+    await act(async () => {
+      root.unmount()
+    })
+  })
 })

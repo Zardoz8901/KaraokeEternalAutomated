@@ -130,7 +130,7 @@
     - cleanup
 
 - id: orchestrator-capability-ux
-  status: planned
+  status: in_progress
   owner: codex
   branch: phase-2-orchestrator-capability-ux
   base: main
@@ -140,6 +140,7 @@
   merge_order: 40
   goal: Align Orchestrator UI dispatch paths with the backend Hydra authority boundary so collaborators use preset-operator workflows and cannot trigger raw-code sends from UI paths.
   write_scope:
+    - docs/analysis/
     - docs/plans/active-slices.yaml
     - src/routes/Orchestrator/
   protected_paths:
@@ -171,6 +172,7 @@
   notes:
     - "Red-team fix locked 2026-05-19: gate dispatch functions and keyboard/click send paths, not only rendering."
     - Overlaps blocked redux-modernization Orchestrator paths; serialize this slice and do not run both branches in parallel.
+    - "Implemented 2026-05-20: capability helper gates Orchestrator raw-code, gallery, and preset send UX without backend contract changes."
   next:
     - implementation
     - review

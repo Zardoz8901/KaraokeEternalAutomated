@@ -8,11 +8,8 @@ import type { PresetTreeNode } from './presetTree'
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
 describe('PresetTree', () => {
-  it('renders preset action controls with explicit aria labels for compact icon UI', async () => {
-    const container = document.createElement('div')
-    const root = createRoot(container)
-
-    const nodes: PresetTreeNode[] = [
+  function makeNodes (): PresetTreeNode[] {
+    return [
       {
         id: 'folder:1',
         folderId: 1,
@@ -23,7 +20,7 @@ describe('PresetTree', () => {
             id: 'preset:1',
             presetId: 1,
             folderId: 1,
-            name: 'long_preset_name_that_needs_room',
+            name: 'test',
             code: 'osc(10).out()',
             isGallery: false,
             usesCamera: false,
@@ -31,6 +28,13 @@ describe('PresetTree', () => {
         ],
       },
     ]
+  }
+
+  it('renders preset action controls with explicit aria labels for compact icon UI', async () => {
+    const container = document.createElement('div')
+    const root = createRoot(container)
+
+    const nodes = makeNodes()
 
     await act(async () => {
       root.render(
@@ -63,25 +67,7 @@ describe('PresetTree', () => {
 
     const onLoad = vi.fn()
 
-    const nodes: PresetTreeNode[] = [
-      {
-        id: 'folder:1',
-        folderId: 1,
-        name: 'My Presets',
-        isGallery: false,
-        children: [
-          {
-            id: 'preset:1',
-            presetId: 1,
-            folderId: 1,
-            name: 'test',
-            code: 'osc(10).out()',
-            isGallery: false,
-            usesCamera: false,
-          },
-        ],
-      },
-    ]
+    const nodes = makeNodes()
 
     await act(async () => {
       root.render(
@@ -107,6 +93,78 @@ describe('PresetTree', () => {
     })
 
     expect(onLoad).toHaveBeenCalledTimes(1)
+
+    await act(async () => {
+      root.unmount()
+    })
+  })
+
+  it('does not send a preset by click when canSendPreset rejects it', async () => {
+    const container = document.createElement('div')
+    const root = createRoot(container)
+    const onSend = vi.fn()
+
+    await act(async () => {
+      root.render(
+        <PresetTree
+          nodes={makeNodes()}
+          expanded={new Set(['folder:1'])}
+          selectedPresetId={null}
+          onToggleFolder={() => {}}
+          onLoad={() => {}}
+          onSend={onSend}
+          canSendPreset={() => false}
+          isDndEnabled={false}
+          onDragEnd={() => {}}
+        />,
+      )
+    })
+
+    const sendButton = container.querySelector('button[aria-label="Send preset"]') as HTMLButtonElement | null
+    expect(sendButton).not.toBeNull()
+    expect(sendButton?.disabled).toBe(true)
+
+    await act(async () => {
+      sendButton?.click()
+    })
+
+    expect(onSend).not.toHaveBeenCalled()
+
+    await act(async () => {
+      root.unmount()
+    })
+  })
+
+  it('does not send a preset with Space when canSendPreset rejects it', async () => {
+    const container = document.createElement('div')
+    const root = createRoot(container)
+    const onSend = vi.fn()
+
+    await act(async () => {
+      root.render(
+        <PresetTree
+          nodes={makeNodes()}
+          expanded={new Set(['folder:1'])}
+          selectedPresetId={null}
+          onToggleFolder={() => {}}
+          onLoad={() => {}}
+          onSend={onSend}
+          canSendPreset={() => false}
+          isDndEnabled={false}
+          onDragEnd={() => {}}
+        />,
+      )
+    })
+
+    const focusables = Array.from(container.querySelectorAll<HTMLElement>('[data-tree-focusable="true"]'))
+    const row = focusables[1] ?? null
+    expect(row).not.toBeNull()
+
+    await act(async () => {
+      row?.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }))
+    })
+
+    expect(onSend).not.toHaveBeenCalled()
 
     await act(async () => {
       root.unmount()
