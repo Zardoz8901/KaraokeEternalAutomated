@@ -23,9 +23,23 @@ The Orchestrator has three user modes:
 
 1. **Host mode:** owner/admin users can live-code, save/manage presets, configure room visual policy, and broadcast arbitrary Hydra code.
 2. **Party operator mode:** collaborators and guests can browse and send server-valid saved presets allowed by room policy.
-3. **Player mode:** the display receives visualizer state, renders it, and should not require editing knowledge.
+3. **Browse-only mode:** collaborators and guests can inspect the Visuals workspace when Orchestrator access is allowed but room policy blocks visual sends.
+4. **Player mode:** the display receives visualizer state, renders it, and should not require editing knowledge.
 
 Design work must show the current mode clearly. Do not rely on server rejection as the main user experience. If a control is unavailable because of room policy or authority, hide it when the absence is obvious, or show it disabled with a short policy reason when discovery matters.
+
+## Product Layout Contract
+
+Visuals is a first-class app area, not a hidden endpoint. The app-level bottom navigation uses visible icon-plus-label items in this order: **Library**, **Queue**, **Visuals**, **Account**. The Visuals item routes to `/orchestrator` only when the shared route-access helper allows the current user and room context. Labels are visible UI, not only `aria-label` or `title`.
+
+The Orchestrator shell has two intentional workspace layouts:
+
+- **Host workspace:** desktop uses Library escape plus Presets/API in the left rail, Stage in the top-right, and Code in the bottom-right. Mobile uses a Library escape plus Stage/Code/Presets tabs.
+- **Operator and browse workspace:** desktop uses Library escape plus Presets in the left rail and an expanded Stage across the full right column. Code and API are not visible primary surfaces. Mobile uses a Library escape plus Stage/Presets tabs.
+
+The Library escape is global navigation, not a workspace tab. Desktop places it at the start of the left rail, visually separated from Presets/API. Mobile places it in a fixed-width slot beside a separate tablist; the wrapper around the Library escape and tabs must not itself be `role="tablist"`.
+
+Visual acceptance for this surface requires that a first-time collaborator can identify within five seconds: where the live Stage is, what presets they can browse, whether they can send visuals, and how to return to Library.
 
 ## Core UX Rules
 
@@ -126,6 +140,7 @@ Desktop Orchestrator should use visible navigation for primary work areas. Mobil
 
 Menu guidance:
 
+- App bottom navigation uses compact icon-over-label items with a minimum 44px touch target. Four items must fit without horizontal clipping.
 - Put primary actions in visible controls, not overflow menus.
 - Use tabs for switching major views, segmented controls for modes, menus for finite option sets, and disclosure for advanced or infrequent actions.
 - Keep labels stable. Avoid renaming the same action across surfaces.

@@ -64,12 +64,15 @@
             pkg-config
 
             # Dev tools
+            chromium
             nodePackages.typescript
             nodePackages.typescript-language-server
             nodePackages.eslint
           ];
 
           shellHook = ''
+            export PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=${pkgs.chromium}/bin/chromium
+
             echo ""
             echo "╔════════════════════════════════════════════╗"
             echo "║     Karaoke Eternal Development Shell      ║"
@@ -84,6 +87,7 @@
             echo "  npm run build   Build for production"
             echo "  npm run test    Run tests"
             echo "  npm run lint    Run linter"
+            echo "  npm run test:e2e Run Playwright with Nix Chromium"
             echo ""
           '';
         };

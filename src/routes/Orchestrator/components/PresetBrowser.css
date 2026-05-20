@@ -97,10 +97,19 @@
 
 .loading,
 .error,
-.empty {
+.empty,
+.policyNotice {
   font-size: var(--text-xs);
   color: var(--orch-muted);
   padding: 6px 2px;
+}
+
+.policyNotice {
+  border: 1px solid var(--orch-border-subtle);
+  border-radius: var(--orch-radius-md);
+  padding: 8px 10px;
+  background: color-mix(in srgb, var(--orch-yellow) 8%, transparent);
+  color: var(--orch-muted);
 }
 
 .error {

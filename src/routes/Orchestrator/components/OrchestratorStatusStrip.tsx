@@ -15,9 +15,9 @@ const toneClass: Record<OrchestratorStatusItem['tone'], string> = {
   danger: styles.toneDanger,
 }
 
-function StatusPill ({ item }: { item: OrchestratorStatusItem }) {
+function StatusPill ({ item, priority }: { item: OrchestratorStatusItem, priority: 'authority' | 'signal' }) {
   return (
-    <span className={`${styles.pill} ${toneClass[item.tone]}`}>
+    <span className={`${styles.pill} ${priority === 'authority' ? styles.authorityPill : styles.signalPill} ${toneClass[item.tone]}`}>
       {item.label}
     </span>
   )
@@ -26,9 +26,9 @@ function StatusPill ({ item }: { item: OrchestratorStatusItem }) {
 function OrchestratorStatusStrip ({ model }: OrchestratorStatusStripProps) {
   return (
     <div className={styles.strip} aria-label='Orchestrator status'>
-      <StatusPill item={model.authority} />
-      <StatusPill item={model.broadcast} />
-      <StatusPill item={model.camera} />
+      <StatusPill item={model.authority} priority='authority' />
+      <StatusPill item={model.broadcast} priority='signal' />
+      <StatusPill item={model.camera} priority='signal' />
     </div>
   )
 }

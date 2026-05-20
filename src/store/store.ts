@@ -4,6 +4,7 @@ import socket from 'lib/socket'
 import createSocketMiddleware from './socketMiddleware'
 import createThrottle from 'redux-throttle'
 import { windowResize } from './modules/ui'
+import { defaultMiddlewareOptions } from './middlewareOptions'
 
 // resize action
 window.addEventListener('resize', () => store.dispatch(windowResize({
@@ -33,7 +34,7 @@ const socketMiddleware = createSocketMiddleware(socket, 'server/')
 // ======================================================
 const store = configureStore({
   reducer: rootReducer,
-  middleware: getDefaultMiddleware => getDefaultMiddleware()
+  middleware: getDefaultMiddleware => getDefaultMiddleware(defaultMiddlewareOptions)
     .concat(throttle, socketMiddleware),
 })
 

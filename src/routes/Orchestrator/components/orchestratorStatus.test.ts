@@ -4,16 +4,25 @@ import { getOrchestratorStatusModel } from './orchestratorStatus'
 const hostCapabilities = {
   canUseOrchestrator: true,
   canLiveCode: true,
+  canSendSavedPresetsByPolicy: true,
 }
 
 const operatorCapabilities = {
   canUseOrchestrator: true,
   canLiveCode: false,
+  canSendSavedPresetsByPolicy: true,
+}
+
+const browseCapabilities = {
+  canUseOrchestrator: true,
+  canLiveCode: false,
+  canSendSavedPresetsByPolicy: false,
 }
 
 const blockedCapabilities = {
   canUseOrchestrator: false,
   canLiveCode: false,
+  canSendSavedPresetsByPolicy: false,
 }
 
 describe('getOrchestratorStatusModel', () => {
@@ -40,6 +49,19 @@ describe('getOrchestratorStatusModel', () => {
     })
 
     expect(model.authority.label).toBe('Preset operator')
+    expect(model.authority.tone).toBe('neutral')
+  })
+
+  it('labels browse-only authority when room policy blocks saved preset sends', () => {
+    const model = getOrchestratorStatusModel({
+      capabilities: browseCapabilities,
+      sendStatus: 'idle',
+      userHasEdited: false,
+      pendingRemoteCount: 0,
+      cameraStatus: 'idle',
+    })
+
+    expect(model.authority.label).toBe('Browse only')
     expect(model.authority.tone).toBe('neutral')
   })
 

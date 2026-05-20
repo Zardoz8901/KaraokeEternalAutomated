@@ -11,6 +11,7 @@ import { buildPresetTree, type PresetLeaf, type PresetTreeNode, type PresetFolde
 import { getOrchestratorCapabilities } from './orchestratorCapabilities'
 import { scopePresetTreeForRoom } from './presetScope'
 import { buildPresetDraft } from './presetDraft'
+import { countPresetLeaves, getPresetPanelState } from './presetEmptyState'
 import type { DropResult } from '@hello-pangea/dnd'
 import { getDefaultSaveFolderId, reorderByDragIndices, parseFolderIdFromDroppableId, toSortOrderUpdates } from './presetManagement'
 import {
@@ -155,6 +156,23 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
       }))
       .filter(node => node.children.length > 0)
   }, [tree, query])
+
+  const scopedPresetCount = useMemo(() => countPresetLeaves(tree), [tree])
+  const presetPanelState = useMemo(() => getPresetPanelState({
+    query,
+    visibleTreeCount: filteredTree.length,
+    scopedPresetCount,
+    isRestrictedToPartyPresetFolder: orchestratorCapabilities.isRestrictedToPartyPresetFolder,
+    partyPresetFolderId: orchestratorCapabilities.partyPresetFolderId,
+    canSendSavedPresetsByPolicy: orchestratorCapabilities.canSendSavedPresetsByPolicy,
+  }), [
+    filteredTree.length,
+    orchestratorCapabilities.canSendSavedPresetsByPolicy,
+    orchestratorCapabilities.isRestrictedToPartyPresetFolder,
+    orchestratorCapabilities.partyPresetFolderId,
+    query,
+    scopedPresetCount,
+  ])
 
   const toggleFolder = useCallback((id: string) => {
     setExpanded((prev) => {
@@ -601,8 +619,12 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
 
       {error && <div className={styles.error}>{error}</div>}
 
+      {!loading && !error && presetPanelState?.kind === 'policy-blocked' && (
+        <div className={styles.policyNotice}>{presetPanelState.message}</div>
+      )}
+
       {!loading && !error && filteredTree.length === 0 && (
-        <div className={styles.empty}>No presets available for this room policy.</div>
+        <div className={styles.empty}>{presetPanelState?.message ?? 'No saved visuals available for this room.'}</div>
       )}
 
       {!loading && !error && filteredTree.length > 0 && (

@@ -24,40 +24,62 @@
   line-height: 1.35;
 }
 
+.authorityPill {
+  max-width: 15rem;
+  color: var(--orch-status-color);
+  background: var(--orch-status-bg);
+  border-color: var(--orch-status-border);
+}
+
+.signalPill {
+  max-width: 11rem;
+  color: var(--orch-muted);
+  background: transparent;
+  border-color: var(--orch-border-subtle);
+}
+
+.signalPill.toneWarning,
+.signalPill.toneDanger,
+.signalPill.toneLive {
+  color: var(--orch-status-color);
+  background: var(--orch-status-bg);
+  border-color: var(--orch-status-border);
+}
+
 .toneNeutral {
   --orch-status-border: var(--orch-border-strong);
   --orch-status-bg: var(--orch-surface-soft);
-  color: var(--orch-muted);
+  --orch-status-color: var(--orch-muted);
 }
 
 .tonePrimary {
   --orch-status-border: color-mix(in srgb, var(--orch-blue) 55%, transparent);
   --orch-status-bg: color-mix(in srgb, var(--orch-blue) 14%, transparent);
-  color: var(--orch-blue);
+  --orch-status-color: var(--orch-blue);
 }
 
 .toneLive {
   --orch-status-border: color-mix(in srgb, var(--orch-cyan) 55%, transparent);
   --orch-status-bg: color-mix(in srgb, var(--orch-cyan) 14%, transparent);
-  color: var(--orch-cyan);
+  --orch-status-color: var(--orch-cyan);
 }
 
 .toneSuccess {
   --orch-status-border: color-mix(in srgb, var(--orch-green) 55%, transparent);
   --orch-status-bg: color-mix(in srgb, var(--orch-green) 14%, transparent);
-  color: var(--orch-green);
+  --orch-status-color: var(--orch-green);
 }
 
 .toneWarning {
   --orch-status-border: color-mix(in srgb, var(--orch-yellow) 58%, transparent);
   --orch-status-bg: color-mix(in srgb, var(--orch-yellow) 14%, transparent);
-  color: var(--orch-yellow);
+  --orch-status-color: var(--orch-yellow);
 }
 
 .toneDanger {
   --orch-status-border: color-mix(in srgb, var(--orch-red) 58%, transparent);
   --orch-status-bg: color-mix(in srgb, var(--orch-red) 14%, transparent);
-  color: var(--orch-red);
+  --orch-status-color: var(--orch-red);
 }
 
 @media (max-width: 979px) {

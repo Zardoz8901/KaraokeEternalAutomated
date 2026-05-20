@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { TEST_PRESET_CODE } from './fixtures/test-preset'
+import { seedAdminSession } from './fixtures/auth'
 
 /**
  * Smoke E2E test — deterministic, local-only.
@@ -17,33 +18,9 @@ import { TEST_PRESET_CODE } from './fixtures/test-preset'
  * No camera, no external URLs, no network beyond localhost.
  */
 
-const TEST_USER = {
-  username: 'e2e-admin',
-  name: 'E2E Test Admin',
-  newPassword: 'test-password-e2e-2026',
-  newPasswordConfirm: 'test-password-e2e-2026',
-}
-
 test.describe('Player smoke', () => {
   test.beforeEach(async ({ page }) => {
-    // Seed test user: try first-run setup, fall back to login
-    const setupRes = await page.request.post('/api/setup', {
-      data: TEST_USER,
-    })
-
-    const status = setupRes.status()
-    if (status === 401 || status === 403) {
-      // Already initialized — login instead
-      const loginRes = await page.request.post('/api/login', {
-        data: {
-          username: TEST_USER.username,
-          password: TEST_USER.newPassword,
-        },
-      })
-      expect(loginRes.ok(), `Login failed: ${loginRes.status()}`).toBeTruthy()
-    } else {
-      expect(setupRes.ok(), `Setup failed: ${status}`).toBeTruthy()
-    }
+    await seedAdminSession(page)
   })
 
   test('loads player route and renders Hydra preset', async ({ page }) => {

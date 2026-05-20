@@ -249,6 +249,9 @@
     - flake.nix
     - src/components/Navigation/
     - src/components/App/Routes/
+    - src/store/middlewareOptions.ts
+    - src/store/store.ts
+    - src/store/store.test.ts
     - src/routes/Orchestrator/
     - e2e/
   protected_paths:

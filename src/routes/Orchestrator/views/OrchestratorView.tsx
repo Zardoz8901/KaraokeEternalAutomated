@@ -1,13 +1,16 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router'
 import combinedReducer from 'store/reducers'
 import { useAppDispatch, useAppSelector } from 'store/hooks'
 import { VISUALIZER_HYDRA_CODE_REQ } from 'shared/actionTypes'
 import playerVisualizerReducer from 'routes/Player/modules/playerVisualizer'
 import { sliceInjectNoOp } from 'routes/Player/modules/player'
+import Icon from 'components/Icon/Icon'
 import { DEFAULT_SKETCH, getRandomSketch } from '../components/hydraSketchBook'
 import type { PresetLeaf } from '../components/presetTree'
 import { canSendHydraInput, getOrchestratorCapabilities } from '../components/orchestratorCapabilities'
 import { getEffectiveCode, getPendingRemote, normalizeCodeForAck, resolvePreviewHydraState, shouldAutoApplyPreset, shouldShowUnsentDot } from './orchestratorViewHelpers'
+import { getOrchestratorShellModel, normalizeDesktopPanel, normalizeMobileTab, type OrchestratorDesktopPanel, type OrchestratorMobileTab } from './orchestratorShellModel'
 import ApiReference from '../components/ApiReference'
 import PresetBrowser from '../components/PresetBrowser'
 import CodeEditor from '../components/CodeEditor'
@@ -43,6 +46,7 @@ function OrchestratorView () {
     currentRoomPrefs,
     user,
   ])
+  const shellModel = useMemo(() => getOrchestratorShellModel(orchestratorCapabilities), [orchestratorCapabilities])
 
   // playerVisualizer starts with hasHydraUpdate=false.
   // Once a VISUALIZER_HYDRA_CODE action arrives, flag is set to true.
@@ -64,8 +68,8 @@ function OrchestratorView () {
   const [userHasEdited, setUserHasEdited] = useState(false)
   const [pendingRemoteCode, setPendingRemoteCode] = useState<string | null>(null)
   const [pendingRemoteCount, setPendingRemoteCount] = useState(0)
-  const [activeTab, setActiveTab] = useState<'presets' | 'api'>('presets')
-  const [activeMobileTab, setActiveMobileTab] = useState<'stage' | 'code' | 'ref'>('stage')
+  const [activeTab, setActiveTab] = useState<OrchestratorDesktopPanel>('presets')
+  const [activeMobileTab, setActiveMobileTab] = useState<OrchestratorMobileTab>('stage')
   const [debouncedCode, setDebouncedCode] = useState<string>(DEFAULT_SKETCH)
   const [refPanelWidth, setRefPanelWidth] = useState<number>(() => {
     if (typeof window === 'undefined') return 280
@@ -363,6 +367,10 @@ function OrchestratorView () {
 
   const previewSize = getPreviewSize(ui.innerWidth)
   const isMobile = ui.innerWidth < 980
+  const activeDesktopPanel = normalizeDesktopPanel(activeTab, shellModel)
+  const activeMobilePanel = normalizeMobileTab(activeMobileTab, shellModel)
+  const canShowApiPanel = shellModel.visibleDesktopPanels.includes('api')
+  const canShowCodePanel = shellModel.visibleMobileTabs.includes('code')
   const orchestratorStatusModel = useMemo(() => getOrchestratorStatusModel({
     capabilities: orchestratorCapabilities,
     sendStatus,
@@ -377,12 +385,12 @@ function OrchestratorView () {
     userHasEdited,
   ])
 
-  const isRefOpen = isMobile && activeMobileTab === 'ref'
+  const isRefOpen = isMobile && activeMobilePanel === 'ref'
   const refPanelClass = isRefOpen
     ? `${styles.refPanel} ${styles.refPanelOpen}`
     : styles.refPanel
   let tabContent: React.ReactNode
-  if (activeTab === 'presets') {
+  if (activeDesktopPanel === 'presets') {
     tabContent = (
       <PresetBrowser
         currentCode={localCode}
@@ -403,26 +411,38 @@ function OrchestratorView () {
 
   return (
     <div
-      className={`${styles.container} ${isResizingPanel ? styles.containerResizing : ''} ${pendingRemoteCode ? styles.containerWithBanner : ''} ${isKeyboardOpen ? styles.containerKeyboardOpen : ''}`}
+      className={`${styles.container} ${shellModel.desktopLayout === 'operatorStageExpanded' ? styles.containerOperatorStageExpanded : ''} ${isResizingPanel ? styles.containerResizing : ''} ${pendingRemoteCode ? styles.containerWithBanner : ''} ${isKeyboardOpen ? styles.containerKeyboardOpen : ''}`}
       ref={containerRef}
       style={containerStyle}
     >
       <div className={refPanelClass}>
         <div className={styles.tabBar}>
-          <button
-            type='button'
-            className={`${styles.tab} ${activeTab === 'presets' ? styles.tabActive : ''}`}
-            onClick={() => setActiveTab('presets')}
-          >
-            Presets
-          </button>
-          <button
-            type='button'
-            className={`${styles.tab} ${activeTab === 'api' ? styles.tabActive : ''}`}
-            onClick={() => setActiveTab('api')}
-          >
-            API
-          </button>
+          <Link to='/library' className={styles.libraryExit} aria-label='Library' title='Library'>
+            <Icon icon='CHEVRON_LEFT' size={18} />
+            <span>Library</span>
+          </Link>
+          <div className={styles.panelTabs} role='tablist' aria-label='Orchestrator panels'>
+            <button
+              type='button'
+              role='tab'
+              aria-selected={activeDesktopPanel === 'presets'}
+              className={`${styles.tab} ${activeDesktopPanel === 'presets' ? styles.tabActive : ''}`}
+              onClick={() => setActiveTab('presets')}
+            >
+              Presets
+            </button>
+            {canShowApiPanel && (
+              <button
+                type='button'
+                role='tab'
+                aria-selected={activeDesktopPanel === 'api'}
+                className={`${styles.tab} ${activeDesktopPanel === 'api' ? styles.tabActive : ''}`}
+                onClick={() => setActiveTab('api')}
+              >
+                API
+              </button>
+            )}
+          </div>
         </div>
         <div className={styles.tabContent}>
           {tabContent}
@@ -438,7 +458,7 @@ function OrchestratorView () {
           />
         )}
       </div>
-      {isMobile && activeMobileTab === 'ref' && (
+      {isMobile && activeMobilePanel === 'ref' && (
         <div
           className={styles.refPanelOverlay}
           onClick={() => setActiveMobileTab('stage')}
@@ -458,7 +478,7 @@ function OrchestratorView () {
           </button>
         </div>
       )}
-      {(!isMobile || activeMobileTab === 'stage') && (
+      {(!isMobile || activeMobilePanel === 'stage') && (
         <div className={styles.stageDock}>
           <StagePanel
             code={effectiveCode}
@@ -479,7 +499,7 @@ function OrchestratorView () {
           />
         </div>
       )}
-      {(!isMobile || activeMobileTab === 'code') && (
+      {canShowCodePanel && (!isMobile || activeMobilePanel === 'code') && (
         <div className={styles.codeDock}>
           <CodeEditor
             code={userHasEdited ? localCode : effectiveCode}
@@ -496,43 +516,51 @@ function OrchestratorView () {
       )}
 
       {isMobile && !isKeyboardOpen && (
-        <div className={styles.mobileToolbar} role='tablist'>
-          <button
-            type='button'
-            role='tab'
-            aria-selected={activeMobileTab === 'stage'}
-            aria-label='Stage'
-            className={`${styles.mobileTab} ${activeMobileTab === 'stage' ? styles.mobileTabActive : ''}`}
-            onClick={() => setActiveMobileTab('stage')}
-          >
-            <span className={styles.mobileTabIcon}>{'\u25b6'}</span>
-            <span>Stage</span>
-          </button>
-          <button
-            type='button'
-            role='tab'
-            aria-selected={activeMobileTab === 'code'}
-            aria-label='Code'
-            className={`${styles.mobileTab} ${activeMobileTab === 'code' ? styles.mobileTabActive : ''}`}
-            onClick={() => setActiveMobileTab('code')}
-          >
-            <span className={styles.mobileTabIcon}>{'\u003c\u002f\u003e'}</span>
-            <span>Code</span>
-            {shouldShowUnsentDot(activeMobileTab, userHasEdited, sendStatus) && (
-              <span className={`${styles.mobileTabDot} ${sendStatus === 'error' ? styles.mobileTabDotError : ''}`} />
+        <div className={styles.mobileToolbar}>
+          <Link to='/library' className={styles.mobileLibraryLink} aria-label='Library' title='Library'>
+            <Icon icon='CHEVRON_LEFT' size={18} />
+            <span>Library</span>
+          </Link>
+          <div className={styles.mobileTabList} role='tablist' aria-label='Orchestrator panels'>
+            <button
+              type='button'
+              role='tab'
+              aria-selected={activeMobilePanel === 'stage'}
+              aria-label='Stage'
+              className={`${styles.mobileTab} ${activeMobilePanel === 'stage' ? styles.mobileTabActive : ''}`}
+              onClick={() => setActiveMobileTab('stage')}
+            >
+              <span className={styles.mobileTabIcon}>{'\u25b6'}</span>
+              <span>Stage</span>
+            </button>
+            {canShowCodePanel && (
+              <button
+                type='button'
+                role='tab'
+                aria-selected={activeMobilePanel === 'code'}
+                aria-label='Code'
+                className={`${styles.mobileTab} ${activeMobilePanel === 'code' ? styles.mobileTabActive : ''}`}
+                onClick={() => setActiveMobileTab('code')}
+              >
+                <span className={styles.mobileTabIcon}>{'\u003c\u002f\u003e'}</span>
+                <span>Code</span>
+                {shouldShowUnsentDot(activeMobilePanel, userHasEdited, sendStatus) && (
+                  <span className={`${styles.mobileTabDot} ${sendStatus === 'error' ? styles.mobileTabDotError : ''}`} />
+                )}
+              </button>
             )}
-          </button>
-          <button
-            type='button'
-            role='tab'
-            aria-selected={activeMobileTab === 'ref'}
-            aria-label='Presets'
-            className={`${styles.mobileTab} ${activeMobileTab === 'ref' ? styles.mobileTabActive : ''}`}
-            onClick={() => setActiveMobileTab('ref')}
-          >
-            <span className={styles.mobileTabIcon}>{'\u2630'}</span>
-            <span>Presets</span>
-          </button>
+            <button
+              type='button'
+              role='tab'
+              aria-selected={activeMobilePanel === 'ref'}
+              aria-label='Presets'
+              className={`${styles.mobileTab} ${activeMobilePanel === 'ref' ? styles.mobileTabActive : ''}`}
+              onClick={() => setActiveMobileTab('ref')}
+            >
+              <span className={styles.mobileTabIcon}>{'\u2630'}</span>
+              <span>Presets</span>
+            </button>
+          </div>
         </div>
       )}
     </div>

@@ -15,7 +15,7 @@ export interface OrchestratorStatusModel {
 }
 
 export interface OrchestratorStatusInput {
-  capabilities: Pick<OrchestratorCapabilities, 'canUseOrchestrator' | 'canLiveCode'>
+  capabilities: Pick<OrchestratorCapabilities, 'canUseOrchestrator' | 'canLiveCode' | 'canSendSavedPresetsByPolicy'>
   sendStatus: 'idle' | 'sending' | 'synced' | 'error'
   userHasEdited: boolean
   pendingRemoteCount: number
@@ -37,7 +37,7 @@ export function getOrchestratorStatusModel ({
 }
 
 function getAuthorityStatus (
-  capabilities: Pick<OrchestratorCapabilities, 'canUseOrchestrator' | 'canLiveCode'>,
+  capabilities: Pick<OrchestratorCapabilities, 'canUseOrchestrator' | 'canLiveCode' | 'canSendSavedPresetsByPolicy'>,
 ): OrchestratorStatusItem {
   if (!capabilities.canUseOrchestrator) {
     return { label: 'Policy blocked', tone: 'danger' }
@@ -45,6 +45,10 @@ function getAuthorityStatus (
 
   if (capabilities.canLiveCode) {
     return { label: 'Host live coding', tone: 'primary' }
+  }
+
+  if (!capabilities.canSendSavedPresetsByPolicy) {
+    return { label: 'Browse only', tone: 'neutral' }
   }
 
   return { label: 'Preset operator', tone: 'neutral' }
