@@ -130,7 +130,7 @@
     - cleanup
 
 - id: orchestrator-capability-ux
-  status: planned
+  status: in_progress
   owner: codex
   branch: phase-2-orchestrator-capability-ux
   base: main
