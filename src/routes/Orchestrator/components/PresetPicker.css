@@ -5,14 +5,25 @@
 
 .toggle {
   padding: 0.35rem 0.75rem;
-  background: rgba(78, 205, 196, 0.2);
-  border: 1px solid rgba(78, 205, 196, 0.4);
-  border-radius: 8px;
-  color: #dffcf8;
+  background: color-mix(in srgb, var(--orch-blue) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--orch-blue) 45%, transparent);
+  border-radius: var(--orch-radius-md);
+  color: var(--orch-blue);
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 650;
   cursor: pointer;
   white-space: nowrap;
+}
+
+.toggle:hover {
+  background: color-mix(in srgb, var(--orch-blue) 26%, transparent);
+}
+
+.toggle:focus-visible,
+.random:focus-visible,
+.action:focus-visible {
+  outline: 2px solid var(--orch-focus);
+  outline-offset: 1px;
 }
 
 .panel {
@@ -26,11 +37,10 @@
   flex-direction: column;
   gap: 6px;
   padding: 8px;
-  background: rgba(20, 30, 40, 0.85);
-  backdrop-filter: var(--aqua-blur, none);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.35);
+  background: var(--orch-surface-raised);
+  border: 1px solid var(--orch-border);
+  border-radius: var(--orch-radius-lg);
+  box-shadow: var(--orch-shadow);
 }
 
 .panelHeader {
@@ -41,19 +51,24 @@
 .search {
   flex: 1;
   padding: 6px 8px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(0, 0, 0, 0.25);
-  color: rgba(255, 255, 255, 0.9);
+  border-radius: var(--orch-radius-sm);
+  border: 1px solid var(--orch-border);
+  background: var(--orch-bg);
+  color: var(--orch-text);
   font-size: 14px;
+}
+
+.search:focus {
+  outline: 2px solid var(--orch-focus);
+  outline-offset: 1px;
 }
 
 .random {
   padding: 6px 8px;
-  border-radius: 6px;
-  border: 1px solid rgba(212, 160, 23, 0.4);
-  background: rgba(212, 160, 23, 0.2);
-  color: #f6d56b;
+  border-radius: var(--orch-radius-sm);
+  border: 1px solid color-mix(in srgb, var(--orch-yellow) 42%, transparent);
+  background: color-mix(in srgb, var(--orch-yellow) 16%, transparent);
+  color: var(--orch-yellow);
   font-size: 12px;
   cursor: pointer;
   white-space: nowrap;
@@ -73,14 +88,14 @@
   align-items: center;
   gap: 6px;
   padding: 6px;
-  border-radius: 8px;
-  background: rgba(10, 15, 20, 0.35);
+  border-radius: var(--orch-radius-md);
+  background: var(--orch-surface-soft);
 }
 
 .label {
   flex: 1;
   font-size: 12px;
-  color: #e6edf3;
+  color: var(--orch-text);
   font-family: 'JetBrains Mono', monospace;
   white-space: nowrap;
   overflow: hidden;
@@ -94,29 +109,29 @@
 
 .action {
   padding: 4px 6px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.85);
+  border-radius: var(--orch-radius-sm);
+  border: 1px solid var(--orch-border);
+  background: var(--orch-surface);
+  color: var(--orch-text);
   font-size: 11px;
   cursor: pointer;
 }
 
 .actionPrimary {
-  background: rgba(78, 205, 196, 0.2);
-  border-color: rgba(78, 205, 196, 0.5);
-  color: #dffcf8;
+  background: color-mix(in srgb, var(--orch-blue) 18%, transparent);
+  border-color: color-mix(in srgb, var(--orch-blue) 50%, transparent);
+  color: var(--orch-blue);
 }
 
 .empty {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--orch-muted);
   padding: 4px 2px;
 }
 
 @media (max-width: 979px) {
   .toggle {
-    min-height: 44px;
+    min-height: var(--orch-touch-target);
   }
 
   .panel {
@@ -132,13 +147,13 @@
   .search {
     padding: 10px 12px;
     font-size: 16px;
-    min-height: 44px;
+    min-height: var(--orch-touch-target);
   }
 
   .random {
     padding: 10px 12px;
     font-size: 13px;
-    min-height: 44px;
+    min-height: var(--orch-touch-target);
   }
 
   .row {
@@ -153,6 +168,6 @@
   .action {
     padding: 10px 14px;
     font-size: 13px;
-    min-height: 44px;
+    min-height: var(--orch-touch-target);
   }
 }

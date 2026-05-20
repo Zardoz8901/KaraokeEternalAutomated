@@ -34,52 +34,52 @@ const { topLevel, dotChain, nativeAudioDot, sourceDot } = buildHydraCompletions(
 
 const hydraTheme = EditorView.theme({
   '&': {
-    backgroundColor: '#0d1117',
-    color: '#c9d1d9',
+    backgroundColor: 'var(--orch-bg)',
+    color: 'var(--orch-text)',
     height: '100%',
     fontFamily: '\'JetBrains Mono\', \'Fira Code\', \'Consolas\', monospace',
     fontSize: '13px',
   },
   '.cm-content': {
-    caretColor: '#c9d1d9',
+    caretColor: 'var(--orch-text-strong)',
     lineHeight: '1.5',
     padding: '12px',
   },
   '.cm-gutters': {
-    backgroundColor: '#0d1117',
-    color: '#484f58',
+    backgroundColor: 'var(--orch-surface)',
+    color: 'var(--orch-muted)',
     border: 'none',
   },
   '.cm-activeLine': {
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    backgroundColor: 'color-mix(in srgb, var(--orch-base01) 14%, transparent)',
   },
   '.cm-activeLineGutter': {
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    backgroundColor: 'color-mix(in srgb, var(--orch-base01) 14%, transparent)',
   },
   '.cm-selectionBackground': {
-    backgroundColor: 'rgba(56, 139, 253, 0.3) !important',
+    backgroundColor: 'color-mix(in srgb, var(--orch-blue) 28%, transparent) !important',
   },
   '.cm-cursor': {
-    borderLeftColor: '#c9d1d9',
+    borderLeftColor: 'var(--orch-text-strong)',
   },
   '.cm-tooltip': {
-    backgroundColor: '#161b22',
-    border: '1px solid #30363d',
-    color: '#c9d1d9',
+    backgroundColor: 'var(--orch-surface-raised)',
+    border: '1px solid var(--orch-border)',
+    color: 'var(--orch-text)',
   },
   '.cm-tooltip.cm-tooltip-autocomplete > ul > li': {
     padding: '2px 8px',
   },
   '.cm-tooltip.cm-tooltip-autocomplete > ul > li[aria-selected]': {
-    backgroundColor: '#388bfd33',
-    color: '#c9d1d9',
+    backgroundColor: 'color-mix(in srgb, var(--orch-blue) 24%, transparent)',
+    color: 'var(--orch-text-strong)',
   },
   '.cm-diagnostic-error': {
-    borderLeft: '3px solid #f85149',
+    borderLeft: '3px solid var(--orch-red)',
   },
   '.cm-injected-line': {
-    backgroundColor: 'rgba(78, 205, 196, 0.08)',
-    borderLeft: '2px solid rgba(78, 205, 196, 0.3)',
+    backgroundColor: 'color-mix(in srgb, var(--orch-cyan) 10%, transparent)',
+    borderLeft: '2px solid color-mix(in srgb, var(--orch-cyan) 34%, transparent)',
   },
 })
 

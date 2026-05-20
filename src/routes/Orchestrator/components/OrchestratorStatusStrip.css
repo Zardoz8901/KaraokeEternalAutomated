@@ -1,0 +1,75 @@
+.strip {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--orch-gap-xs);
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.pill {
+  min-width: 0;
+  max-width: 13rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border: 1px solid var(--orch-status-border);
+  border-radius: var(--orch-radius-sm);
+  padding: 0.18rem 0.5rem;
+  color: var(--orch-text);
+  background: var(--orch-status-bg);
+  font-size: var(--text-xs);
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.toneNeutral {
+  --orch-status-border: var(--orch-border-strong);
+  --orch-status-bg: var(--orch-surface-soft);
+  color: var(--orch-muted);
+}
+
+.tonePrimary {
+  --orch-status-border: color-mix(in srgb, var(--orch-blue) 55%, transparent);
+  --orch-status-bg: color-mix(in srgb, var(--orch-blue) 14%, transparent);
+  color: var(--orch-blue);
+}
+
+.toneLive {
+  --orch-status-border: color-mix(in srgb, var(--orch-cyan) 55%, transparent);
+  --orch-status-bg: color-mix(in srgb, var(--orch-cyan) 14%, transparent);
+  color: var(--orch-cyan);
+}
+
+.toneSuccess {
+  --orch-status-border: color-mix(in srgb, var(--orch-green) 55%, transparent);
+  --orch-status-bg: color-mix(in srgb, var(--orch-green) 14%, transparent);
+  color: var(--orch-green);
+}
+
+.toneWarning {
+  --orch-status-border: color-mix(in srgb, var(--orch-yellow) 58%, transparent);
+  --orch-status-bg: color-mix(in srgb, var(--orch-yellow) 14%, transparent);
+  color: var(--orch-yellow);
+}
+
+.toneDanger {
+  --orch-status-border: color-mix(in srgb, var(--orch-red) 58%, transparent);
+  --orch-status-bg: color-mix(in srgb, var(--orch-red) 14%, transparent);
+  color: var(--orch-red);
+}
+
+@media (max-width: 979px) {
+  .strip {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .pill {
+    flex: 1 1 auto;
+    max-width: 100%;
+    text-align: center;
+    min-height: 2rem;
+  }
+}

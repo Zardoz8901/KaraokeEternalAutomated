@@ -12,6 +12,8 @@ import ApiReference from '../components/ApiReference'
 import PresetBrowser from '../components/PresetBrowser'
 import CodeEditor from '../components/CodeEditor'
 import StagePanel from '../components/StagePanel'
+import OrchestratorStatusStrip from '../components/OrchestratorStatusStrip'
+import { getOrchestratorStatusModel } from '../components/orchestratorStatus'
 import { type StageBuffer } from '../components/stagePanelUtils'
 import { useCameraSender } from 'lib/webrtc/useCameraSender'
 import { fetchCurrentRoom } from 'store/modules/rooms'
@@ -361,6 +363,19 @@ function OrchestratorView () {
 
   const previewSize = getPreviewSize(ui.innerWidth)
   const isMobile = ui.innerWidth < 980
+  const orchestratorStatusModel = useMemo(() => getOrchestratorStatusModel({
+    capabilities: orchestratorCapabilities,
+    sendStatus,
+    userHasEdited,
+    pendingRemoteCount,
+    cameraStatus: camera.status,
+  }), [
+    camera.status,
+    orchestratorCapabilities,
+    pendingRemoteCount,
+    sendStatus,
+    userHasEdited,
+  ])
 
   const isRefOpen = isMobile && activeMobileTab === 'ref'
   const refPanelClass = isRefOpen
@@ -455,6 +470,7 @@ function OrchestratorView () {
             onPresetLoad={handleLoadPreset}
             onPresetSend={orchestratorCapabilities.canSendGalleryPreset ? handleSendPreset : undefined}
             onRandomize={handleRandomize}
+            statusStrip={<OrchestratorStatusStrip model={orchestratorStatusModel} />}
             visualizerMode={previewHydraState.mode}
             visualizerEnabled={previewHydraState.isEnabled}
             visualizerSensitivity={previewHydraState.sensitivity}

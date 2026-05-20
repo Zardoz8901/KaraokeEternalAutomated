@@ -17,6 +17,7 @@ interface StagePanelProps {
   onPresetLoad?: (code: string) => void
   onPresetSend?: (code: string) => void
   onRandomize?: () => void
+  statusStrip?: React.ReactNode
   visualizerMode: VisualizerMode
   visualizerEnabled: boolean
   visualizerSensitivity: number
@@ -34,6 +35,7 @@ function StagePanel ({
   onPresetLoad,
   onPresetSend,
   onRandomize,
+  statusStrip,
   visualizerMode,
   visualizerEnabled,
   visualizerSensitivity,
@@ -88,6 +90,11 @@ function StagePanel ({
             />
           )}
         </div>
+        {statusStrip && (
+          <div className={styles.stageStatusSlot}>
+            {statusStrip}
+          </div>
+        )}
         <div className={styles.stageHeaderRight}>
           {showCameraPipeline && (
             <div className={`${styles.cameraPipeline} ${cameraPipelineClass}`}>

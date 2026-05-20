@@ -637,6 +637,7 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
 
       <Modal
         title='New Folder'
+        className={styles.orchestratorModal}
         visible={showNewFolder}
         onClose={() => setShowNewFolder(false)}
         buttons={(
@@ -662,6 +663,7 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
 
       <Modal
         title='Save Preset'
+        className={styles.orchestratorModal}
         visible={showSavePreset}
         onClose={() => setShowSavePreset(false)}
         buttons={(
@@ -691,6 +693,7 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
 
       <Modal
         title={renameModalTitle}
+        className={styles.orchestratorModal}
         visible={pendingRename !== null}
         onClose={() => {
           setPendingRename(null)
@@ -728,6 +731,7 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
 
       <Modal
         title={deleteModalTitle}
+        className={styles.orchestratorModal}
         visible={pendingDelete !== null}
         onClose={() => setPendingDelete(null)}
         buttons={(
@@ -744,6 +748,7 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
 
       <Modal
         title='Move to Folder'
+        className={styles.orchestratorModal}
         visible={pendingMove !== null}
         onClose={() => setPendingMove(null)}
         buttons={(

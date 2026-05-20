@@ -1,37 +1,41 @@
 .stage {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background: radial-gradient(circle at 15% 20%, rgba(0, 255, 255, 0.08), transparent 55%), #07080c;
+  border-bottom: 1px solid var(--orch-border);
+  background: var(--orch-bg);
   min-height: 0;
   height: 100%;
 }
 
 .stageHeader {
   grid-row: 1;
-  display: flex;
-  flex-direction: row;
+  display: grid;
+  grid-template-columns: minmax(12rem, max-content) minmax(13rem, 1fr) minmax(16rem, max-content);
   align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background: linear-gradient(180deg, rgba(18, 24, 35, 0.9), rgba(7, 8, 12, 0.9));
+  gap: var(--orch-gap-md);
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid var(--orch-border-subtle);
+  background: var(--orch-surface-raised);
   min-height: 44px;
 }
 
 .stageHeaderLeft {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--orch-gap-sm);
   min-width: 0;
+}
+
+.stageStatusSlot {
+  min-width: 0;
+  max-width: clamp(14rem, 34vw, 34rem);
 }
 
 .stageHeaderRight {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 0.5rem;
+  gap: var(--orch-gap-sm);
   min-width: 0;
 }
 
@@ -40,16 +44,16 @@
   flex-direction: column;
   gap: 2px;
   font-size: var(--text-sm);
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #bcd1ff;
+  color: var(--orch-text-strong);
   white-space: nowrap;
 }
 
 .stageHint {
   font-size: var(--text-xs);
   letter-spacing: 0.08em;
-  color: rgba(188, 209, 255, 0.6);
+  color: var(--orch-muted);
   display: none;
 }
 
@@ -58,10 +62,11 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 0.1rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 0.42rem;
+  border: 1px solid var(--orch-border);
+  border-radius: var(--orch-radius-sm);
   padding: 0.22rem 0.44rem;
-  max-width: min(18rem, 42vw);
+  max-width: min(18rem, 32vw);
+  min-width: 0;
 }
 
 .cameraPipelineLabel {
@@ -75,7 +80,7 @@
 .cameraPipelineDetail {
   font-size: 0.58rem;
   line-height: 1.25;
-  color: rgba(232, 242, 255, 0.72);
+  color: var(--orch-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -83,30 +88,30 @@
 }
 
 .cameraPipelineLive {
-  border-color: rgba(0, 255, 178, 0.62);
-  background: rgba(0, 255, 178, 0.12);
+  border-color: color-mix(in srgb, var(--orch-cyan) 58%, transparent);
+  background: color-mix(in srgb, var(--orch-cyan) 12%, transparent);
 }
 
 .cameraPipelineLive .cameraPipelineLabel {
-  color: #87ffd8;
+  color: var(--orch-cyan);
 }
 
 .cameraPipelinePartial {
-  border-color: rgba(255, 186, 61, 0.62);
-  background: rgba(255, 186, 61, 0.12);
+  border-color: color-mix(in srgb, var(--orch-yellow) 58%, transparent);
+  background: color-mix(in srgb, var(--orch-yellow) 12%, transparent);
 }
 
 .cameraPipelinePartial .cameraPipelineLabel {
-  color: #ffd79a;
+  color: var(--orch-yellow);
 }
 
 .cameraPipelineOff {
-  border-color: rgba(162, 176, 199, 0.42);
-  background: rgba(162, 176, 199, 0.08);
+  border-color: var(--orch-border);
+  background: var(--orch-surface-soft);
 }
 
 .cameraPipelineOff .cameraPipelineLabel {
-  color: rgba(198, 210, 228, 0.88);
+  color: var(--orch-muted);
 }
 
 .bufferControls {
@@ -124,12 +129,12 @@
 }
 
 .bufferButton {
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(8, 10, 14, 0.8);
-  color: rgba(255, 255, 255, 0.75);
+  border: 1px solid var(--orch-border);
+  background: var(--orch-surface);
+  color: var(--orch-muted);
   font-size: var(--text-xs);
   padding: 0.25rem 0.5rem;
-  border-radius: 6px;
+  border-radius: var(--orch-radius-sm);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   white-space: nowrap;
@@ -138,14 +143,19 @@
 }
 
 .bufferButton:hover {
-  border-color: rgba(0, 255, 255, 0.6);
-  color: #eaffff;
+  border-color: color-mix(in srgb, var(--orch-cyan) 60%, transparent);
+  color: var(--orch-text-strong);
+}
+
+.bufferButton:focus-visible {
+  outline: 2px solid var(--orch-focus);
+  outline-offset: 1px;
 }
 
 .bufferButtonActive {
-  background: rgba(0, 255, 255, 0.2);
-  border-color: rgba(0, 255, 255, 0.85);
-  color: #eaffff;
+  background: color-mix(in srgb, var(--orch-cyan) 16%, transparent);
+  border-color: color-mix(in srgb, var(--orch-cyan) 80%, transparent);
+  color: var(--orch-cyan);
 }
 
 .stageBody {
@@ -169,15 +179,28 @@
 
 @media (max-width: 979px) {
   .stageHeader {
+    display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: var(--orch-gap-sm);
     padding: 0.5rem;
+  }
+
+  .stageHeaderLeft {
+    flex: 1 1 100%;
+    order: 1;
+  }
+
+  .stageStatusSlot {
+    flex: 1 1 100%;
+    order: 2;
+    max-width: 100%;
   }
 
   .stageHeaderRight {
     width: 100%;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: var(--orch-gap-sm);
+    order: 3;
   }
 
   .cameraPipeline {
@@ -195,17 +218,13 @@
 
   .bufferButton {
     flex: 1;
-    min-height: 44px;
+    min-height: var(--orch-touch-target);
     padding: 0.375rem 0.5rem;
     text-align: center;
   }
 }
 
 @media (min-width: 980px) {
-  .stageHeader {
-    padding: 0.625rem 0.75rem;
-  }
-
   .stageHint {
     display: block;
   }
