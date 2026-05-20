@@ -178,13 +178,13 @@
     - cleanup
 
 - id: orchestrator-solarized-foundation-ux
-  status: in_progress
+  status: merged_to_main
   owner: codex
   branch: design/orchestrator-solarized-foundation-ux
   base: main
   worktree:
-    path: /home/steph/projects/KaraokeEternalAutomated-orchestrator-solarized-foundation-ux
-    state: present
+    path: null
+    state: not_required
   merge_order: 50
   goal: Apply a Solarized, token-driven Orchestrator foundation with Figma-level shell polish, status clarity, and deterministic visual QA.
   write_scope:
@@ -227,10 +227,10 @@
     - CodeMirror tokenization includes both CodeEditor.tsx theme colors and hydraHighlightStyle.ts syntax colors.
     - "Implementation note 2026-05-20: authenticated Playwright screenshots remain manual QA until Nix browser wiring is fixed; the reusable setup/login auth path exists in e2e/smoke.spec.ts."
     - "Validation note 2026-05-20: local Chromium e2e is blocked on Nix because the dev shell does not provide a Nix-built browser or PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH; downloaded Playwright Chromium fails with stub-ld."
+    - Merged to main on 2026-05-20 as 8657488f.
     - Stale merged worktrees and branches exist and are cleanup candidates, but cleanup is outside this slice.
   next:
-    - implementation
-    - review
+    - cleanup
 
 - id: rollback-2026-02-12-cleanup
   status: merged_to_main

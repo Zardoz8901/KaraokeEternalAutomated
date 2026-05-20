@@ -86,4 +86,8 @@ Status on 2026-05-20: automated screenshots were not captured because local Play
 
 ## Rollback
 
-Before coding, the dedicated worktree was created from `main` and the slice was registered in `docs/plans/active-slices.yaml`. After merge, rollback command is `git revert <merge-sha>`; replace `<merge-sha>` with the main merge commit recorded when the slice is marked `merged_to_main`.
+Before coding, the dedicated worktree was created from `main` and the slice was registered in `docs/plans/active-slices.yaml`. After merge, rollback command is:
+
+```sh
+git revert 8657488f
+```
