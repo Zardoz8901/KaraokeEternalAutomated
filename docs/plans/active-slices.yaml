@@ -129,6 +129,52 @@
   next:
     - cleanup
 
+- id: orchestrator-capability-ux
+  status: planned
+  owner: codex
+  branch: phase-2-orchestrator-capability-ux
+  base: main
+  worktree:
+    path: /home/steph/projects/KaraokeEternalAutomated-orchestrator-capability-ux
+    state: present
+  merge_order: 40
+  goal: Align Orchestrator UI dispatch paths with the backend Hydra authority boundary so collaborators use preset-operator workflows and cannot trigger raw-code sends from UI paths.
+  write_scope:
+    - docs/plans/active-slices.yaml
+    - src/routes/Orchestrator/
+  protected_paths:
+    - server/
+    - shared/actionTypes.ts
+    - shared/types.ts
+    - src/routes/Player/
+    - src/components/App/
+    - package.json
+    - package-lock.json
+    - flake.nix
+    - .github/workflows/
+  verification:
+    - npm test -- src/routes/Orchestrator/components/orchestratorCapabilities.test.ts src/routes/Orchestrator/components/PresetTree.test.tsx src/routes/Orchestrator/components/PresetPicker.test.tsx src/routes/Orchestrator/views/orchestratorViewHelpers.test.ts
+    - npm run slices:check
+    - npm run typecheck
+    - npm run lint
+  acceptance:
+    - Raw code send dispatch is gated in Orchestrator handlers, not only hidden in UI.
+    - Collaborators and guests can send only saved DB presets when both room policies allow it.
+    - Gallery/raw-code send paths are manager-only.
+    - PresetTree click and keyboard send paths share the same send predicate.
+    - Existing preset/folder CRUD permissions remain admin-or-author.
+  non_goals:
+    - Do not change backend socket contracts or enforcement.
+    - Do not change room prefs APIs or admin room-policy management.
+    - Do not perform the Solarized restyle in this slice.
+    - Do not resume or merge redux-modernization.
+  notes:
+    - "Red-team fix locked 2026-05-19: gate dispatch functions and keyboard/click send paths, not only rendering."
+    - Overlaps blocked redux-modernization Orchestrator paths; serialize this slice and do not run both branches in parallel.
+  next:
+    - implementation
+    - review
+
 - id: rollback-2026-02-12-cleanup
   status: merged_to_main
   owner: unassigned
