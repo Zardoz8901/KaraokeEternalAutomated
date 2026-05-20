@@ -178,13 +178,13 @@
     - cleanup
 
 - id: orchestrator-solarized-foundation-ux
-  status: planned
+  status: in_progress
   owner: codex
   branch: design/orchestrator-solarized-foundation-ux
   base: main
   worktree:
     path: /home/steph/projects/KaraokeEternalAutomated-orchestrator-solarized-foundation-ux
-    state: missing
+    state: present
   merge_order: 50
   goal: Apply a Solarized, token-driven Orchestrator foundation with Figma-level shell polish, status clarity, and deterministic visual QA.
   write_scope:
