@@ -177,6 +177,59 @@
   next:
     - cleanup
 
+- id: orchestrator-solarized-foundation-ux
+  status: planned
+  owner: codex
+  branch: design/orchestrator-solarized-foundation-ux
+  base: main
+  worktree:
+    path: /home/steph/projects/KaraokeEternalAutomated-orchestrator-solarized-foundation-ux
+    state: missing
+  merge_order: 50
+  goal: Apply a Solarized, token-driven Orchestrator foundation with Figma-level shell polish, status clarity, and deterministic visual QA.
+  write_scope:
+    - docs/analysis/
+    - docs/architecture/orchestrator-synthesis-ui-style-guide.md
+    - docs/plans/active-slices.yaml
+    - src/routes/Orchestrator/
+  protected_paths:
+    - server/
+    - shared/actionTypes.ts
+    - shared/types.ts
+    - src/routes/Player/
+    - src/routes/Queue/
+    - src/routes/Account/
+    - package.json
+    - package-lock.json
+    - flake.nix
+    - .github/workflows/
+  verification:
+    - npm test -- src/routes/Orchestrator/views/orchestratorLayout.test.ts src/routes/Orchestrator/views/orchestratorViewHelpers.test.ts src/routes/Orchestrator/components/orchestratorCapabilities.test.ts
+    - npm test -- src/routes/Orchestrator/components/orchestratorStatus.test.ts src/routes/Orchestrator/components/OrchestratorStatusStrip.test.tsx src/routes/Orchestrator/components/orchestratorColorAudit.test.ts src/routes/Orchestrator/components/PresetBrowser.test.tsx
+    - npm run slices:check
+    - npm run typecheck
+    - npm run lint
+    - npm run build
+  acceptance:
+    - Orchestrator shell, Stage header, CodeEditor, CodeMirror theme, Hydra syntax highlighting, presets, API reference, and scoped Orchestrator modals use Solarized tokens instead of one-off GitHub/neon colors.
+    - Stage header status strip shows Host live coding, Preset operator, or Policy blocked, plus broadcast and camera state without colliding with preset, camera, or buffer controls.
+    - Every PresetBrowser Modal receives the scoped Orchestrator modal class.
+    - Deterministic color audit passes for touched Orchestrator files.
+    - Desktop and mobile visual QA is completed through authenticated Playwright when feasible, otherwise documented as manual QA with exact viewport evidence.
+  non_goals:
+    - Do not change backend socket contracts or enforcement.
+    - Do not change room prefs APIs or admin room-policy management.
+    - Do not redesign app-wide queue, account, player, or shared Modal defaults.
+    - Do not add new runtime dependencies.
+    - Do not resume or merge redux-modernization.
+  notes:
+    - "User decision locked 2026-05-20: Orchestrator-first foundation + shell polish, code plus docs, include CodeMirror, Stage-header status strip, scoped Orchestrator modals."
+    - CodeMirror tokenization includes both CodeEditor.tsx theme colors and hydraHighlightStyle.ts syntax colors.
+    - Stale merged worktrees and branches exist and are cleanup candidates, but cleanup is outside this slice.
+  next:
+    - implementation
+    - review
+
 - id: rollback-2026-02-12-cleanup
   status: merged_to_main
   owner: unassigned
