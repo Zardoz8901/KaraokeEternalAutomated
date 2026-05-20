@@ -23,35 +23,54 @@
   display: flex;
   align-items: center;
   padding: 0.5rem 0.75rem;
-  background: var(--aqua-glass-bg, #16213e);
-  backdrop-filter: var(--aqua-blur, none);
-  border-top: var(--aqua-border, 1px solid rgba(255, 255, 255, 0.08));
+  background: var(--orch-surface-raised);
+  border-top: 1px solid var(--orch-border-subtle);
   gap: 0.75rem;
   min-height: 0;
 }
 
 .hint {
   font-size: var(--text-xs);
-  color: #555;
+  color: var(--orch-muted);
   white-space: nowrap;
+}
+
+.hintToggle,
+.editButton,
+.randomButton,
+.sendButton,
+.resendButton,
+.cameraBannerEnable,
+.cameraBannerDismiss {
+  border-radius: var(--orch-radius-sm);
 }
 
 .hintToggle {
   padding: 0.3125rem 0.625rem;
-  background: rgba(118, 134, 156, 0.18);
-  color: #c3cfdf;
-  border: 1px solid rgba(118, 134, 156, 0.35);
-  border-radius: 6px;
+  background: var(--orch-surface-soft);
+  color: var(--orch-muted);
+  border: 1px solid var(--orch-border);
   font-size: var(--text-xs);
-  font-weight: 600;
+  font-weight: 650;
   cursor: pointer;
   min-height: 34px;
   white-space: nowrap;
 }
 
 .hintToggle:hover {
-  background: rgba(118, 134, 156, 0.28);
-  border-color: rgba(118, 134, 156, 0.55);
+  background: color-mix(in srgb, var(--orch-base01) 16%, transparent);
+  border-color: var(--orch-border-strong);
+}
+
+.hintToggle:focus-visible,
+.editButton:focus-visible,
+.randomButton:focus-visible,
+.sendButton:focus-visible,
+.resendButton:focus-visible,
+.cameraBannerEnable:focus-visible,
+.cameraBannerDismiss:focus-visible {
+  outline: 2px solid var(--orch-focus);
+  outline-offset: 1px;
 }
 
 .passiveHints {
@@ -60,16 +79,16 @@
   flex-wrap: wrap;
   gap: 0.375rem;
   padding: 0.4rem 0.5rem;
-  border: 1px solid rgba(118, 134, 156, 0.3);
-  border-radius: 6px;
-  background: rgba(14, 22, 32, 0.45);
+  border: 1px solid var(--orch-border);
+  border-radius: var(--orch-radius-sm);
+  background: var(--orch-surface-soft);
 }
 
 .passiveHintItem {
   font-size: var(--text-xs);
-  color: #b6c4d8;
-  background: rgba(96, 122, 157, 0.16);
-  border: 1px solid rgba(96, 122, 157, 0.28);
+  color: var(--orch-muted);
+  background: color-mix(in srgb, var(--orch-base01) 14%, transparent);
+  border: 1px solid var(--orch-border-subtle);
   border-radius: 999px;
   padding: 0.125rem 0.5rem;
   line-height: 1.4;
@@ -84,12 +103,11 @@
 
 .editButton {
   padding: 0.375rem 0.625rem;
-  background: rgba(11, 18, 28, 0.78);
-  color: rgba(206, 241, 255, 0.88);
-  border: 1px solid rgba(78, 205, 196, 0.28);
-  border-radius: 6px;
+  background: var(--orch-surface);
+  color: var(--orch-text);
+  border: 1px solid var(--orch-border);
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 650;
   letter-spacing: 0.02em;
   cursor: pointer;
   min-height: 36px;
@@ -97,14 +115,9 @@
 }
 
 .editButton:hover {
-  background: rgba(29, 52, 76, 0.9);
-  border-color: rgba(78, 205, 196, 0.6);
-  color: #e9fbff;
-}
-
-.editButton:focus-visible {
-  outline: 2px solid rgba(78, 205, 196, 0.55);
-  outline-offset: 1px;
+  background: color-mix(in srgb, var(--orch-base01) 16%, transparent);
+  border-color: color-mix(in srgb, var(--orch-blue) 48%, transparent);
+  color: var(--orch-text-strong);
 }
 
 .editButton:active {
@@ -118,44 +131,42 @@
 
 .randomButton {
   padding: 0.375rem 0.75rem;
-  background: rgba(212, 160, 23, 0.15);
-  background-image: var(--aqua-gloss, none);
-  color: #d4a017;
-  border: 1px solid rgba(212, 160, 23, 0.3);
-  border-radius: 6px;
+  background: color-mix(in srgb, var(--orch-yellow) 14%, transparent);
+  color: var(--orch-yellow);
+  border: 1px solid color-mix(in srgb, var(--orch-yellow) 36%, transparent);
   font-size: var(--text-sm);
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 600;
   white-space: nowrap;
   min-height: 36px;
 }
 
 .randomButton:hover {
-  background: rgba(212, 160, 23, 0.25);
-  border-color: rgba(212, 160, 23, 0.5);
+  background: color-mix(in srgb, var(--orch-yellow) 22%, transparent);
+  border-color: color-mix(in srgb, var(--orch-yellow) 52%, transparent);
 }
 
 .sendButton {
   padding: 0.375rem 1rem;
-  background: #238636;
-  background-image: var(--aqua-gloss, none);
-  color: #fff;
-  border: none;
-  border-radius: 6px;
+  background: color-mix(in srgb, var(--orch-blue) 24%, transparent);
+  color: var(--orch-blue);
+  border: 1px solid color-mix(in srgb, var(--orch-blue) 58%, transparent);
   font-size: var(--text-md);
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 650;
   min-height: 40px;
 }
 
 .sendButton:hover {
-  background: #2ea043;
+  background: color-mix(in srgb, var(--orch-blue) 32%, transparent);
 }
 
 .sendButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  background: rgba(118, 134, 156, 0.28);
+  background: var(--orch-surface-soft);
+  color: var(--orch-muted);
+  border-color: var(--orch-border);
 }
 
 .sendGroup {
@@ -173,22 +184,22 @@
 }
 
 .sendStatusOk {
-  color: #7ee787;
-  border-color: rgba(126, 231, 135, 0.4);
-  background: rgba(126, 231, 135, 0.12);
+  color: var(--orch-green);
+  border-color: color-mix(in srgb, var(--orch-green) 42%, transparent);
+  background: color-mix(in srgb, var(--orch-green) 12%, transparent);
 }
 
 .sendStatusError {
-  color: #ff7b72;
-  border-color: rgba(255, 123, 114, 0.4);
-  background: rgba(255, 123, 114, 0.12);
+  color: var(--orch-red);
+  border-color: color-mix(in srgb, var(--orch-red) 42%, transparent);
+  background: color-mix(in srgb, var(--orch-red) 12%, transparent);
 }
 
 .sendLintError {
   font-size: var(--text-xs);
-  color: #ffcc7a;
-  background: rgba(255, 204, 122, 0.12);
-  border: 1px solid rgba(255, 204, 122, 0.35);
+  color: var(--orch-yellow);
+  background: color-mix(in srgb, var(--orch-yellow) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--orch-yellow) 35%, transparent);
   padding: 0.125rem 0.5rem;
   border-radius: 999px;
   white-space: nowrap;
@@ -196,9 +207,9 @@
 
 .sendLintDebug {
   font-size: var(--text-xs);
-  color: #9ec8ff;
-  background: rgba(88, 166, 255, 0.12);
-  border: 1px solid rgba(88, 166, 255, 0.35);
+  color: var(--orch-blue);
+  background: color-mix(in srgb, var(--orch-blue) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--orch-blue) 35%, transparent);
   padding: 0.125rem 0.5rem;
   border-radius: 999px;
   white-space: nowrap;
@@ -209,10 +220,9 @@
 
 .resendButton {
   padding: 0.25rem 0.6rem;
-  background: rgba(255, 123, 114, 0.15);
-  color: #ff7b72;
-  border: 1px solid rgba(255, 123, 114, 0.35);
-  border-radius: 6px;
+  background: color-mix(in srgb, var(--orch-red) 12%, transparent);
+  color: var(--orch-red);
+  border: 1px solid color-mix(in srgb, var(--orch-red) 35%, transparent);
   font-size: var(--text-xs);
   cursor: pointer;
   min-height: 32px;
@@ -228,39 +238,37 @@
   align-items: center;
   gap: 0.625rem;
   padding: 0.375rem 0.75rem;
-  background: rgba(78, 144, 156, 0.15);
-  border-bottom: 1px solid rgba(78, 144, 156, 0.3);
+  background: color-mix(in srgb, var(--orch-cyan) 12%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--orch-cyan) 30%, transparent);
   font-size: var(--text-sm);
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--orch-text);
 }
 
 .cameraBannerEnable {
   padding: 0.1875rem 0.625rem;
-  background: rgba(78, 205, 196, 0.2);
-  color: #4ecdc4;
-  border: 1px solid rgba(78, 205, 196, 0.4);
-  border-radius: 3px;
+  background: color-mix(in srgb, var(--orch-cyan) 18%, transparent);
+  color: var(--orch-cyan);
+  border: 1px solid color-mix(in srgb, var(--orch-cyan) 42%, transparent);
   font-size: var(--text-sm);
   cursor: pointer;
 }
 
 .cameraBannerEnable:hover {
-  background: rgba(78, 205, 196, 0.3);
+  background: color-mix(in srgb, var(--orch-cyan) 28%, transparent);
 }
 
 .cameraBannerDismiss {
   padding: 0.1875rem 0.625rem;
   background: transparent;
-  color: #888;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
+  color: var(--orch-muted);
+  border: 1px solid var(--orch-border-subtle);
   font-size: var(--text-sm);
   cursor: pointer;
 }
 
 .cameraBannerDismiss:hover {
-  color: #aaa;
-  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--orch-text);
+  border-color: var(--orch-border);
 }
 
 @media (max-width: 979px) {
@@ -315,7 +323,7 @@
     flex: 1;
     padding: 0.625rem;
     font-size: var(--text-md);
-    min-height: 44px;
+    min-height: var(--orch-touch-target);
   }
 
   .passiveHints {

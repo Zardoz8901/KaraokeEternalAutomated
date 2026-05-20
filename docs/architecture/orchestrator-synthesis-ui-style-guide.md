@@ -14,6 +14,8 @@ This guide adapts these references:
 - Nielsen Norman Group, [Complex Application Design](https://www.nngroup.com/articles/complex-application-design/)
 - W3C WAI-ARIA Authoring Practices, [Slider Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/slider/)
 - Ethan Schoonover, [Solarized](https://ethanschoonover.com/solarized/)
+- Figma Learn, [Overview of variables, collections, and modes](https://help.figma.com/hc/en-us/articles/14506821864087-Overview-of-variables-collections-and-modes)
+- Figma Learn, [The difference between variables and styles](https://help.figma.com/hc/en-us/articles/15871097384471)
 
 ## Product Model
 
@@ -69,6 +71,14 @@ Color rules:
 - Keep live preview visuals visually separate from UI chrome. UI chrome should remain Solarized even when the Hydra output is bright or arbitrary.
 - Preserve contrast. If Solarized token combinations are too low-contrast at a given size, adjust weight, surface, or label placement before adding a new color.
 
+Implementation contract:
+
+- The Orchestrator token source lives on `src/routes/Orchestrator/views/OrchestratorView.css` in the `ORCH_SOLARIZED_TOKENS_START` / `ORCH_SOLARIZED_TOKENS_END` block.
+- Child Orchestrator components consume semantic `--orch-*` variables. Raw `#hex`, `rgb()`, `rgba()`, `hsl()`, and `hsla()` values are not allowed outside the token block for audited Orchestrator files.
+- CodeMirror is not an exception. The editor chrome in `CodeEditor.tsx` and the Hydra syntax colors in `hydraHighlightStyle.ts` must use Solarized variables.
+- Figma library work should mirror this structure: primitives map to Solarized, semantic variables map to Orchestrator usage, and mode-specific values stay behind variable aliases rather than being painted directly on components.
+- The deterministic check is `src/routes/Orchestrator/components/orchestratorColorAudit.test.ts`. Update its audited file list deliberately when expanding the Orchestrator visual surface.
+
 ## Progressive Synth UI
 
 The default Orchestrator surface should answer three questions without explanation:
@@ -85,6 +95,26 @@ Use this hierarchy:
 - **API/reference last:** reference material appears in a stable panel or tab, not as blocking onboarding text.
 
 Advanced controls should be disclosed when they are relevant: show camera binding controls when code uses a camera source, show room preset policy affordances to room managers, and show code diagnostics when sending or editing.
+
+## Stage Header Contract
+
+The Stage header owns immediate operational status. It is not a marketing banner, help strip, or alert drawer.
+
+Desktop order:
+
+1. Left group: Stage label and preset picker.
+2. Center group: Orchestrator status strip.
+3. Right group: camera pipeline and preview buffer controls.
+
+The center status group must be width-limited and truncate labels before it crowds camera or buffer controls. The right group remains the home for camera/buffer controls; do not move those into the status strip.
+
+Mobile order:
+
+1. Stage label and preset picker wrap to the first row.
+2. Status strip wraps to the second row.
+3. Camera pipeline and buffer controls wrap to the third row, with touch-sized controls.
+
+The remote-update banner remains a fixed high-priority room-state affordance above the shell. It may shift the Stage/Code docks down, but it should not consume the Stage header row or displace camera/buffer controls.
 
 ## Menuing And Navigation
 
@@ -141,6 +171,8 @@ Preset rows should make source and capability legible:
 - party/player preset folder eligibility;
 - actions available to the current user.
 
+Orchestrator modal rule: modal dialogs launched from `PresetBrowser` must receive the scoped Orchestrator modal class. Shared app-wide `Modal` defaults are not the source of truth for this surface.
+
 ## Feedback And Failure States
 
 Every live-control surface must make the system status visible:
@@ -175,3 +207,5 @@ Before merging Orchestrator UI work, verify:
 - Keyboard and touch interactions are covered.
 - Labels, values, units, and defaults are visible for synthesis parameters.
 - The change preserves mobile Stage/Code/Presets navigation.
+- The deterministic Orchestrator color audit passes.
+- Authenticated desktop and mobile screenshots are captured when a login harness is available; otherwise record manual visual QA with exact viewport sizes.

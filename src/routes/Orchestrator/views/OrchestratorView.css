@@ -1,28 +1,73 @@
 .container {
-  /* Aqua-inspired CSS variables — scoped to Orchestrator, not :root */
-  --aqua-glass-bg: rgba(20, 30, 40, 0.65);
-  --aqua-blur: blur(12px);
-  --aqua-radius: 10px;
-  --aqua-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-  --aqua-gloss: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 50%);
-  --aqua-border: 1px solid rgba(255, 255, 255, 0.08);
-  --aqua-accent: #4ecdc4;
+  /* ORCH_SOLARIZED_TOKENS_START */
+  --orch-base03: #002b36;
+  --orch-base02: #073642;
+  --orch-base01: #586e75;
+  --orch-base00: #657b83;
+  --orch-base0: #839496;
+  --orch-base1: #93a1a1;
+  --orch-base2: #eee8d5;
+  --orch-base3: #fdf6e3;
+  --orch-yellow: #b58900;
+  --orch-orange: #cb4b16;
+  --orch-red: #dc322f;
+  --orch-magenta: #d33682;
+  --orch-violet: #6c71c4;
+  --orch-blue: #268bd2;
+  --orch-cyan: #2aa198;
+  --orch-green: #859900;
+  --orch-black: #000000;
+  /* ORCH_SOLARIZED_TOKENS_END */
 
-  /* Typography scale */
-  --text-xs: clamp(10px, 2.2vw, 12px);
-  --text-sm: clamp(12px, 2.6vw, 14px);
-  --text-md: clamp(14px, 2.8vw, 16px);
-  --text-lg: clamp(16px, 3.2vw, 18px);
+  --orch-bg: var(--orch-base03);
+  --orch-surface: var(--orch-base02);
+  --orch-surface-soft: color-mix(in srgb, var(--orch-base02) 68%, transparent);
+  --orch-surface-raised: color-mix(in srgb, var(--orch-base02) 82%, var(--orch-base03));
+  --orch-surface-strong: color-mix(in srgb, var(--orch-base02) 92%, var(--orch-base03));
+  --orch-border: color-mix(in srgb, var(--orch-base01) 34%, transparent);
+  --orch-border-subtle: color-mix(in srgb, var(--orch-base01) 18%, transparent);
+  --orch-border-strong: color-mix(in srgb, var(--orch-base01) 52%, transparent);
+  --orch-text: var(--orch-base1);
+  --orch-text-strong: var(--orch-base2);
+  --orch-muted: var(--orch-base0);
+  --orch-muted-soft: color-mix(in srgb, var(--orch-base0) 70%, transparent);
+  --orch-primary: var(--orch-blue);
+  --orch-live: var(--orch-cyan);
+  --orch-warning: var(--orch-yellow);
+  --orch-danger: var(--orch-red);
+  --orch-focus: var(--orch-blue);
+  --orch-shadow: 0 1rem 2.4rem color-mix(in srgb, var(--orch-black) 36%, transparent);
+  --orch-gap-xs: 0.35rem;
+  --orch-gap-sm: 0.5rem;
+  --orch-gap-md: 0.75rem;
+  --orch-radius-sm: 6px;
+  --orch-radius-md: 8px;
+  --orch-radius-lg: 10px;
+  --orch-control-height: 2.25rem;
+  --orch-touch-target: 44px;
+
+  /* Temporary compatibility aliases for child modules during this slice. */
+  --aqua-glass-bg: var(--orch-surface-soft);
+  --aqua-blur: none;
+  --aqua-radius: var(--orch-radius-md);
+  --aqua-shadow: var(--orch-shadow);
+  --aqua-gloss: none;
+  --aqua-border: 1px solid var(--orch-border-subtle);
+  --aqua-accent: var(--orch-cyan);
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.125rem;
 
   display: grid;
   grid-template-columns: minmax(240px, var(--ref-panel-width, 320px)) minmax(0, 1fr);
-  /* 2-row structure: Stage, then Code editor */
   grid-template-rows: minmax(320px, 44dvh) minmax(0, 1fr);
   height: 100dvh;
   width: 100%;
   overflow: hidden;
-  background: #0b0d12;
-  color: #eee;
+  background: var(--orch-bg);
+  color: var(--orch-text);
   font-size: 16px;
 }
 
@@ -32,9 +77,8 @@
   grid-column: 1;
   grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
-  border-right: var(--aqua-border);
-  background: var(--aqua-glass-bg);
-  backdrop-filter: var(--aqua-blur);
+  border-right: 1px solid var(--orch-border);
+  background: var(--orch-surface-soft);
   z-index: 10;
   min-height: 0;
   position: relative;
@@ -44,9 +88,9 @@
 .tabBar {
   grid-row: 1;
   display: flex;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--orch-border-subtle);
   flex-shrink: 0;
-  background: rgba(18, 24, 35, 0.9);
+  background: var(--orch-surface-strong);
 }
 
 .tab {
@@ -55,22 +99,28 @@
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--orch-muted);
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 650;
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
+  transition: color 0.15s, border-color 0.15s, background-color 0.15s;
   height: 100%;
   min-height: 40px;
 }
 
 .tab:hover {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--orch-text);
+  background: color-mix(in srgb, var(--orch-base01) 12%, transparent);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--orch-focus);
+  outline-offset: -2px;
 }
 
 .tabActive {
-  color: var(--aqua-accent);
-  border-bottom-color: var(--aqua-accent);
+  color: var(--orch-cyan);
+  border-bottom-color: var(--orch-cyan);
 }
 
 .tabContent {
@@ -95,7 +145,7 @@
   grid-row: 2;
   grid-column: 2;
   display: block;
-  background: linear-gradient(180deg, #141823, #0c0f16);
+  background: var(--orch-bg);
   overflow: hidden;
   min-height: 0;
 }
@@ -117,7 +167,7 @@
   left: 3px;
   width: 2px;
   height: 100%;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--orch-border-subtle);
 }
 
 .containerResizing {
@@ -132,9 +182,8 @@
   height: calc(50px + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
   display: flex;
-  background: rgba(15, 20, 30, 0.95);
-  backdrop-filter: var(--aqua-blur);
-  border-top: var(--aqua-border);
+  background: var(--orch-surface-strong);
+  border-top: 1px solid var(--orch-border);
   z-index: 100;
 }
 
@@ -148,12 +197,17 @@
   gap: 2px;
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--orch-muted-soft);
   font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   cursor: pointer;
-  min-height: 44px;
+  min-height: var(--orch-touch-target);
+}
+
+.mobileTab:focus-visible {
+  outline: 2px solid var(--orch-focus);
+  outline-offset: -2px;
 }
 
 .mobileTabDot {
@@ -163,15 +217,15 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--aqua-accent);
+  background: var(--orch-cyan);
 }
 
 .mobileTabDotError {
-  background: #ff7b72;
+  background: var(--orch-red);
 }
 
 .mobileTabActive {
-  color: var(--aqua-accent);
+  color: var(--orch-cyan);
 }
 
 .mobileTabIcon {
@@ -187,25 +241,23 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.5rem 0.75rem;
-  background: rgba(0, 255, 255, 0.1);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+  background: color-mix(in srgb, var(--orch-blue) 18%, var(--orch-base03));
+  border-bottom: 1px solid color-mix(in srgb, var(--orch-blue) 45%, transparent);
   font-size: var(--text-sm);
   z-index: 110;
 }
 
 .remoteBannerText {
   flex: 1;
-  color: #aee;
+  color: var(--orch-text-strong);
 }
 
 .remoteBannerApply {
   padding: 0.25rem 0.75rem;
-  background: rgba(0, 255, 255, 0.2);
-  background-image: var(--aqua-gloss);
-  color: #0ff;
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  border-radius: 6px;
+  background: color-mix(in srgb, var(--orch-blue) 18%, transparent);
+  color: var(--orch-blue);
+  border: 1px solid color-mix(in srgb, var(--orch-blue) 45%, transparent);
+  border-radius: var(--orch-radius-sm);
   font-size: var(--text-sm);
   cursor: pointer;
   min-height: 32px;
@@ -214,17 +266,22 @@
 .remoteBannerDismiss {
   padding: 0.25rem 0.75rem;
   background: transparent;
-  color: #888;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
+  color: var(--orch-muted);
+  border: 1px solid var(--orch-border);
+  border-radius: var(--orch-radius-sm);
   font-size: var(--text-sm);
   cursor: pointer;
   min-height: 32px;
 }
 
+.remoteBannerApply:focus-visible,
+.remoteBannerDismiss:focus-visible {
+  outline: 2px solid var(--orch-focus);
+  outline-offset: 1px;
+}
+
 @media (max-width: 979px) {
   .container {
-    /* On mobile, only one dock is visible at a time — use simple 1fr to fill */
     grid-template-rows: minmax(0, 1fr);
     grid-template-columns: 1fr;
     padding-bottom: calc(50px + env(safe-area-inset-bottom));
@@ -259,8 +316,7 @@
     bottom: calc(50px + env(safe-area-inset-bottom));
     z-index: 95;
     grid-template-rows: auto 1fr;
-    background: rgba(20, 30, 40, 0.95);
-    backdrop-filter: var(--aqua-blur);
+    background: var(--orch-surface-strong);
     transform: translateY(0);
     animation: refPanelSlideUp 0.18s ease-out;
   }
@@ -269,7 +325,7 @@
     position: fixed;
     inset: 0;
     bottom: calc(50px + env(safe-area-inset-bottom));
-    background: rgba(0, 0, 0, 0.5);
+    background: color-mix(in srgb, var(--orch-black) 52%, transparent);
     z-index: 94;
   }
 
@@ -294,6 +350,7 @@
     transform: translateY(12px);
     opacity: 0.7;
   }
+
   to {
     transform: translateY(0);
     opacity: 1;
@@ -314,7 +371,8 @@
     display: grid;
   }
 
-  .stageDock, .codeDock {
+  .stageDock,
+  .codeDock {
     grid-column: 2;
   }
 

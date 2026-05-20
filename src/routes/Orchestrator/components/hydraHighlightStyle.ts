@@ -2,17 +2,17 @@ import { HighlightStyle, syntaxHighlighting } from '@codemirror/language'
 import { tags } from '@lezer/highlight'
 import { MatchDecorator, ViewPlugin, Decoration, EditorView } from '@codemirror/view'
 
-// Extended highlight style with higher contrast and distinct colors
+// Extended highlight style using the Orchestrator Solarized token contract.
 export const hydraHighlightStyle = HighlightStyle.define([
-  { tag: tags.function(tags.variableName), color: '#7ee787', fontWeight: 'bold' }, // Functions: bright green
-  { tag: [tags.number, tags.integer, tags.float], color: '#d2a8ff' }, // Numbers: purple
-  { tag: [tags.string, tags.special(tags.string)], color: '#a5d6ff' }, // Strings: light blue
-  { tag: [tags.keyword, tags.controlKeyword, tags.operatorKeyword], color: '#ff7b72' }, // Keywords: orange/red
-  { tag: tags.comment, color: '#8b949e', fontStyle: 'italic' }, // Comments: grey
-  { tag: [tags.operator, tags.punctuation, tags.separator], color: '#c9d1d9' }, // Operators: white
-  { tag: tags.variableName, color: '#c9d1d9' }, // Variables: white
-  { tag: tags.propertyName, color: '#7ee787' }, // Properties: green
-  { tag: [tags.bool, tags.null], color: '#79c0ff' }, // Booleans: blue
+  { tag: tags.function(tags.variableName), color: 'var(--orch-green)', fontWeight: 'bold' },
+  { tag: [tags.number, tags.integer, tags.float], color: 'var(--orch-violet)' },
+  { tag: [tags.string, tags.special(tags.string)], color: 'var(--orch-cyan)' },
+  { tag: [tags.keyword, tags.controlKeyword, tags.operatorKeyword], color: 'var(--orch-orange)' },
+  { tag: tags.comment, color: 'var(--orch-muted)', fontStyle: 'italic' },
+  { tag: [tags.operator, tags.punctuation, tags.separator], color: 'var(--orch-text)' },
+  { tag: tags.variableName, color: 'var(--orch-text)' },
+  { tag: tags.propertyName, color: 'var(--orch-green)' },
+  { tag: [tags.bool, tags.null], color: 'var(--orch-blue)' },
 ])
 
 // Custom decorations for Hydra-specific tokens
@@ -68,9 +68,9 @@ export const hydraExtensions = [
   hydraInputPlugin,
   hydraAudioPlugin,
   EditorView.theme({
-    '.cm-hydra-source': { color: '#ff7b72', fontWeight: 'bold' }, // Red/Orange bold
-    '.cm-hydra-output': { color: '#d2a8ff', fontWeight: 'bold' }, // Purple bold
-    '.cm-hydra-input': { color: '#79c0ff', fontStyle: 'italic' }, // Blue italic
-    '.cm-hydra-audio': { color: '#e2e4e9', textDecoration: 'underline' }, // White underline
+    '.cm-hydra-source': { color: 'var(--orch-orange)', fontWeight: 'bold' },
+    '.cm-hydra-output': { color: 'var(--orch-violet)', fontWeight: 'bold' },
+    '.cm-hydra-input': { color: 'var(--orch-blue)', fontStyle: 'italic' },
+    '.cm-hydra-audio': { color: 'var(--orch-text-strong)', textDecoration: 'underline' },
   }),
 ]

@@ -14,7 +14,7 @@
 
 .toolbarHint {
   font-size: var(--text-xs);
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--orch-muted);
   white-space: nowrap;
 }
 
@@ -22,30 +22,37 @@
 .toolbarButtonPrimary {
   flex: 1;
   padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.85);
+  border-radius: var(--orch-radius-md);
+  border: 1px solid var(--orch-border);
+  background: var(--orch-surface-soft);
+  color: var(--orch-text);
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 650;
   cursor: pointer;
   transition: border-color 0.2s, background-color 0.2s;
   min-height: 40px;
 }
 
 .toolbarButton:hover {
-  border-color: rgba(78, 205, 196, 0.35);
-  background: rgba(78, 205, 196, 0.12);
+  border-color: color-mix(in srgb, var(--orch-cyan) 42%, transparent);
+  background: color-mix(in srgb, var(--orch-cyan) 10%, transparent);
 }
 
 .toolbarButtonPrimary {
-  background: rgba(78, 205, 196, 0.2);
-  border-color: rgba(78, 205, 196, 0.45);
-  color: #eafffb;
+  background: color-mix(in srgb, var(--orch-blue) 18%, transparent);
+  border-color: color-mix(in srgb, var(--orch-blue) 48%, transparent);
+  color: var(--orch-blue);
 }
 
 .toolbarButtonPrimary:hover {
-  background: rgba(78, 205, 196, 0.3);
+  background: color-mix(in srgb, var(--orch-blue) 28%, transparent);
+}
+
+.toolbarButton:focus-visible,
+.toolbarButtonPrimary:focus-visible,
+.searchClear:focus-visible {
+  outline: 2px solid var(--orch-focus);
+  outline-offset: 1px;
 }
 
 .searchWrap {
@@ -55,10 +62,10 @@
 .searchInput {
   width: 100%;
   padding: 8px 12px;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  color: rgba(255, 255, 255, 0.9);
+  background: var(--orch-surface-soft);
+  border: 1px solid var(--orch-border);
+  border-radius: var(--orch-radius-md);
+  color: var(--orch-text);
   font-size: 16px;
   outline: none;
   box-sizing: border-box;
@@ -66,12 +73,12 @@
 }
 
 .searchInput:focus {
-  border-color: rgba(78, 205, 196, 0.6);
-  background: rgba(0, 0, 0, 0.3);
+  border-color: var(--orch-focus);
+  background: var(--orch-surface);
 }
 
 .searchInput::placeholder {
-  color: rgba(255, 255, 255, 0.35);
+  color: var(--orch-muted-soft);
 }
 
 .searchClear {
@@ -79,10 +86,10 @@
   top: 50%;
   right: 8px;
   transform: translateY(-50%);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.8);
-  border-radius: 6px;
+  border: 1px solid var(--orch-border);
+  background: var(--orch-surface);
+  color: var(--orch-text);
+  border-radius: var(--orch-radius-sm);
   padding: 2px 8px;
   font-size: var(--text-xs);
   cursor: pointer;
@@ -92,12 +99,12 @@
 .error,
 .empty {
   font-size: var(--text-xs);
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--orch-muted);
   padding: 6px 2px;
 }
 
 .error {
-  color: #ffb4b4;
+  color: var(--orch-red);
 }
 
 .loadingLabel {
@@ -111,16 +118,16 @@
 }
 
 .skeletonGroup {
-  border-radius: 10px;
+  border-radius: var(--orch-radius-lg);
   padding: 8px;
-  background: rgba(255, 255, 255, 0.03);
+  background: color-mix(in srgb, var(--orch-base01) 8%, transparent);
 }
 
 .skeletonFolder,
 .skeletonItem,
 .skeletonItemShort {
-  border-radius: 6px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.06));
+  border-radius: var(--orch-radius-sm);
+  background: linear-gradient(90deg, var(--orch-surface-soft), color-mix(in srgb, var(--orch-base01) 20%, transparent), var(--orch-surface-soft));
   background-size: 240px 100%;
   animation: shimmer 1.2s linear infinite;
 }
@@ -156,7 +163,7 @@
   flex-direction: column;
   gap: 6px;
   font-size: var(--text-sm);
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--orch-muted);
   margin-bottom: 12px;
 }
 
@@ -164,11 +171,18 @@
 .modalSelect,
 .modalCodePreview {
   padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(10, 15, 20, 0.6);
-  color: rgba(255, 255, 255, 0.9);
+  border-radius: var(--orch-radius-md);
+  border: 1px solid var(--orch-border);
+  background: var(--orch-bg);
+  color: var(--orch-text);
   font-size: var(--text-md);
+}
+
+.modalInput:focus,
+.modalSelect:focus,
+.modalCodePreview:focus {
+  outline: 2px solid var(--orch-focus);
+  outline-offset: 1px;
 }
 
 .modalSelect {
@@ -185,8 +199,24 @@
 }
 
 .confirmText {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--orch-text);
   font-size: var(--text-sm);
+}
+
+.orchestratorModal {
+  background: var(--orch-surface-raised);
+  color: var(--orch-text);
+  border: 1px solid var(--orch-border-strong);
+  border-radius: var(--orch-radius-lg);
+  box-shadow: var(--orch-shadow);
+}
+
+.orchestratorModal::backdrop {
+  background: color-mix(in srgb, var(--orch-black) 58%, transparent);
+}
+
+.orchestratorModal button {
+  border-radius: var(--orch-radius-sm);
 }
 
 @media (max-width: 980px) {
