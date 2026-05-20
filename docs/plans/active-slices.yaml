@@ -130,13 +130,13 @@
     - cleanup
 
 - id: orchestrator-capability-ux
-  status: in_progress
+  status: merged_to_main
   owner: codex
   branch: phase-2-orchestrator-capability-ux
   base: main
   worktree:
-    path: /home/steph/projects/KaraokeEternalAutomated-orchestrator-capability-ux
-    state: present
+    path: null
+    state: not_required
   merge_order: 40
   goal: Align Orchestrator UI dispatch paths with the backend Hydra authority boundary so collaborators use preset-operator workflows and cannot trigger raw-code sends from UI paths.
   write_scope:
@@ -173,9 +173,9 @@
     - "Red-team fix locked 2026-05-19: gate dispatch functions and keyboard/click send paths, not only rendering."
     - Overlaps blocked redux-modernization Orchestrator paths; serialize this slice and do not run both branches in parallel.
     - "Implemented 2026-05-20: capability helper gates Orchestrator raw-code, gallery, and preset send UX without backend contract changes."
+    - Merged to main on 2026-05-20.
   next:
-    - implementation
-    - review
+    - cleanup
 
 - id: rollback-2026-02-12-cleanup
   status: merged_to_main

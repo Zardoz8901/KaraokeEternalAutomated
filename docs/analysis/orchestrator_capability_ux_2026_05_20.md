@@ -51,4 +51,4 @@ Notes: Vitest emits existing jsdom/media and CSS-module warnings; tests pass. Th
 
 ## Rollback
 
-Before coding, `git stash push -m "pre-orchestrator-capability-ux-savepoint"` reported no local changes to save. After merge, rollback should be a normal `git revert <merge-or-slice-commit-sha>`.
+Before coding, `git stash push -m "pre-orchestrator-capability-ux-savepoint"` reported no local changes to save. After merge, rollback command is `git revert aa594b49`.
