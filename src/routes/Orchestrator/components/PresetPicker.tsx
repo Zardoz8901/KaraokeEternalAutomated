@@ -88,13 +88,15 @@ function PresetPicker ({ onLoad, onSend, onRandomize }: PresetPickerProps) {
                   >
                     Load
                   </button>
-                  <button
-                    type='button'
-                    className={`${styles.action} ${styles.actionPrimary}`}
-                    onClick={() => handleSendByIndex(option.index)}
-                  >
-                    Send
-                  </button>
+                  {onSend && (
+                    <button
+                      type='button'
+                      className={`${styles.action} ${styles.actionPrimary}`}
+                      onClick={() => handleSendByIndex(option.index)}
+                    >
+                      Send
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

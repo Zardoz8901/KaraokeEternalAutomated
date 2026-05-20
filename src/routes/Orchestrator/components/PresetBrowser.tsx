@@ -8,6 +8,7 @@ import { ROOM_PREFS_PUSH } from 'shared/actionTypes'
 import { HYDRA_GALLERY } from './hydraGallery'
 import PresetTree from './PresetTree'
 import { buildPresetTree, type PresetLeaf, type PresetTreeNode, type PresetFolder, type PresetItem } from './presetTree'
+import { getOrchestratorCapabilities } from './orchestratorCapabilities'
 import { scopePresetTreeForRoom } from './presetScope'
 import { buildPresetDraft } from './presetDraft'
 import type { DropResult } from '@hello-pangea/dnd'
@@ -49,11 +50,12 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
     if (typeof state.user.roomId !== 'number') return undefined
     return state.rooms.entities[state.user.roomId]?.prefs
   })
-  const isRoomOwner = typeof user.roomId === 'number'
-    && typeof user.ownRoomId === 'number'
-    && user.roomId === user.ownRoomId
-  const isPrivilegedPresetUser = user.isAdmin || isRoomOwner
-  const canManageRoomPolicy = isRoomOwner
+  const orchestratorCapabilities = useMemo(() => getOrchestratorCapabilities(user, currentRoomPrefs), [
+    currentRoomPrefs,
+    user,
+  ])
+  const isPrivilegedPresetUser = orchestratorCapabilities.isManager
+  const canManageRoomPolicy = orchestratorCapabilities.canManageRoomVisualPolicy
   const startingPresetId = typeof currentRoomPrefs?.startingPresetId === 'number'
     ? currentRoomPrefs.startingPresetId
     : null
@@ -169,9 +171,10 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
   }, [onLoad])
 
   const handleSend = useCallback((preset: PresetLeaf) => {
+    if (!orchestratorCapabilities.canSendPreset(preset)) return
     setSelectedPresetId(preset.presetId ?? null)
     onSend(preset)
-  }, [onSend])
+  }, [onSend, orchestratorCapabilities])
 
   const canDeletePreset = useCallback((preset: PresetLeaf) => {
     if (preset.isGallery) return false
@@ -626,6 +629,7 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
           canDeleteFolder={canDeleteFolder}
           canManagePreset={canManagePreset}
           canManageFolder={canManageFolder}
+          canSendPreset={orchestratorCapabilities.canSendPreset}
           canSetStartingPreset={canSetStartingPreset}
           canSetPlayerPresetFolder={canSetPlayerPresetFolder}
         />

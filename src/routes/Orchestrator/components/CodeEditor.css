@@ -152,6 +152,12 @@
   background: #2ea043;
 }
 
+.sendButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: rgba(118, 134, 156, 0.28);
+}
+
 .sendGroup {
   display: inline-flex;
   align-items: center;
@@ -210,6 +216,11 @@
   font-size: var(--text-xs);
   cursor: pointer;
   min-height: 32px;
+}
+
+.resendButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .cameraBanner {

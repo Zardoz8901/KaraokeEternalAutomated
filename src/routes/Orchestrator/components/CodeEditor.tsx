@@ -255,6 +255,7 @@ interface CodeEditorProps {
   code: string
   onCodeChange: (code: string) => void
   onSend: (code: string) => void
+  canSend?: boolean
   sendStatus?: 'idle' | 'sending' | 'synced' | 'error'
   onResend?: () => void
   onRandomize: () => void
@@ -266,6 +267,7 @@ function CodeEditor ({
   code,
   onCodeChange,
   onSend,
+  canSend = true,
   sendStatus = 'idle',
   onResend,
   onRandomize,
@@ -276,6 +278,7 @@ function CodeEditor ({
   const viewRef = useRef<EditorView | null>(null)
   const onCodeChangeRef = useRef(onCodeChange)
   const onSendRef = useRef(onSend)
+  const canSendRef = useRef(canSend)
   const codeRef = useRef(code)
   const sendAttemptRef = useRef<() => void>(() => {})
   const [sendLintError, setSendLintError] = useState<LintErrorSummary | null>(null)
@@ -283,6 +286,7 @@ function CodeEditor ({
 
   onCodeChangeRef.current = onCodeChange
   onSendRef.current = onSend
+  canSendRef.current = canSend
   codeRef.current = code
 
   useEffect(() => {
@@ -357,6 +361,11 @@ function CodeEditor ({
   }, [code])
 
   sendAttemptRef.current = () => {
+    if (!canSendRef.current) {
+      setSendLintError(null)
+      return
+    }
+
     const currentCode = viewRef.current?.state.doc.toString() ?? codeRef.current
     const summary = getLintErrorSummary(currentCode)
     if (summary) {
@@ -452,7 +461,7 @@ function CodeEditor ({
       )}
       <div ref={containerRef} className={styles.editor} />
       <div className={styles.footer}>
-        <span className={styles.hint}>Ctrl+Enter to send</span>
+        <span className={styles.hint}>{canSend ? 'Ctrl+Enter to send' : 'Preset sends only'}</span>
         <div className={styles.editActions}>
           <button type='button' className={styles.editButton} onClick={handleUndo}>Undo</button>
           <button type='button' className={styles.editButton} onClick={handleRedo}>Redo</button>
@@ -482,7 +491,13 @@ function CodeEditor ({
           </button>
         )}
         <div className={styles.sendGroup}>
-          <button type='button' className={styles.sendButton} onClick={handleSend}>
+          <button
+            type='button'
+            className={styles.sendButton}
+            onClick={handleSend}
+            disabled={!canSend}
+            title={canSend ? 'Send code' : 'Raw code send requires room owner or admin'}
+          >
             {sendStatus === 'sending' ? 'Sending…' : 'Send'}
           </button>
           {showSendStatus && sendStatus !== 'sending' && (
@@ -501,7 +516,13 @@ function CodeEditor ({
             </>
           )}
           {sendStatus === 'error' && onResend && (
-            <button type='button' className={styles.resendButton} onClick={onResend}>
+            <button
+              type='button'
+              className={styles.resendButton}
+              onClick={onResend}
+              disabled={!canSend}
+              title={canSend ? 'Resend code' : 'Raw code resend requires room owner or admin'}
+            >
               Resend
             </button>
           )}

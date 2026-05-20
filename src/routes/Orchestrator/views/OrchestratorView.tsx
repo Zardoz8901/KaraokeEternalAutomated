@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import combinedReducer from 'store/reducers'
 import { useAppDispatch, useAppSelector } from 'store/hooks'
 import { VISUALIZER_HYDRA_CODE_REQ } from 'shared/actionTypes'
@@ -6,6 +6,7 @@ import playerVisualizerReducer from 'routes/Player/modules/playerVisualizer'
 import { sliceInjectNoOp } from 'routes/Player/modules/player'
 import { DEFAULT_SKETCH, getRandomSketch } from '../components/hydraSketchBook'
 import type { PresetLeaf } from '../components/presetTree'
+import { canSendHydraInput, getOrchestratorCapabilities } from '../components/orchestratorCapabilities'
 import { getEffectiveCode, getPendingRemote, normalizeCodeForAck, resolvePreviewHydraState, shouldAutoApplyPreset, shouldShowUnsentDot } from './orchestratorViewHelpers'
 import ApiReference from '../components/ApiReference'
 import PresetBrowser from '../components/PresetBrowser'
@@ -31,6 +32,15 @@ function OrchestratorView () {
   const camera = useCameraSender()
   const playerVisualizer = useAppSelector(state => state.playerVisualizer)
   const status = useAppSelector(state => state.status)
+  const user = useAppSelector(state => state.user)
+  const currentRoomPrefs = useAppSelector((state) => {
+    if (typeof state.user.roomId !== 'number') return undefined
+    return state.rooms.entities[state.user.roomId]?.prefs
+  })
+  const orchestratorCapabilities = useMemo(() => getOrchestratorCapabilities(user, currentRoomPrefs), [
+    currentRoomPrefs,
+    user,
+  ])
 
   // playerVisualizer starts with hasHydraUpdate=false.
   // Once a VISUALIZER_HYDRA_CODE action arrives, flag is set to true.
@@ -69,8 +79,7 @@ function OrchestratorView () {
   const lastSentRef = useRef<string | null>(null)
   const remoteSyncRafRef = useRef<number | null>(null)
 
-  const handleSendCode = useCallback((input: string | SendHydraPayload) => {
-    const payload = typeof input === 'string' ? { code: input } : input
+  const dispatchHydraPayload = useCallback((payload: SendHydraPayload) => {
     lastSentRef.current = normalizeCodeForAck(payload.code)
     setSendStatus('sending')
     dispatch({
@@ -78,6 +87,21 @@ function OrchestratorView () {
       payload,
     })
   }, [dispatch])
+
+  const rejectHydraSend = useCallback(() => {
+    lastSentRef.current = null
+    setSendStatus('error')
+  }, [])
+
+  const handleSendCode = useCallback((input: string | SendHydraPayload) => {
+    if (!orchestratorCapabilities.canLiveCode) {
+      rejectHydraSend()
+      return
+    }
+
+    const payload = typeof input === 'string' ? { code: input } : input
+    dispatchHydraPayload(payload)
+  }, [dispatchHydraPayload, orchestratorCapabilities.canLiveCode, rejectHydraSend])
 
   const cancelPendingRemoteSync = useCallback(() => {
     if (remoteSyncRafRef.current !== null) {
@@ -128,6 +152,11 @@ function OrchestratorView () {
   }, [cancelPendingRemoteSync, ui.innerWidth])
 
   const handleSendPreset = useCallback((input: PresetLeaf | string) => {
+    if (!canSendHydraInput(input, orchestratorCapabilities)) {
+      rejectHydraSend()
+      return
+    }
+
     const payload: SendHydraPayload = typeof input === 'string'
       ? { code: input }
       : {
@@ -142,11 +171,11 @@ function OrchestratorView () {
     setLocalCode(payload.code)
     setDebouncedCode(payload.code)
     setUserHasEdited(true)
-    handleSendCode(payload)
+    dispatchHydraPayload(payload)
     if (ui.innerWidth < 980) {
       setActiveMobileTab('stage')
     }
-  }, [cancelPendingRemoteSync, handleSendCode, ui.innerWidth])
+  }, [cancelPendingRemoteSync, dispatchHydraPayload, orchestratorCapabilities, rejectHydraSend, ui.innerWidth])
 
   const handleInsertApiExample = useCallback((snippet: string) => {
     const trimmed = snippet.trim()
@@ -175,8 +204,13 @@ function OrchestratorView () {
   }, [cancelPendingRemoteSync, ui.innerWidth])
 
   const handleResend = useCallback(() => {
+    if (!orchestratorCapabilities.canLiveCode) {
+      rejectHydraSend()
+      return
+    }
+
     handleSendCode(localCode)
-  }, [handleSendCode, localCode])
+  }, [handleSendCode, localCode, orchestratorCapabilities.canLiveCode, rejectHydraSend])
 
   const handleApplyRemote = useCallback(() => {
     if (pendingRemoteCode) {
@@ -419,7 +453,7 @@ function OrchestratorView () {
             onBufferChange={setPreviewBuffer}
             localCameraStream={camera.stream}
             onPresetLoad={handleLoadPreset}
-            onPresetSend={handleSendPreset}
+            onPresetSend={orchestratorCapabilities.canSendGalleryPreset ? handleSendPreset : undefined}
             onRandomize={handleRandomize}
             visualizerMode={previewHydraState.mode}
             visualizerEnabled={previewHydraState.isEnabled}
@@ -435,6 +469,7 @@ function OrchestratorView () {
             code={userHasEdited ? localCode : effectiveCode}
             onCodeChange={handleCodeChange}
             onSend={handleSendCode}
+            canSend={orchestratorCapabilities.canLiveCode}
             sendStatus={sendStatus}
             onResend={handleResend}
             onRandomize={handleRandomize}
