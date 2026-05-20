@@ -232,6 +232,63 @@
   next:
     - cleanup
 
+- id: orchestrator-menu-productization
+  status: planned
+  owner: codex
+  branch: phase-3-orchestrator-menu-productization
+  base: main
+  worktree:
+    path: /home/steph/projects/KaraokeEternalAutomated-phase-3-orchestrator-menu-productization
+    state: missing
+  merge_order: 60
+  goal: Make Visuals a discoverable first-class app area with role-aware Orchestrator host/operator workspaces and Nix-runnable Playwright visual QA.
+  write_scope:
+    - docs/plans/active-slices.yaml
+    - docs/analysis/
+    - docs/architecture/orchestrator-synthesis-ui-style-guide.md
+    - flake.nix
+    - src/components/Navigation/
+    - src/components/App/Routes/
+    - src/routes/Orchestrator/
+    - e2e/
+  protected_paths:
+    - server/
+    - shared/actionTypes.ts
+    - shared/types.ts
+    - src/routes/Player/
+    - src/routes/Queue/
+    - src/routes/Account/
+    - package.json
+    - package-lock.json
+    - .github/workflows/
+  verification:
+    - npm test -- src/components/Navigation src/components/App/Routes src/routes/Orchestrator
+    - npm run slices:check
+    - npm run typecheck
+    - npm run lint
+    - npm run build
+    - nix develop -c npm run test:e2e -- --project=chromium
+  acceptance:
+    - Visuals appears in bottom app navigation with visible icon-and-label treatment when /orchestrator route access allows it.
+    - Bottom app navigation labels remain visible and unclipped with four items on mobile.
+    - Orchestrator host layout preserves Presets/API, Stage, and Code; operator/browse layout expands Stage and hides Code/API.
+    - Orchestrator status distinguishes Host live coding, Preset operator, Browse only, and Policy blocked.
+    - Preset panel empty and policy states explain saved preset availability and send authority.
+    - Nix dev shell runs Chromium Playwright without the downloaded-browser stub-ld failure.
+  non_goals:
+    - Do not change backend socket contracts or enforcement.
+    - Do not change room prefs APIs or admin room-policy management.
+    - Do not modify package scripts, package lockfiles, or GitHub workflows.
+    - Do not alter Player, Queue, Account, server, or shared action/type contracts.
+    - Do not resume or merge redux-modernization.
+  notes:
+    - "User decision locked 2026-05-20: Visuals is a first-class bottom-nav destination serving host plus operator audiences."
+    - This slice overlaps blocked redux-modernization Orchestrator component/view paths; serialize this slice ahead of redux-modernization and do not run both branches in parallel.
+    - Library escape is navigation, not an Orchestrator workspace tab.
+  next:
+    - implementation
+    - review
+
 - id: rollback-2026-02-12-cleanup
   status: merged_to_main
   owner: unassigned
