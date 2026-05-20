@@ -233,13 +233,13 @@
     - cleanup
 
 - id: orchestrator-menu-productization
-  status: planned
+  status: in_progress
   owner: codex
   branch: phase-3-orchestrator-menu-productization
   base: main
   worktree:
     path: /home/steph/projects/KaraokeEternalAutomated-phase-3-orchestrator-menu-productization
-    state: missing
+    state: present
   merge_order: 60
   goal: Make Visuals a discoverable first-class app area with role-aware Orchestrator host/operator workspaces and Nix-runnable Playwright visual QA.
   write_scope:
