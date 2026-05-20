@@ -233,13 +233,13 @@
     - cleanup
 
 - id: orchestrator-menu-productization
-  status: in_progress
+  status: merged_to_main
   owner: codex
   branch: phase-3-orchestrator-menu-productization
   base: main
   worktree:
-    path: /home/steph/projects/KaraokeEternalAutomated-phase-3-orchestrator-menu-productization
-    state: present
+    path: null
+    state: not_required
   merge_order: 60
   goal: Make Visuals a discoverable first-class app area with role-aware Orchestrator host/operator workspaces and Nix-runnable Playwright visual QA.
   write_scope:
@@ -288,9 +288,9 @@
     - "User decision locked 2026-05-20: Visuals is a first-class bottom-nav destination serving host plus operator audiences."
     - This slice overlaps blocked redux-modernization Orchestrator component/view paths; serialize this slice ahead of redux-modernization and do not run both branches in parallel.
     - Library escape is navigation, not an Orchestrator workspace tab.
+    - Merged to main on 2026-05-20 as 5cdbafae.
   next:
-    - implementation
-    - review
+    - cleanup
 
 - id: rollback-2026-02-12-cleanup
   status: merged_to_main
