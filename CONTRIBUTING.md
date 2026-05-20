@@ -54,6 +54,40 @@ npm install
 npm run dev
 ```
 
+The flake development shell is the current canonical local toolchain. It
+provides the Node.js and npm versions expected by `package.json`, so validation
+should run inside it when possible:
+
+```bash
+nix develop -c npm ci
+nix develop -c npm run lint
+nix develop -c npm run typecheck
+nix develop -c npm test
+```
+
+When working in multiple Git worktrees, install dependencies per worktree with
+`nix develop -c npm ci --prefer-offline --ignore-scripts`. Avoid sharing
+`node_modules` between worktrees with symlinks; module resolution can drift
+between worktree paths and produce misleading test failures.
+
+### Future devenv direction
+
+The intended developer-experience improvement is to move this setup into a
+checked-in `devenv`/`direnv` workflow. That should make entering the repository
+automatically select the correct Node.js/npm toolchain and expose the standard
+validation commands without retyping `nix develop -c`.
+
+A future `devenv` slice should:
+
+1. Add the minimal `devenv` files needed to reproduce the current flake shell.
+2. Keep Node.js 24 and npm 11 aligned with `package.json`.
+3. Preserve per-worktree `node_modules` installs; do not introduce shared
+   `node_modules` symlinks.
+4. Document the expected first-run command for each worktree, likely
+   `npm ci --prefer-offline --ignore-scripts`.
+5. Leave production packaging in `flake.nix` unchanged unless a separate Nix
+   packaging slice explicitly owns that work.
+
 ## Contributor License Agreement
 
 By contributing, you agree to the [CLA](.github/CLA.md).
