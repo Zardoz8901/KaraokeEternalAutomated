@@ -32,6 +32,6 @@ Phase 5 documented the Preset operator and Browse-only contract. Phase 6 impleme
 
 ## Rollback
 
-Feature commit rollback before merge: `git revert bf335538`.
+Feature commit rollback before merge: `git revert 4467080d`.
 
 After merge, use `git revert <merge-or-feature-sha>` to remove the runtime UX slice from main.
