@@ -90,3 +90,4 @@ Standard users authenticate through Authentik OIDC. Guest room assignment is han
 - [Security](SECURITY.md) — Security model and hardening
 - [SSO Overlay Architecture](architecture/sso-overlay.md) — Detailed SSO integration
 - [Orchestrator Synthesis UI Style Guide](architecture/orchestrator-synthesis-ui-style-guide.md) — UX rules for Hydra, preset, menu, and future synthesis-control work
+- [Orchestrator Preset Operator UX](architecture/orchestrator-preset-operator-ux.md) — Decision spec for Preset operator and Browse-only visual workflows

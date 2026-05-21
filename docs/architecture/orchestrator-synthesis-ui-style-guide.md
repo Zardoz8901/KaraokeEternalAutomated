@@ -19,14 +19,17 @@ This guide adapts these references:
 
 ## Product Model
 
-The Orchestrator has three user modes:
+The Orchestrator has three user-facing workspace modes plus one Player runtime role:
 
 1. **Host mode:** owner/admin users can live-code, save/manage presets, configure room visual policy, and broadcast arbitrary Hydra code.
 2. **Party operator mode:** collaborators and guests can browse and send server-valid saved presets allowed by room policy.
 3. **Browse-only mode:** collaborators and guests can inspect the Visuals workspace when Orchestrator access is allowed but room policy blocks visual sends.
-4. **Player mode:** the display receives visualizer state, renders it, and should not require editing knowledge.
+
+**Player runtime role:** the display receives visualizer state, renders it, and should not require editing knowledge. It is not an Orchestrator workspace mode.
 
 Design work must show the current mode clearly. Do not rely on server rejection as the main user experience. If a control is unavailable because of room policy or authority, hide it when the absence is obvious, or show it disabled with a short policy reason when discovery matters.
+
+Preset operator and Browse-only runtime UI work must follow the [Orchestrator Preset Operator UX](orchestrator-preset-operator-ux.md) decision spec.
 
 ## Product Layout Contract
 
@@ -176,6 +179,8 @@ The backend now enforces a clear authority boundary. The UI must mirror it:
 - Gallery presets are host/admin-only for broadcast until gallery entries become server-validatable.
 - Collaborators should not see arbitrary-code send affordances as usable controls.
 - A rejected send must produce visible feedback, not a silent timeout.
+
+For detailed Preset operator and Browse-only behavior, including the action matrix, local Load definition, state-truth model, and copy matrix, use the [Orchestrator Preset Operator UX](orchestrator-preset-operator-ux.md) spec.
 
 Preset rows should make source and capability legible:
 
