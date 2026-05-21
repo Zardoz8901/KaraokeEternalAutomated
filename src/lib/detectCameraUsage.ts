@@ -8,6 +8,7 @@ import { getSkipRegions, type SkipRegion } from 'lib/skipRegions'
 export interface SourceInitInfo {
   hasInitCam: boolean
   hasExplicitInit: boolean
+  hasInitVideo: boolean
 }
 
 export interface CameraUsageResult {
@@ -17,6 +18,8 @@ export interface CameraUsageResult {
   hasInitCam: boolean
   /** Whether any sN.initVideo/initImage/initScreen call is present (self-initializing, no permission needed) */
   hasExplicitSource: boolean
+  /** Whether any sN.initVideo call is present */
+  hasInitVideo: boolean
   /** Per-source init info: only sources that have at least one init call */
   sourceInitMap: Record<string, SourceInitInfo>
 }
@@ -31,7 +34,7 @@ const INIT_SOURCE_PATTERN = /\b(s[0-3])\.(initVideo|initImage|initScreen)\s*\(/g
 
 function ensureSourceEntry (map: Record<string, SourceInitInfo>, src: string): SourceInitInfo {
   if (!map[src]) {
-    map[src] = { hasInitCam: false, hasExplicitInit: false }
+    map[src] = { hasInitCam: false, hasExplicitInit: false, hasInitVideo: false }
   }
   return map[src]
 }
@@ -62,13 +65,18 @@ export function detectCameraUsage (code: string): CameraUsageResult {
   const sourceRe = new RegExp(INIT_SOURCE_PATTERN.source, 'g')
   while ((m = sourceRe.exec(code)) !== null) {
     if (!isInSkipRegion(m.index, regions)) {
-      ensureSourceEntry(sourceInitMap, m[1]).hasExplicitInit = true
+      const entry = ensureSourceEntry(sourceInitMap, m[1])
+      entry.hasExplicitInit = true
+      if (m[2] === 'initVideo') {
+        entry.hasInitVideo = true
+      }
     }
   }
 
   const sources = Array.from(sourceSet).sort()
   const hasInitCam = Object.values(sourceInitMap).some(v => v.hasInitCam)
   const hasExplicitSource = Object.values(sourceInitMap).some(v => v.hasExplicitInit)
+  const hasInitVideo = Object.values(sourceInitMap).some(v => v.hasInitVideo)
 
-  return { sources, hasInitCam, hasExplicitSource, sourceInitMap }
+  return { sources, hasInitCam, hasExplicitSource, hasInitVideo, sourceInitMap }
 }

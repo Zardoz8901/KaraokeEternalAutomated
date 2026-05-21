@@ -8,6 +8,7 @@ describe('detectCameraUsage', () => {
       sources: ['s0'],
       hasInitCam: false,
       hasExplicitSource: false,
+      hasInitVideo: false,
       sourceInitMap: {},
     })
   })
@@ -18,7 +19,8 @@ describe('detectCameraUsage', () => {
       sources: ['s0'],
       hasInitCam: true,
       hasExplicitSource: false,
-      sourceInitMap: { s0: { hasInitCam: true, hasExplicitInit: false } },
+      hasInitVideo: false,
+      sourceInitMap: { s0: { hasInitCam: true, hasExplicitInit: false, hasInitVideo: false } },
     })
   })
 
@@ -33,6 +35,7 @@ describe('detectCameraUsage', () => {
       sources: [],
       hasInitCam: false,
       hasExplicitSource: false,
+      hasInitVideo: false,
       sourceInitMap: {},
     })
   })
@@ -43,6 +46,7 @@ describe('detectCameraUsage', () => {
       sources: [],
       hasInitCam: false,
       hasExplicitSource: false,
+      hasInitVideo: false,
       sourceInitMap: {},
     })
   })
@@ -53,6 +57,7 @@ describe('detectCameraUsage', () => {
       sources: [],
       hasInitCam: false,
       hasExplicitSource: false,
+      hasInitVideo: false,
       sourceInitMap: {},
     })
   })
@@ -63,6 +68,7 @@ describe('detectCameraUsage', () => {
       sources: [],
       hasInitCam: false,
       hasExplicitSource: false,
+      hasInitVideo: false,
       sourceInitMap: {},
     })
   })
@@ -78,27 +84,33 @@ describe('detectCameraUsage', () => {
       sources: ['s0'],
       hasInitCam: false,
       hasExplicitSource: true,
-      sourceInitMap: { s0: { hasInitCam: false, hasExplicitInit: true } },
+      hasInitVideo: false,
+      sourceInitMap: { s0: { hasInitCam: false, hasExplicitInit: true, hasInitVideo: false } },
     })
   })
 
   it('detects initVideo as explicit source (not initCam)', () => {
     const result = detectCameraUsage('s0.initVideo("url")\nsrc(s0).out()')
+    expect(result.hasInitVideo).toBe(true)
+    expect(result.sourceInitMap.s0.hasInitVideo).toBe(true)
     expect(result).toEqual({
       sources: ['s0'],
       hasInitCam: false,
       hasExplicitSource: true,
-      sourceInitMap: { s0: { hasInitCam: false, hasExplicitInit: true } },
+      hasInitVideo: true,
+      sourceInitMap: { s0: { hasInitCam: false, hasExplicitInit: true, hasInitVideo: true } },
     })
   })
 
   it('detects initScreen as explicit source (not initCam)', () => {
     const result = detectCameraUsage('s0.initScreen()\nsrc(s0).out()')
+    expect(result.hasInitVideo).toBe(false)
     expect(result).toEqual({
       sources: ['s0'],
       hasInitCam: false,
       hasExplicitSource: true,
-      sourceInitMap: { s0: { hasInitCam: false, hasExplicitInit: true } },
+      hasInitVideo: false,
+      sourceInitMap: { s0: { hasInitCam: false, hasExplicitInit: true, hasInitVideo: false } },
     })
   })
 
@@ -108,9 +120,10 @@ describe('detectCameraUsage', () => {
       sources: ['s0', 's1'],
       hasInitCam: true,
       hasExplicitSource: true,
+      hasInitVideo: true,
       sourceInitMap: {
-        s0: { hasInitCam: true, hasExplicitInit: false },
-        s1: { hasInitCam: false, hasExplicitInit: true },
+        s0: { hasInitCam: true, hasExplicitInit: false, hasInitVideo: false },
+        s1: { hasInitCam: false, hasExplicitInit: true, hasInitVideo: true },
       },
     })
   })
@@ -124,7 +137,7 @@ describe('detectCameraUsage', () => {
   it('tracks initVideo per-source: s0 has video, s1 gets camera', () => {
     const result = detectCameraUsage('s0.initVideo("url")\nsrc(s0).add(src(s1)).out()')
     expect(result.sourceInitMap).toEqual({
-      s0: { hasInitCam: false, hasExplicitInit: true },
+      s0: { hasInitCam: false, hasExplicitInit: true, hasInitVideo: true },
     })
     expect(result.sources).toEqual(['s0', 's1'])
   })
@@ -132,21 +145,22 @@ describe('detectCameraUsage', () => {
   it('tracks initCam on s0, initVideo on s1 in mixed preset', () => {
     const result = detectCameraUsage('s0.initCam()\ns1.initVideo("url")\nsrc(s0).blend(src(s1)).out()')
     expect(result.sourceInitMap).toEqual({
-      s0: { hasInitCam: true, hasExplicitInit: false },
-      s1: { hasInitCam: false, hasExplicitInit: true },
+      s0: { hasInitCam: true, hasExplicitInit: false, hasInitVideo: false },
+      s1: { hasInitCam: false, hasExplicitInit: true, hasInitVideo: true },
     })
   })
 
   it('source with both initCam and initVideo has both flags', () => {
     const result = detectCameraUsage('s0.initCam()\ns0.initVideo("url")\nsrc(s0).out()')
     expect(result.sourceInitMap).toEqual({
-      s0: { hasInitCam: true, hasExplicitInit: true },
+      s0: { hasInitCam: true, hasExplicitInit: true, hasInitVideo: true },
     })
   })
 
   it('ignores init calls inside comments in sourceInitMap', () => {
     const result = detectCameraUsage('// s0.initVideo("url")\nsrc(s0).out()')
     expect(result.sourceInitMap).toEqual({})
+    expect(result.hasInitVideo).toBe(false)
   })
 
   /**
@@ -161,6 +175,7 @@ describe('detectCameraUsage', () => {
       sources: [],
       hasInitCam: false,
       hasExplicitSource: false,
+      hasInitVideo: false,
       sourceInitMap: {},
     })
   })

@@ -135,6 +135,8 @@ interface HydraVisualizerProps {
   playerMediaVideoElement?: HTMLVideoElement | null
   /** Player media clock associated with playerMediaVideoElement. */
   playerMediaClock?: PlayerMediaClockState | null
+  /** When true, initVideo must wait for playerMediaVideoElement instead of using fallback video. */
+  requirePlayerMediaVideo?: boolean
   /** Emits currently bound camera sources (s0-s3) after init/rebind passes */
   onCameraSourcesBoundChange?: (sources: string[]) => void
   /** Player runtime identity; only Player instances provide this. */
@@ -157,6 +159,7 @@ function HydraVisualizer ({
   remoteVideoElement,
   playerMediaVideoElement,
   playerMediaClock,
+  requirePlayerMediaVideo,
   onCameraSourcesBoundChange,
   playerInstanceId,
   visualizerRunId,
@@ -178,22 +181,77 @@ function HydraVisualizer ({
   const prevRemoteVideoRef = useRef<HTMLVideoElement | null>(null)
   const playerMediaVideoElementRef = useRef<HTMLVideoElement | null>(playerMediaVideoElement ?? null)
   const playerMediaClockRef = useRef<PlayerMediaClockState | null>(playerMediaClock ?? null)
+  const requirePlayerMediaVideoRef = useRef(requirePlayerMediaVideo === true)
   const playerMediaSourceKeysRef = useRef<Set<HydraVideoSourceKey>>(new Set())
   const fallbackVideoSourceKeysRef = useRef<Set<HydraVideoSourceKey>>(new Set())
   const compatRef = useRef<HydraAudioCompat | null>(null)
   const timerOwnerRef = useRef<HydraTimerOwner>(Symbol('hydraTimers'))
-  const appliedRunIdsRef = useRef<Set<VisualizerRunId>>(new Set())
+  const appliedBindingKeysRef = useRef<Set<string>>(new Set())
+  const playerMediaElementIdsRef = useRef<WeakMap<HTMLVideoElement, number>>(new WeakMap())
+  const nextPlayerMediaElementIdRef = useRef(1)
+  const lastEvalIdentityRef = useRef<{
+    code: string
+    visualizerRunId: VisualizerRunId | null
+    requirePlayerMediaVideo: boolean
+    playerMediaVideoElement: HTMLVideoElement | null
+    mediaId: number | null
+    queueId: number | null
+  } | null>(null)
   const playerInstanceIdRef = useRef<PlayerInstanceId | null | undefined>(playerInstanceId)
   const [remoteVideoEpoch, setRemoteVideoEpoch] = useState(0)
+
+  const getPlayerMediaElementId = useCallback((element: HTMLVideoElement | null) => {
+    if (!element) return 'no-provider'
+    let id = playerMediaElementIdsRef.current.get(element)
+    if (typeof id !== 'number') {
+      id = nextPlayerMediaElementIdRef.current++
+      playerMediaElementIdsRef.current.set(element, id)
+    }
+    return `provider-${id}`
+  }, [])
+
+  const getCurrentEvalIdentity = useCallback((nextCode: string, runId?: VisualizerRunId | null) => {
+    const clock = playerMediaClockRef.current
+    return {
+      code: nextCode,
+      visualizerRunId: runId ?? null,
+      requirePlayerMediaVideo: requirePlayerMediaVideoRef.current,
+      playerMediaVideoElement: playerMediaVideoElementRef.current,
+      mediaId: typeof clock?.mediaId === 'number' ? clock.mediaId : null,
+      queueId: typeof clock?.queueId === 'number' ? clock.queueId : null,
+    }
+  }, [])
+
+  const isSameEvalIdentity = useCallback((
+    a: ReturnType<typeof getCurrentEvalIdentity> | null,
+    b: ReturnType<typeof getCurrentEvalIdentity>,
+  ) => {
+    return a?.code === b.code
+      && a.visualizerRunId === b.visualizerRunId
+      && a.requirePlayerMediaVideo === b.requirePlayerMediaVideo
+      && a.playerMediaVideoElement === b.playerMediaVideoElement
+      && a.mediaId === b.mediaId
+      && a.queueId === b.queueId
+  }, [])
 
   const emitAppliedForRun = useCallback((runId?: VisualizerRunId | null) => {
     const currentPlayerInstanceId = playerInstanceIdRef.current
     if (!runId || !currentPlayerInstanceId) return
-    if (appliedRunIdsRef.current.has(runId)) return
-    appliedRunIdsRef.current.add(runId)
+    if (requirePlayerMediaVideoRef.current && !playerMediaVideoElementRef.current) return
     const playerMediaKeys = Array.from(playerMediaSourceKeysRef.current).sort()
     const fallbackVideoKeys = Array.from(fallbackVideoSourceKeysRef.current).sort()
     const clock = playerMediaClockRef.current
+    const appliedBindingKey = [
+      runId,
+      requirePlayerMediaVideoRef.current ? 'required-player-media' : 'optional-video',
+      getPlayerMediaElementId(playerMediaVideoElementRef.current),
+      typeof clock?.mediaId === 'number' ? clock.mediaId : 'no-media',
+      typeof clock?.queueId === 'number' ? clock.queueId : 'no-queue',
+      playerMediaKeys.join(','),
+      fallbackVideoKeys.join(','),
+    ].join(':')
+    if (appliedBindingKeysRef.current.has(appliedBindingKey)) return
+    appliedBindingKeysRef.current.add(appliedBindingKey)
     const sourceBindingPayload = playerMediaKeys.length > 0
       && clock?.mediaType === 'mp4'
       && typeof clock.mediaId === 'number'
@@ -228,7 +286,7 @@ function HydraVisualizer ({
         ...sourceBindingPayload,
       },
     })
-  }, [])
+  }, [getPlayerMediaElementId])
 
   const reportCameraSourcesBound = useCallback(() => {
     if (!onCameraSourcesBoundChange) return
@@ -288,7 +346,8 @@ function HydraVisualizer ({
     playerInstanceIdRef.current = playerInstanceId
     playerMediaVideoElementRef.current = playerMediaVideoElement ?? null
     playerMediaClockRef.current = playerMediaClock ?? null
-  }, [dispatch, playerInstanceId, playerMediaVideoElement, playerMediaClock])
+    requirePlayerMediaVideoRef.current = requirePlayerMediaVideo === true
+  }, [dispatch, playerInstanceId, playerMediaVideoElement, playerMediaClock, requirePlayerMediaVideo])
 
   // Override initCam() to use remote video when present
   useEffect(() => {
@@ -394,9 +453,15 @@ function HydraVisualizer ({
     const videoProxyOverrides = videoProxyOverrideRef.current
     applyVideoProxyOverride(videoSources, w, videoProxyOverrides, {
       getPlayerMediaVideoElement: () => playerMediaVideoElementRef.current,
+      shouldRequirePlayerMediaVideo: () => requirePlayerMediaVideoRef.current,
       onPlayerMediaSourceBound: (sourceKey) => {
         if (!isHydraVideoSourceKey(sourceKey)) return
         playerMediaSourceKeysRef.current.add(sourceKey)
+        fallbackVideoSourceKeysRef.current.delete(sourceKey)
+      },
+      onPlayerMediaSourceWaiting: (sourceKey) => {
+        if (!isHydraVideoSourceKey(sourceKey)) return
+        playerMediaSourceKeysRef.current.delete(sourceKey)
         fallbackVideoSourceKeysRef.current.delete(sourceKey)
       },
       onFallbackVideoSourceBound: (sourceKey) => {
@@ -417,7 +482,9 @@ function HydraVisualizer ({
     playerMediaSourceKeysRef.current.clear()
     fallbackVideoSourceKeysRef.current.clear()
     const timerOwner = timerOwnerRef.current
-    const evalResult = executeHydraCode(hydra, codeRef.current, compatRef.current ?? undefined, timerOwner)
+    const initialCode = codeRef.current ?? ''
+    lastEvalIdentityRef.current = getCurrentEvalIdentity(initialCode, visualizerRunId)
+    const evalResult = executeHydraCode(hydra, initialCode, compatRef.current ?? undefined, timerOwner)
     if (evalResult.ok && tickHydraOnce(hydra, timerOwner)) {
       emitAppliedForRun(visualizerRunId)
     }
@@ -558,15 +625,6 @@ function HydraVisualizer ({
     const hydra = hydraRef.current
     if (!hydra) return
 
-    // Clear previous render graph to prevent oscillator bleed between presets.
-    // Always use softHush — hydra.hush() calls source.clear() which destroys
-    // WebRTC tracks AND in-flight video elements (initVideo sets s0.src async
-    // on loadeddata; hush nulls it before the video loads, causing 10 tick
-    // errors and fallback to DEFAULT_PATCH).
-    softHush(hydra)
-    playerMediaSourceKeysRef.current.clear()
-    fallbackVideoSourceKeysRef.current.clear()
-
     // Re-check camera init when code changes with camera enabled
     if (allowCamera || remoteVideoElement) {
       const { sources, sourceInitMap } = detectCameraUsage(getHydraEvalCode(code))
@@ -640,7 +698,21 @@ function HydraVisualizer ({
 
     reportCameraSourcesBound()
 
-    const evalResult = executeHydraCode(hydra, code, compatRef.current ?? undefined, timerOwnerRef.current)
+    const nextCode = code ?? ''
+    const nextIdentity = getCurrentEvalIdentity(nextCode, visualizerRunId)
+    if (isSameEvalIdentity(lastEvalIdentityRef.current, nextIdentity)) return
+    lastEvalIdentityRef.current = nextIdentity
+
+    // Clear previous render graph to prevent oscillator bleed between presets.
+    // Always use softHush — hydra.hush() calls source.clear() which destroys
+    // WebRTC tracks AND in-flight video elements (initVideo sets s0.src async
+    // on loadeddata; hush nulls it before the video loads, causing 10 tick
+    // errors and fallback to DEFAULT_PATCH).
+    softHush(hydra)
+    playerMediaSourceKeysRef.current.clear()
+    fallbackVideoSourceKeysRef.current.clear()
+
+    const evalResult = executeHydraCode(hydra, nextCode, compatRef.current ?? undefined, timerOwnerRef.current)
     errorCountRef.current = 0
 
     // Render one frame immediately so the new graph is visible even when the
@@ -648,7 +720,21 @@ function HydraVisualizer ({
     if (evalResult.ok && tickHydraOnce(hydra, timerOwnerRef.current)) {
       emitAppliedForRun(visualizerRunId)
     }
-  }, [code, allowCamera, remoteVideoElement, reportCameraSourcesBound, pruneStaleCameraBindings, emitAppliedForRun, visualizerRunId])
+  }, [
+    code,
+    allowCamera,
+    remoteVideoElement,
+    reportCameraSourcesBound,
+    pruneStaleCameraBindings,
+    emitAppliedForRun,
+    visualizerRunId,
+    getCurrentEvalIdentity,
+    isSameEvalIdentity,
+    playerMediaVideoElement,
+    playerMediaClock?.mediaId,
+    playerMediaClock?.queueId,
+    requirePlayerMediaVideo,
+  ])
 
   // Animation tick
   const tick = useCallback((time: number) => {

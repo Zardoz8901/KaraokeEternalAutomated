@@ -76,7 +76,7 @@ function isVideoProxyDebugEnabled (): boolean {
   }
 }
 
-function ensureVideoMountPoint (): HTMLElement | null {
+export function ensureHydraVideoMountPoint (): HTMLElement | null {
   if (typeof document === 'undefined') return null
   const id = '__hydraVideoMount'
   const existing = document.getElementById(id)
@@ -131,7 +131,9 @@ function cleanupVideo (vid: HTMLVideoElement): void {
 
 interface ApplyVideoProxyOverrideOptions {
   getPlayerMediaVideoElement?: () => HTMLVideoElement | null
+  shouldRequirePlayerMediaVideo?: () => boolean
   onPlayerMediaSourceBound?: (sourceKey: string, video: HTMLVideoElement) => void
+  onPlayerMediaSourceWaiting?: (sourceKey: string) => void
   onFallbackVideoSourceBound?: (sourceKey: string) => void
 }
 
@@ -211,6 +213,28 @@ export function applyVideoProxyOverride (
 
       const playerMediaVideo = options.getPlayerMediaVideoElement?.() ?? null
       if (playerMediaVideo) {
+        let playerFrameReady = false
+        const signalPlayerFrameReady = (): void => {
+          if (playerFrameReady) return
+          if (state.epoch !== epoch) return
+          if (
+            playerMediaVideo.readyState < 2
+            || playerMediaVideo.videoWidth <= 0
+            || playerMediaVideo.videoHeight <= 0
+          ) {
+            return
+          }
+          playerFrameReady = true
+          if (state.pollTimer !== null) {
+            clearInterval(state.pollTimer)
+            state.pollTimer = null
+          }
+          const target = globals as unknown as EventTarget
+          if (typeof target.dispatchEvent === 'function') {
+            target.dispatchEvent(new Event(HYDRA_VIDEO_READY_EVENT))
+          }
+        }
+
         borrowVideoElement(playerMediaVideo)
         this.src = playerMediaVideo
         if (this.regl) {
@@ -232,16 +256,30 @@ export function applyVideoProxyOverride (
         this.dynamic = true
         options.onPlayerMediaSourceBound?.(src, playerMediaVideo)
 
-        if (playerMediaVideo.readyState >= 2) {
-          const target = globals as unknown as EventTarget
-          if (typeof target.dispatchEvent === 'function') {
-            target.dispatchEvent(new Event(HYDRA_VIDEO_READY_EVENT))
-          }
+        signalPlayerFrameReady()
+        if (!playerFrameReady) {
+          const onReady = () => signalPlayerFrameReady()
+          playerMediaVideo.addEventListener('loadeddata', onReady, { once: true })
+          playerMediaVideo.addEventListener('canplay', onReady, { once: true })
+          let pollAttempts = 0
+          state.pollTimer = setInterval(() => {
+            pollAttempts++
+            signalPlayerFrameReady()
+            if (playerFrameReady || state.epoch !== epoch || pollAttempts >= READY_POLL_MAX_ATTEMPTS) {
+              if (state.pollTimer !== null) {
+                clearInterval(state.pollTimer)
+                state.pollTimer = null
+              }
+            }
+          }, READY_POLL_INTERVAL_MS)
         }
         return
       }
 
-      options.onFallbackVideoSourceBound?.(src)
+      if (options.shouldRequirePlayerMediaVideo?.() === true) {
+        options.onPlayerMediaSourceWaiting?.(src)
+        return
+      }
 
       // Extract custom params before spreading into regl.texture
       const startTime = params?.startTime as number | 'random' | undefined
@@ -317,7 +355,7 @@ export function applyVideoProxyOverride (
       vid.playsInline = true
 
       state.pendingVideo = vid
-      const mount = ensureVideoMountPoint()
+      const mount = ensureHydraVideoMountPoint()
       if (mount) mount.appendChild(vid)
 
       // Two-phase binding:

@@ -583,13 +583,13 @@
     - cleanup
 
 - id: deterministic-hydra-video-binding
-  status: planned
+  status: in_progress
   owner: codex
   branch: phase-7b1-deterministic-hydra-video-binding
   base: main
   worktree:
     path: /home/steph/projects/KaraokeEternalAutomated-phase-7b1-deterministic-hydra-video-binding
-    state: missing
+    state: present
   merge_order: 115
   goal: Harden Hydra initVideo binding so Orchestrator waits for required Player MP4 shadow media instead of falling back to random external video.
   write_scope:

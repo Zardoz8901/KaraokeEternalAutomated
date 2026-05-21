@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { useAppSelector } from 'store/hooks'
+import { detectCameraUsage } from 'lib/detectCameraUsage'
+import { ensureHydraVideoMountPoint } from 'lib/videoProxyOverride'
 import { type AudioData } from 'routes/Player/components/Player/PlayerVisualizer/hooks/useAudioAnalyser'
 import type { PlayerMediaClockState, VisualizerMode } from 'shared/types'
 import HydraVisualizer from '../../Player/components/Player/PlayerVisualizer/HydraVisualizer'
@@ -78,6 +80,7 @@ function usePlayerMediaShadowVideo (clock: PlayerMediaClockState | null): HTMLVi
     el.loop = false
     el.setAttribute('src', getPlayerMediaShadowVideoUrl(mediaId))
     el.currentTime = estimatePlayerMediaPosition(clock)
+    ensureHydraVideoMountPoint()?.appendChild(el)
     if (clock.isPlaying) {
       el.play()?.catch(() => {})
     }
@@ -92,6 +95,7 @@ function usePlayerMediaShadowVideo (clock: PlayerMediaClockState | null): HTMLVi
       } catch {
         // Ignore jsdom/detached media cleanup failures.
       }
+      el.remove()
     }
   // Recreate only when the media identity changes; clock drift is handled below.
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -153,6 +157,8 @@ const HydraPreview = ({
   const isHydraActive = isEnabled && mode === 'hydra'
   const playerMediaClock = useMemo(() => getPlayerMediaClockFromStatus(status), [status])
   const playerMediaVideoElement = usePlayerMediaShadowVideo(playerMediaClock)
+  const codeUsage = useMemo(() => detectCameraUsage(code), [code])
+  const requirePlayerMediaVideo = Boolean(playerMediaClock && codeUsage.hasInitVideo)
 
   const isLive = status.isPlayerPresent && status.fftData !== null
   const overrideData = isLive && status.fftData ? mapFftToAudioData(status.fftData) : null
@@ -265,7 +271,7 @@ const HydraPreview = ({
   return (
     <div className={styles.container} style={{ width, height }}>
       <div className={styles.label}>{label}</div>
-      {isHydraActive && (audioSource || isLive) && (
+      {isHydraActive && (audioSource || isLive) && (!requirePlayerMediaVideo || playerMediaVideoElement) && (
         <HydraVisualizer
           audioSourceNode={isLive ? null : audioSource}
           isPlaying={true}
@@ -279,6 +285,7 @@ const HydraPreview = ({
           remoteVideoElement={previewVideoElement}
           playerMediaVideoElement={playerMediaVideoElement}
           playerMediaClock={playerMediaClock}
+          requirePlayerMediaVideo={requirePlayerMediaVideo}
           onCameraSourcesBoundChange={onCameraBoundSourcesChange}
         />
       )}

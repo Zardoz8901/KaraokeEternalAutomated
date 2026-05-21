@@ -358,6 +358,32 @@ describe('videoProxyOverride', () => {
   })
 
   describe('player media provider', () => {
+    it('waits without fallback when player media is required but provider is missing', () => {
+      const videos = spyOnCreateElement()
+      const source = makeSource()
+      const randomSpy = vi.spyOn(Math, 'random')
+      const onFallbackVideoSourceBound = vi.fn()
+      const onPlayerMediaSourceWaiting = vi.fn()
+      const globals: Record<string, unknown> = { s0: source }
+      const overrides = new Map<string, unknown>()
+
+      applyVideoProxyOverride(['s0'], globals, overrides, {
+        getPlayerMediaVideoElement: () => null,
+        shouldRequirePlayerMediaVideo: () => true,
+        onFallbackVideoSourceBound,
+        onPlayerMediaSourceWaiting,
+      })
+      source.initVideo('https://example.com/must-not-load.mp4', { startTime: 'random' })
+
+      expect(videos).toHaveLength(0)
+      expect(source.src).toBeNull()
+      expect(source.dynamic).toBe(false)
+      expect(source.regl.texture).toHaveBeenCalledWith({ shape: [1, 1] })
+      expect(randomSpy).not.toHaveBeenCalled()
+      expect(onFallbackVideoSourceBound).not.toHaveBeenCalled()
+      expect(onPlayerMediaSourceWaiting).toHaveBeenCalledWith('s0')
+    })
+
     it('binds provider-returned player media instead of creating an external video and suppresses random seek', () => {
       const videos = spyOnCreateElement()
       const source = makeSource()
@@ -383,6 +409,43 @@ describe('videoProxyOverride', () => {
       expect(videos).toHaveLength(1) // the provider element only
       expect(randomSpy).not.toHaveBeenCalled()
       expect(onPlayerMediaSourceBound).toHaveBeenCalledWith('s0', playerVideo)
+    })
+
+    it('binds all initVideo sources to the same borrowed player media and suppresses random seek', () => {
+      const playerVideo = document.createElement('video')
+      Object.defineProperty(playerVideo, 'videoWidth', { value: 1280, writable: true, configurable: true })
+      Object.defineProperty(playerVideo, 'videoHeight', { value: 720, writable: true, configurable: true })
+      setReadyState(playerVideo, 2)
+      const videos = spyOnCreateElement()
+      const sources = {
+        s0: makeSource(),
+        s1: makeSource(),
+        s2: makeSource(),
+        s3: makeSource(),
+      }
+      const randomSpy = vi.spyOn(Math, 'random')
+      const onPlayerMediaSourceBound = vi.fn()
+      const globals: Record<string, unknown> = sources
+      const overrides = new Map<string, unknown>()
+
+      applyVideoProxyOverride(['s0', 's1', 's2', 's3'], globals, overrides, {
+        getPlayerMediaVideoElement: () => playerVideo,
+        shouldRequirePlayerMediaVideo: () => true,
+        onPlayerMediaSourceBound,
+      })
+
+      sources.s0.initVideo('https://example.com/a.mp4', { startTime: 'random' })
+      sources.s1.initVideo('https://example.com/b.mp4', { startTime: 'random' })
+      sources.s2.initVideo('https://example.com/c.mp4', { startTime: 'random' })
+      sources.s3.initVideo('https://example.com/d.mp4', { startTime: 'random' })
+
+      expect(videos).toHaveLength(0)
+      expect(sources.s0.src).toBe(playerVideo)
+      expect(sources.s1.src).toBe(playerVideo)
+      expect(sources.s2.src).toBe(playerVideo)
+      expect(sources.s3.src).toBe(playerVideo)
+      expect(randomSpy).not.toHaveBeenCalled()
+      expect(onPlayerMediaSourceBound).toHaveBeenCalledTimes(4)
     })
 
     it('treats provider-returned player media as borrowed during later cleanup', () => {
