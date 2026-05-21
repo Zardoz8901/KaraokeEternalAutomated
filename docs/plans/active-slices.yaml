@@ -397,6 +397,64 @@
   next:
     - cleanup
 
+- id: orchestrator-preset-operator-runtime-ux
+  status: planned
+  owner: codex
+  branch: phase-6-orchestrator-preset-operator-runtime-ux
+  base: main
+  worktree:
+    path: /home/steph/projects/KaraokeEternalAutomated-phase-6-orchestrator-preset-operator-runtime-ux
+    state: missing
+  merge_order: 90
+  goal: Implement the client-only Preset operator and Browse-only runtime UX contract without backend, socket, route guard, package, Nix, workflow, or Player changes.
+  write_scope:
+    - docs/plans/active-slices.yaml
+    - docs/architecture/orchestrator-preset-operator-ux.md
+    - docs/analysis/
+    - src/routes/Orchestrator/components/
+  protected_paths:
+    - server/
+    - shared/actionTypes.ts
+    - shared/types.ts
+    - src/routes/Player/
+    - src/routes/Queue/
+    - src/routes/Account/
+    - src/routes/Orchestrator/views/
+    - package.json
+    - package-lock.json
+    - flake.nix
+    - e2e/
+    - .github/workflows/
+  verification:
+    - npm test -- src/routes/Orchestrator/components/presetEmptyState.test.ts src/routes/Orchestrator/components/PresetTree.test.tsx src/routes/Orchestrator/components/PresetPicker.test.tsx src/routes/Orchestrator/components/PresetBrowser.test.tsx
+    - npm test -- src/routes/Orchestrator/components/orchestratorCapabilities.test.ts src/routes/Orchestrator/views/orchestratorShellModel.test.ts
+    - npm run slices:check
+    - npm run typecheck
+    - npm run lint
+    - npm test
+  acceptance:
+    - Operator and Browse-only Presets surfaces hide host-management clutter, including New Folder, Save Preset, gallery Save copy, rename, move, delete, set start, and set player folder.
+    - Stable preset keys use preset:<number> and gallery:<string>; selected and loaded preview keys clear when missing from the scoped tree.
+    - Load locally previews and selects only; Send does not claim local preview or player-applied state.
+    - Send is enabled only for allowed saved DB presets; disabled Send explains room policy or party-folder restriction without broad policy copy repeated on every row.
+    - Non-host gallery presets are clearly preview-only.
+    - Guest users do not see management actions backend would reject.
+    - Named Load/Send actions, touch-target sizing, reduced-motion handling, and Solarized token usage meet the visual design contract.
+    - Permanent UX docs record the Phase 6 non-host management decision.
+  non_goals:
+    - Do not change backend, socket, room prefs, route guards, database, package, Nix, workflow, e2e, or Player visualizer behavior.
+    - Do not add player-applied or live-preset labels.
+    - Do not add a new socket/player acknowledgement protocol.
+    - Do not add deeper preset analytics or experimental skill-clock/sphere UI.
+    - Do not resume or merge redux-modernization.
+  notes:
+    - "User decision locked 2026-05-21: Phase 6 hides all non-host management actions so Operator/Browse-only are audition/send surfaces, not reduced host tools."
+    - This slice overlaps blocked redux-modernization Orchestrator component paths; serialize this slice ahead of redux-modernization and do not run both branches in parallel.
+    - Hidden UI is not authorization; server-side enforcement remains unchanged.
+  next:
+    - implementation
+    - review
+
 - id: rollback-2026-02-12-cleanup
   status: merged_to_main
   owner: unassigned
