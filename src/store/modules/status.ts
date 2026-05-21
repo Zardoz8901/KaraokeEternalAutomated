@@ -29,11 +29,13 @@ export interface StatusState {
   isPlaying: boolean
   isVideoKeyingEnabled: boolean
   isWebGLSupported: boolean
+  mediaId: number | null
   mediaType: MediaType | null
   mp4Alpha: number
   nextUserId: number | null
   position: number
   queueId: number
+  statusAt: number
   visualizer: Partial<PlayerVisualizerState>
   visualizerApplied: PlayerVisualizerAppliedState | null
   volume: number
@@ -51,11 +53,13 @@ const initialState: StatusState = {
   isPlaying: false,
   isVideoKeyingEnabled: false,
   isWebGLSupported: false,
+  mediaId: null,
   mediaType: null,
   mp4Alpha: 1,
   nextUserId: null,
   position: 0,
   queueId: -1,
+  statusAt: 0,
   visualizer: {},
   visualizerApplied: null,
   volume: 1,
@@ -143,6 +147,14 @@ const statusSlice = createSlice({
         }
         if (typeof payload.visualizerAcceptedAt === 'number') {
           viz.visualizerAcceptedAt = payload.visualizerAcceptedAt
+        }
+        if (
+          typeof payload.visualizerRunId === 'string'
+          && payload.visualizerRunId.trim()
+          && state.visualizerApplied?.visualizerRunId
+          && state.visualizerApplied.visualizerRunId !== payload.visualizerRunId
+        ) {
+          state.visualizerApplied = null
         }
         if (Object.keys(viz).length > 0) {
           state.visualizer = { ...state.visualizer, ...viz }

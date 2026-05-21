@@ -2,7 +2,7 @@ import { createAction, createReducer } from '@reduxjs/toolkit'
 import { AppThunk } from 'store/store'
 import { CANCEL } from 'redux-throttle'
 import getWebGLSupport from 'lib/getWebGLSupport'
-import type { PlayerInstanceId } from 'shared/types'
+import type { MediaType, PlayerInstanceId } from 'shared/types'
 import {
   PLAYER_CMD_NEXT,
   PLAYER_CMD_OPTIONS,
@@ -42,35 +42,59 @@ const playerCmdOptions = createAction<{
 // ------------------------------------
 // Actions for emitting to room
 // ------------------------------------
-export function playerStatus (status: Partial<PlayerState> = {}, deferEmit = false): AppThunk {
+function emitPlayerStatus (
+  status: Partial<PlayerState>,
+  throttleMeta: { wait: number, leading: boolean } | null,
+): AppThunk {
   return (dispatch, getState) => {
     const { player, playerVisualizer } = getState()
+    const statusWithClock = {
+      ...status,
+      statusAt: Date.now(),
+    }
 
     // update "internal" state (player slice); status is partial
-    dispatch(playerUpdate(status))
+    dispatch(playerUpdate(statusWithClock))
 
     // emit full updated status (excluding "private" properties)
     const emitStatus = Object.fromEntries(
       Object.entries({
         ...player, // previous complete state
-        ...status, // current partial state
+        ...statusWithClock, // current partial state
       }).filter(([key]) => !key.startsWith('_')),
     )
 
-    dispatch({
+    const action: {
+      type: string
+      payload: Record<string, unknown>
+      meta?: { throttle: { wait: number, leading: boolean } }
+    } = {
       type: PLAYER_EMIT_STATUS,
       payload: {
         ...emitStatus,
         visualizer: playerVisualizer,
       },
-      meta: {
+    }
+
+    if (throttleMeta) {
+      action.meta = {
         throttle: {
-          wait: 1000,
-          leading: !deferEmit,
+          wait: throttleMeta.wait,
+          leading: throttleMeta.leading,
         },
-      },
-    })
+      }
+    }
+
+    dispatch(action)
   }
+}
+
+export function playerStatus (status: Partial<PlayerState> = {}, deferEmit = false): AppThunk {
+  return emitPlayerStatus(status, { wait: 1000, leading: !deferEmit })
+}
+
+export function playerStatusImmediate (status: Partial<PlayerState> = {}): AppThunk {
+  return emitPlayerStatus(status, null)
 }
 
 // cancel any throttled/queued status emits
@@ -105,7 +129,8 @@ export interface PlayerState {
   isPlaying: boolean
   isVideoKeyingEnabled: boolean
   isWebGLSupported: boolean
-  mediaType: string | null
+  mediaId: number | null
+  mediaType: MediaType | null
   mp4Alpha: number
   nextUserId: number | null
   playerInstanceId: PlayerInstanceId | null
@@ -113,6 +138,7 @@ export interface PlayerState {
   queueId: number
   rgTrackGain: number | null
   rgTrackPeak: number | null
+  statusAt: number
   volume: number
   _isFetching: boolean
   _isPlayingNext: boolean
@@ -130,6 +156,7 @@ const initialState: PlayerState = {
   isPlaying: false,
   isVideoKeyingEnabled: false,
   isWebGLSupported: getWebGLSupport(),
+  mediaId: null,
   mediaType: null,
   mp4Alpha: 0.5,
   nextUserId: null,
@@ -138,6 +165,7 @@ const initialState: PlayerState = {
   queueId: -1,
   rgTrackGain: null,
   rgTrackPeak: null,
+  statusAt: 0,
   volume: 1,
   // "private" internal state that shouldn't be emitted
   _isFetching: false,

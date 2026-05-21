@@ -126,6 +126,19 @@ describe('presetOperatorUx', () => {
     })).toBeNull()
   })
 
+  it('does not map stale applied visualizer state when accepted run id differs', () => {
+    expect(getAppliedPresetKey({
+      visualizerRunId: 'run-old',
+      visualizerCodeHash: 'hash',
+      visualizerAcceptedAt: 1,
+      visualizerAppliedAt: 2,
+      playerSocketId: 'player-sock',
+      playerInstanceId: 'player-instance',
+      hydraPresetSource: 'folder',
+      hydraPresetId: 10,
+    }, 'run-new')).toBeNull()
+  })
+
   it('keeps host management controls available while hiding all non-host management controls', () => {
     expect(getPresetToolbarUx(hostCapabilities)).toEqual({
       showManagementToolbar: true,

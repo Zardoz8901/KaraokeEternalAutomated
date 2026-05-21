@@ -24,6 +24,7 @@ export const HYDRA_VIDEO_READY_EVENT = 'hydra:video-ready'
  * decoder resources.
  */
 const protectedElements = new WeakSet<HTMLVideoElement>()
+const borrowedElements = new WeakSet<HTMLVideoElement>()
 
 export function protectVideoElement (el: HTMLVideoElement): void {
   protectedElements.add(el)
@@ -31,6 +32,14 @@ export function protectVideoElement (el: HTMLVideoElement): void {
 
 export function isProtectedVideoElement (el: HTMLVideoElement): boolean {
   return protectedElements.has(el)
+}
+
+function borrowVideoElement (el: HTMLVideoElement): void {
+  borrowedElements.add(el)
+}
+
+function isBorrowedVideoElement (el: HTMLVideoElement): boolean {
+  return borrowedElements.has(el)
 }
 
 const PROXY_PATH = 'api/video-proxy'
@@ -109,6 +118,7 @@ function getState (ext: object): SourceState {
 }
 
 function cleanupVideo (vid: HTMLVideoElement): void {
+  if (isBorrowedVideoElement(vid)) return
   vid.pause()
   vid.removeAttribute('src')
   try {
@@ -117,6 +127,12 @@ function cleanupVideo (vid: HTMLVideoElement): void {
     // Ignore cleanup failures from detached media elements.
   }
   if (typeof vid.remove === 'function') vid.remove()
+}
+
+interface ApplyVideoProxyOverrideOptions {
+  getPlayerMediaVideoElement?: () => HTMLVideoElement | null
+  onPlayerMediaSourceBound?: (sourceKey: string, video: HTMLVideoElement) => void
+  onFallbackVideoSourceBound?: (sourceKey: string) => void
 }
 
 /**
@@ -130,6 +146,7 @@ export function applyVideoProxyOverride (
   sources: string[],
   globals: Record<string, unknown>,
   overrides: Map<string, unknown>,
+  options: ApplyVideoProxyOverrideOptions = {},
 ): void {
   for (const src of sources) {
     const ext = globals[src] as HydraExternalSource | undefined
@@ -159,7 +176,11 @@ export function applyVideoProxyOverride (
       // don't render during the async load gap.
       const prevSrc = this.src as HTMLVideoElement | null
       if (prevSrc instanceof HTMLVideoElement) {
-        if (prevSrc.srcObject) {
+        if (isBorrowedVideoElement(prevSrc)) {
+          // Provider-owned Player/shadow videos are borrowed. Hydra may detach
+          // them from its source graph, but ownership and cleanup stay with the
+          // Player or shadow-video hook.
+        } else if (prevSrc.srcObject) {
           if (!protectedElements.has(prevSrc)) {
             // Local camera (getUserMedia) — stop tracks to free decoder resources
             try {
@@ -187,6 +208,40 @@ export function applyVideoProxyOverride (
       // Bump epoch — any pending callbacks from a previous call become stale
       const epoch = ++state.epoch
       state.initStartTime = typeof performance !== 'undefined' ? performance.now() : Date.now()
+
+      const playerMediaVideo = options.getPlayerMediaVideoElement?.() ?? null
+      if (playerMediaVideo) {
+        borrowVideoElement(playerMediaVideo)
+        this.src = playerMediaVideo
+        if (this.regl) {
+          if (
+            playerMediaVideo.readyState >= 2
+            && playerMediaVideo.videoWidth > 0
+            && playerMediaVideo.videoHeight > 0
+          ) {
+            this.tex = this.regl.texture({ data: playerMediaVideo })
+          } else if (playerMediaVideo.videoWidth > 0 && playerMediaVideo.videoHeight > 0) {
+            this.tex = this.regl.texture({
+              width: playerMediaVideo.videoWidth,
+              height: playerMediaVideo.videoHeight,
+            })
+          } else {
+            this.tex = this.regl.texture({ shape: [1, 1] })
+          }
+        }
+        this.dynamic = true
+        options.onPlayerMediaSourceBound?.(src, playerMediaVideo)
+
+        if (playerMediaVideo.readyState >= 2) {
+          const target = globals as unknown as EventTarget
+          if (typeof target.dispatchEvent === 'function') {
+            target.dispatchEvent(new Event(HYDRA_VIDEO_READY_EVENT))
+          }
+        }
+        return
+      }
+
+      options.onFallbackVideoSourceBound?.(src)
 
       // Extract custom params before spreading into regl.texture
       const startTime = params?.startTime as number | 'random' | undefined
@@ -360,6 +415,7 @@ export function applyVideoProxyOverride (
           }
         }
         this.dynamic = true
+        options.onFallbackVideoSourceBound?.(src)
 
         telemetry.emit(VIDEO_INIT_BOUND, {
           source_key: src,

@@ -15,7 +15,7 @@ import Player from '../Player/Player'
 import PlayerTextOverlay from '../PlayerTextOverlay/PlayerTextOverlay'
 import PlayerQR from '../PlayerQR/PlayerQR'
 import getRoundRobinQueue from 'routes/Queue/selectors/getRoundRobinQueue'
-import { playerLeave, playerError, playerLoad, playerPlay, playerStatus, type PlayerState } from '../../modules/player'
+import { playerLeave, playerError, playerLoad, playerPlay, playerStatus, playerStatusImmediate, type PlayerState } from '../../modules/player'
 import getRoomPrefs from '../../selectors/getRoomPrefs'
 import type { PlayerInstanceId, QueueItem } from 'shared/types'
 import { shouldApplyFolderDefaultAtSessionStart, shouldApplyFolderDefaultOnIdle, shouldApplyFolderDefaultOnPoolReady, shouldQueueFolderDefaultAtSessionStart, shouldApplyStartingPresetAtSessionStart, shouldApplyStartingPresetOnIdle, shouldCyclePresetOnSongTransition } from './transitionPolicy'
@@ -50,19 +50,53 @@ const PlayerController = (props: PlayerControllerProps) => {
   const pendingFolderDefaultSessionStartRef = useRef(false)
   const lastTransitionKeyRef = useRef<string | null>(null)
   const [playerInstanceId] = useState<PlayerInstanceId>(() => createPlayerInstanceId())
+  const [isPlayerIdentityRegistered, setPlayerIdentityRegistered] = useState(false)
 
   const { videoElement: remoteVideoElement } = useCameraReceiver()
   const dispatch = useAppDispatch()
-  const handleStatus = useCallback<(status?: Partial<PlayerState>) => void>(status => dispatch(playerStatus({
-    ...status,
+  const handleStatus = useCallback<(status?: Partial<PlayerState>) => void>((status = {}) => {
+    const statusQueueId = typeof status.queueId === 'number' ? status.queueId : player.queueId
+    const statusQueueItem = statusQueueId >= 0 ? queue.entities[statusQueueId] : undefined
+    const isClearingMedia = status.mediaType === null || !statusQueueItem
+
+    dispatch(playerStatus({
+      mediaId: isClearingMedia ? null : statusQueueItem.mediaId,
+      mediaType: isClearingMedia ? null : statusQueueItem.mediaType,
+      queueId: statusQueueId,
+      position: typeof status.position === 'number' ? status.position : player.position,
+      isPlaying: typeof status.isPlaying === 'boolean' ? status.isPlaying : player.isPlaying,
+      ...status,
+      playerInstanceId,
+    }))
+  }, [
+    dispatch,
     playerInstanceId,
-  })), [dispatch, playerInstanceId])
+    player.isPlaying,
+    player.position,
+    player.queueId,
+    queue.entities,
+  ])
   const handleLoad = useCallback(() => dispatch(playerLoad()), [dispatch])
   const handlePlay = useCallback(() => dispatch(playerPlay()), [dispatch])
   const handleError = useCallback((msg: string) => {
     dispatch(playerError(msg))
     handleStatus()
   }, [dispatch, handleStatus])
+
+  useEffect(() => {
+    dispatch(playerStatusImmediate({
+      playerInstanceId,
+      mediaId: null,
+      mediaType: null,
+      queueId: player.queueId,
+      position: player.position,
+      isPlaying: player.isPlaying,
+    }))
+    setPlayerIdentityRegistered(true)
+  // This is a one-time unthrottled identity registration. Regular status
+  // updates below carry media clock changes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch, playerInstanceId])
 
   const emitHydraPresetByIndex = useCallback((index: number) => {
     const presets = runtimePresetPool.presets
@@ -384,33 +418,37 @@ const PlayerController = (props: PlayerControllerProps) => {
 
   return (
     <>
-      <Player
-        cdgAlpha={player.cdgAlpha}
-        cdgSize={player.cdgSize}
-        isPlaying={player.isPlaying}
-        isVisible={!!queueItem && !player.isErrored && !player.isAtQueueEnd}
-        isReplayGainEnabled={prefs.isReplayGainEnabled}
-        isVideoKeyingEnabled={!!queueItem?.isVideoKeyingEnabled}
-        isWebGLSupported={player.isWebGLSupported}
-        mediaId={queueItem ? queueItem.mediaId : null}
-        mediaKey={queueItem ? queueItem.queueId : null}
-        mediaReplayKey={player._lastReplayTime}
-        mediaType={queueItem ? queueItem.mediaType : null}
-        mp4Alpha={player.mp4Alpha}
-        playerInstanceId={playerInstanceId}
-        onEnd={handleLoadNext}
-        onError={handleError}
-        onLoad={handleLoad}
-        onPlay={handlePlay}
-        onStatus={handleStatus}
-        rgTrackGain={queueItem ? queueItem.rgTrackGain : null}
-        rgTrackPeak={queueItem ? queueItem.rgTrackPeak : null}
-        visualizer={playerVisualizer}
-        remoteVideoElement={remoteVideoElement}
-        volume={player.volume}
-        width={props.width}
-        height={props.height}
-      />
+      {isPlayerIdentityRegistered && (
+        <Player
+          cdgAlpha={player.cdgAlpha}
+          cdgSize={player.cdgSize}
+          isPlaying={player.isPlaying}
+          isVisible={!!queueItem && !player.isErrored && !player.isAtQueueEnd}
+          isReplayGainEnabled={prefs.isReplayGainEnabled}
+          isVideoKeyingEnabled={!!queueItem?.isVideoKeyingEnabled}
+          isWebGLSupported={player.isWebGLSupported}
+          mediaId={queueItem ? queueItem.mediaId : null}
+          mediaKey={queueItem ? queueItem.queueId : null}
+          mediaReplayKey={player._lastReplayTime}
+          mediaType={queueItem ? queueItem.mediaType : null}
+          mp4Alpha={player.mp4Alpha}
+          playerInstanceId={playerInstanceId}
+          position={player.position}
+          statusAt={player.statusAt}
+          onEnd={handleLoadNext}
+          onError={handleError}
+          onLoad={handleLoad}
+          onPlay={handlePlay}
+          onStatus={handleStatus}
+          rgTrackGain={queueItem ? queueItem.rgTrackGain : null}
+          rgTrackPeak={queueItem ? queueItem.rgTrackPeak : null}
+          visualizer={playerVisualizer}
+          remoteVideoElement={remoteVideoElement}
+          volume={player.volume}
+          width={props.width}
+          height={props.height}
+        />
+      )}
       <PlayerTextOverlay
         queueItem={queueItem as QueueItem}
         nextQueueItem={nextQueueItem as QueueItem}

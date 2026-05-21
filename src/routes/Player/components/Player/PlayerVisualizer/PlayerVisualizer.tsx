@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react'
-import type { PlayerInstanceId, VisualizerMode, VisualizerRunId } from 'shared/types'
+import type { PlayerInstanceId, PlayerMediaClockState, VisualizerMode, VisualizerRunId } from 'shared/types'
 import styles from './PlayerVisualizer.css'
 
 // Lazy load visualizer to reduce initial bundle
@@ -15,6 +15,8 @@ interface PlayerVisualizerProps {
   hydraCode?: string
   allowCamera?: boolean
   remoteVideoElement?: HTMLVideoElement | null
+  playerMediaVideoElement?: HTMLVideoElement | null
+  playerMediaClock?: PlayerMediaClockState | null
   playerInstanceId?: PlayerInstanceId | null
   visualizerRunId?: VisualizerRunId | null
 }
@@ -29,6 +31,8 @@ function PlayerVisualizer ({
   hydraCode,
   allowCamera,
   remoteVideoElement,
+  playerMediaVideoElement,
+  playerMediaClock,
   playerInstanceId,
   visualizerRunId,
 }: PlayerVisualizerProps) {
@@ -48,6 +52,8 @@ function PlayerVisualizer ({
           code={hydraCode}
           allowCamera={allowCamera}
           remoteVideoElement={remoteVideoElement}
+          playerMediaVideoElement={playerMediaVideoElement}
+          playerMediaClock={playerMediaClock}
           emitFft={true}
           playerInstanceId={playerInstanceId}
           visualizerRunId={visualizerRunId}

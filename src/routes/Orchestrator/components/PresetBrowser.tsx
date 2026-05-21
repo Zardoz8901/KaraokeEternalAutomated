@@ -61,6 +61,7 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
     return state.rooms.entities[state.user.roomId]?.prefs
   })
   const appliedVisualizer = useAppSelector(state => state.status.visualizerApplied)
+  const acceptedVisualizerRunId = useAppSelector(state => state.status.visualizer?.visualizerRunId ?? null)
   const orchestratorCapabilities = useMemo(() => getOrchestratorCapabilities(user, currentRoomPrefs), [
     currentRoomPrefs,
     user,
@@ -152,7 +153,10 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
   )
 
   const visiblePresetKeys = useMemo(() => collectPresetKeys(tree), [tree])
-  const appliedPresetKey = useMemo(() => getAppliedPresetKey(appliedVisualizer), [appliedVisualizer])
+  const appliedPresetKey = useMemo(
+    () => getAppliedPresetKey(appliedVisualizer, acceptedVisualizerRunId),
+    [appliedVisualizer, acceptedVisualizerRunId],
+  )
 
   useEffect(() => {
     setSelectedPresetKey(prev => (prev !== null && !visiblePresetKeys.has(prev) ? null : prev))

@@ -4,8 +4,10 @@ import { resolveRoomAccessPrefs } from '../../shared/roomAccess.js'
 import getLogger from '../lib/Log.js'
 import { createHash, randomUUID } from 'node:crypto'
 import type {
+  HydraVideoSourceKey,
   HydraPresetSource,
   PlayerInstanceId,
+  PlayerVisualizerSourceBindingStatus,
   PlayerVisualizerAppliedState,
   VisualizerRunId,
 } from '../../shared/types.js'
@@ -186,6 +188,69 @@ function isHydraPresetSource (value: unknown): value is HydraPresetSource {
   return value === 'gallery' || value === 'folder' || value === 'raw'
 }
 
+function isHydraVideoSourceKey (value: unknown): value is HydraVideoSourceKey {
+  return value === 's0' || value === 's1' || value === 's2' || value === 's3'
+}
+
+function isSourceBindingStatus (value: unknown): value is PlayerVisualizerSourceBindingStatus {
+  return value === 'not-tracked'
+    || value === 'player-media'
+    || value === 'fallback-external'
+    || value === 'unavailable'
+}
+
+function isPositiveInteger (value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0
+}
+
+function isNonNegativeFiniteNumber (value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0
+}
+
+function sanitizeSourceBindingSummary (payload: Record<string, unknown>): Pick<
+  PlayerVisualizerAppliedState,
+  | 'sourceBindingStatus'
+  | 'sourceBindingMediaId'
+  | 'sourceBindingQueueId'
+  | 'sourceBindingPosition'
+  | 'sourceBindingStatusAt'
+  | 'sourceBindingSourceKeys'
+> {
+  if (!isSourceBindingStatus(payload.sourceBindingStatus)) {
+    return { sourceBindingStatus: 'not-tracked' }
+  }
+
+  if (payload.sourceBindingStatus !== 'player-media') {
+    return { sourceBindingStatus: payload.sourceBindingStatus }
+  }
+
+  if (
+    !isPositiveInteger(payload.sourceBindingMediaId)
+    || !isPositiveInteger(payload.sourceBindingQueueId)
+    || !isNonNegativeFiniteNumber(payload.sourceBindingPosition)
+    || !isPositiveInteger(payload.sourceBindingStatusAt)
+  ) {
+    return { sourceBindingStatus: 'not-tracked' }
+  }
+
+  const keys = Array.isArray(payload.sourceBindingSourceKeys)
+    ? Array.from(new Set(payload.sourceBindingSourceKeys.filter(isHydraVideoSourceKey))).sort()
+    : []
+
+  if (keys.length === 0) {
+    return { sourceBindingStatus: 'not-tracked' }
+  }
+
+  return {
+    sourceBindingStatus: 'player-media',
+    sourceBindingMediaId: payload.sourceBindingMediaId,
+    sourceBindingQueueId: payload.sourceBindingQueueId,
+    sourceBindingPosition: payload.sourceBindingPosition,
+    sourceBindingStatusAt: payload.sourceBindingStatusAt,
+    sourceBindingSourceKeys: keys,
+  }
+}
+
 function sanitizeManagerHydraPayload (payload: Record<string, unknown>): HydraBroadcastPayload | null {
   if (!isValidHydraCode(payload)) return null
 
@@ -257,6 +322,7 @@ function storeVisualizerState (
   sock: RoomControlSocket,
   payload: HydraBroadcastPayload,
 ): void {
+  roomAppliedVisualizerStates.delete(roomId)
   roomVisualizerStates.set(roomId, {
     roomId,
     authorUserId: typeof sock.user?.userId === 'number' ? sock.user.userId : null,
@@ -499,7 +565,7 @@ const ACTION_HANDLERS = {
       visualizerAppliedAt: Date.now(),
       playerSocketId: sock.id,
       playerInstanceId,
-      sourceBindingStatus: 'not-tracked',
+      ...sanitizeSourceBindingSummary(payload),
     }
 
     if (typeof accepted.payload.hydraPresetIndex === 'number') {

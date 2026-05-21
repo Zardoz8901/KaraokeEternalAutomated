@@ -522,18 +522,20 @@
     - cleanup
 
 - id: player-video-source-sync
-  status: planned
+  status: in_progress
   owner: codex
   branch: phase-7b-player-video-source-sync
   base: main
   worktree:
     path: /home/steph/projects/KaraokeEternalAutomated-phase-7b-player-video-source-sync
-    state: missing
+    state: present
   merge_order: 110
   goal: Sync Hydra initVideo sources in Player and Orchestrator preview to the current Player MP4 media clock after applied-runtime truth lands.
   write_scope:
     - docs/plans/active-slices.yaml
     - docs/analysis/
+    - server/Player/socket.ts
+    - server/Player/socket.test.ts
     - shared/types.ts
     - src/store/modules/status.ts
     - src/routes/Player/components/Player/
@@ -554,13 +556,15 @@
     - e2e/
     - .github/workflows/
   verification:
-    - npm test -- src/lib/videoProxyOverride.test.ts src/routes/Player src/routes/Orchestrator src/store/modules/status.test.ts
+    - npm test -- server/Player/socket.test.ts src/lib/videoProxyOverride.test.ts src/routes/Player src/routes/Orchestrator src/store/modules/status.test.ts
     - npm run slices:check
     - npm run typecheck
     - npm run lint
     - npm test
   acceptance:
     - Player status exposes mediaId, mediaType, queueId, position, isPlaying, and statusAt for current media clock.
+    - Server accepts sanitized source-binding summaries only from the pinned Player applied emitter.
+    - Player identity registration is unthrottled or applied emits retry until the server can accept the pinned identity.
     - Orchestrator preview creates and cleans up a muted shadow video for current MP4 media only.
     - Shadow video seeks on media change, mirrors pause/play, and resyncs when drift exceeds 0.75s.
     - Active Player MP4 media intentionally overrides any Hydra sN.initVideo(...) URL while MP4 media clock is available.
@@ -572,6 +576,7 @@
   notes:
     - "This slice depends on Phase 7A accepted/applied runtime truth."
     - "The explicit source policy is product intent: Player MP4 wins over artist-authored initVideo URLs while current MP4 media is available."
+    - "Red-team revision 2026-05-21: include source-binding protocol truth, borrowed media element cleanup rules, exact clock units, and Player identity race hardening."
     - Overlaps blocked redux-modernization Player visualizer and Orchestrator paths; serialize ahead of redux-modernization.
   next:
     - implementation

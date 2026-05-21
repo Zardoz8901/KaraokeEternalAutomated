@@ -1115,6 +1115,84 @@ describe('Visualizer state tracking', () => {
     }))
   })
 
+  it('accepts only sanitized source-binding summary from the pinned player applied emit', async () => {
+    allowHydraCode(10)
+    const { sock, broadcastEmit } = createMockSocket({ userId: 999, roomId: 10, isAdmin: false }, 'player-sock')
+
+    await handlers[PLAYER_EMIT_STATUS](sock, {
+      payload: { queueId: 123, mediaId: 88, mediaType: 'mp4', position: 12.5, isPlaying: true, statusAt: 1770000000123, playerInstanceId: 'player-instance-a' },
+    })
+    await handlers[VISUALIZER_HYDRA_CODE_REQ](sock, {
+      payload: { code: 's0.initVideo("https://example.com/a.mp4"); src(s0).out(o0)' },
+    })
+
+    const accepted = getLastVisualizerCode(10)
+    broadcastEmit.mockClear()
+    await handlers[PLAYER_EMIT_VISUALIZER_APPLIED](sock, {
+      payload: {
+        visualizerRunId: accepted?.visualizerRunId,
+        playerInstanceId: 'player-instance-a',
+        sourceBindingStatus: 'player-media',
+        sourceBindingMediaId: 88,
+        sourceBindingQueueId: 123,
+        sourceBindingPosition: 12.5,
+        sourceBindingStatusAt: 1770000000123,
+        sourceBindingSourceKeys: ['s0', 'bad', 's0'],
+        sourceBindingUrl: 'https://should-not-broadcast.example/video.mp4',
+      },
+    })
+
+    expect(broadcastEmit).toHaveBeenCalledWith('action', {
+      type: PLAYER_VISUALIZER_APPLIED,
+      payload: expect.objectContaining({
+        visualizerRunId: accepted?.visualizerRunId,
+        sourceBindingStatus: 'player-media',
+        sourceBindingMediaId: 88,
+        sourceBindingQueueId: 123,
+        sourceBindingPosition: 12.5,
+        sourceBindingStatusAt: 1770000000123,
+        sourceBindingSourceKeys: ['s0'],
+      }),
+    })
+    const appliedPayload = broadcastEmit.mock.calls[0]?.[1]?.payload as Record<string, unknown>
+    expect(appliedPayload.sourceBindingUrl).toBeUndefined()
+  })
+
+  it('falls back to not-tracked when applied source-binding summary is invalid', async () => {
+    allowHydraCode(10)
+    const { sock, broadcastEmit } = createMockSocket({ userId: 999, roomId: 10, isAdmin: false }, 'player-sock')
+
+    await handlers[PLAYER_EMIT_STATUS](sock, {
+      payload: { queueId: 123, mediaId: 88, mediaType: 'mp4', playerInstanceId: 'player-instance-a' },
+    })
+    await handlers[VISUALIZER_HYDRA_CODE_REQ](sock, {
+      payload: { code: 'osc(10).out()' },
+    })
+
+    const accepted = getLastVisualizerCode(10)
+    broadcastEmit.mockClear()
+    await handlers[PLAYER_EMIT_VISUALIZER_APPLIED](sock, {
+      payload: {
+        visualizerRunId: accepted?.visualizerRunId,
+        playerInstanceId: 'player-instance-a',
+        sourceBindingStatus: 'player-media',
+        sourceBindingMediaId: '88',
+        sourceBindingQueueId: -1,
+        sourceBindingPosition: Number.NaN,
+        sourceBindingStatusAt: 'now',
+        sourceBindingSourceKeys: ['s0'],
+      },
+    })
+
+    expect(broadcastEmit).toHaveBeenCalledWith('action', {
+      type: PLAYER_VISUALIZER_APPLIED,
+      payload: expect.objectContaining({
+        visualizerRunId: accepted?.visualizerRunId,
+        sourceBindingStatus: 'not-tracked',
+      }),
+    })
+  })
+
   it('rejects applied visualizer emits from a manager socket with the wrong player instance', async () => {
     allowHydraCode(10)
     const { sock: playerSock } = createMockSocket({ userId: 999, roomId: 10, isAdmin: false }, 'player-sock')

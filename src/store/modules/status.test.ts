@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import statusReducer, { type StatusState } from './status'
-import { PLAYER_FFT, PLAYER_LEAVE, PLAYER_VISUALIZER_APPLIED, VISUALIZER_HYDRA_CODE } from 'shared/actionTypes'
+import { PLAYER_FFT, PLAYER_LEAVE, PLAYER_STATUS, PLAYER_VISUALIZER_APPLIED, VISUALIZER_HYDRA_CODE } from 'shared/actionTypes'
 import { type FftPayload } from 'shared/fftPayload'
 
 describe('status reducer', () => {
@@ -16,6 +16,7 @@ describe('status reducer', () => {
     isPlaying: false,
     isVideoKeyingEnabled: false,
     isWebGLSupported: false,
+    mediaId: null,
     mediaType: null,
     mp4Alpha: 1,
     nextUserId: null,
@@ -24,6 +25,7 @@ describe('status reducer', () => {
     visualizer: {},
     visualizerApplied: null,
     volume: 1,
+    statusAt: 0,
   }
 
   it('should handle PLAYER_FFT', () => {
@@ -107,6 +109,36 @@ describe('status reducer', () => {
       expect(nextState.visualizer.hydraPresetIndex).toBe(5)
     })
 
+    it('clears stale applied state when a newer accepted visualizer run arrives', () => {
+      const stateWithApplied: StatusState = {
+        ...initialState,
+        visualizer: {
+          visualizerRunId: 'run-old',
+        },
+        visualizerApplied: {
+          visualizerRunId: 'run-old',
+          visualizerCodeHash: 'hash-old',
+          visualizerAcceptedAt: 1000,
+          visualizerAppliedAt: 1100,
+          playerSocketId: 'player-sock',
+          playerInstanceId: 'player-instance',
+        },
+      }
+
+      const nextState = statusReducer(stateWithApplied, {
+        type: VISUALIZER_HYDRA_CODE,
+        payload: {
+          code: 'noise(4).out(o0)',
+          visualizerRunId: 'run-new',
+          visualizerCodeHash: 'hash-new',
+          visualizerAcceptedAt: 1200,
+        },
+      })
+
+      expect(nextState.visualizer.visualizerRunId).toBe('run-new')
+      expect(nextState.visualizerApplied).toBeNull()
+    })
+
     it('only updates index when name is also present', () => {
       const stateWithViz: StatusState = {
         ...initialState,
@@ -153,6 +185,30 @@ describe('status reducer', () => {
 
       expect(nextState.visualizerApplied).toEqual(payload)
       expect(nextState.visualizer.hydraPresetName).toBeUndefined()
+    })
+  })
+
+  describe('PLAYER_STATUS', () => {
+    it('stores player media clock fields with position in seconds and statusAt as Unix milliseconds', () => {
+      const nextState = statusReducer(initialState, {
+        type: PLAYER_STATUS,
+        payload: {
+          mediaId: 91,
+          mediaType: 'mp4',
+          queueId: 55,
+          position: 12.5,
+          isPlaying: true,
+          statusAt: 1770000000123,
+        },
+      })
+
+      expect(nextState.mediaId).toBe(91)
+      expect(nextState.mediaType).toBe('mp4')
+      expect(nextState.queueId).toBe(55)
+      expect(nextState.position).toBe(12.5)
+      expect(nextState.isPlaying).toBe(true)
+      expect(nextState.statusAt).toBe(1770000000123)
+      expect(nextState.isPlayerPresent).toBe(true)
     })
   })
 

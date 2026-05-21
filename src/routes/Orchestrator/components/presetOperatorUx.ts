@@ -45,8 +45,12 @@ export function getPresetKey (preset: PresetLeaf): PresetKey | null {
   return `preset:${preset.presetId}`
 }
 
-export function getAppliedPresetKey (applied: PlayerVisualizerAppliedState | null | undefined): PresetKey | null {
+export function getAppliedPresetKey (
+  applied: PlayerVisualizerAppliedState | null | undefined,
+  acceptedRunId?: string | null,
+): PresetKey | null {
   if (!applied) return null
+  if (acceptedRunId && applied.visualizerRunId !== acceptedRunId) return null
 
   if (applied.hydraPresetSource === 'folder' && isPositiveInteger(applied.hydraPresetId)) {
     return `preset:${applied.hydraPresetId}`

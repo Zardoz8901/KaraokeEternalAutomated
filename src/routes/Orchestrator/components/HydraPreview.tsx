@@ -1,7 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { useAppSelector } from 'store/hooks'
 import { type AudioData } from 'routes/Player/components/Player/PlayerVisualizer/hooks/useAudioAnalyser'
-import type { VisualizerMode } from 'shared/types'
+import type { PlayerMediaClockState, VisualizerMode } from 'shared/types'
 import HydraVisualizer from '../../Player/components/Player/PlayerVisualizer/HydraVisualizer'
 import styles from './HydraPreview.css'
 
@@ -15,6 +15,110 @@ interface HydraPreviewProps {
   sensitivity: number
   allowCamera: boolean
   onCameraBoundSourcesChange?: (sources: string[]) => void
+}
+
+const SHADOW_VIDEO_DRIFT_THRESHOLD_SECONDS = 0.75
+
+function getPlayerMediaShadowVideoUrl (mediaId: number): string {
+  return `/api/media/${mediaId}?type=video`
+}
+
+function estimatePlayerMediaPosition (clock: PlayerMediaClockState, nowMs = Date.now()): number {
+  if (!clock.isPlaying) return clock.position
+  return clock.position + Math.max(0, nowMs - clock.statusAt) / 1000
+}
+
+function getPlayerMediaClockFromStatus (status: {
+  mediaId?: number | null
+  mediaType?: string | null
+  queueId?: number
+  position?: number
+  isPlaying?: boolean
+  statusAt?: number
+}): PlayerMediaClockState | null {
+  if (
+    status.mediaType !== 'mp4'
+    || typeof status.mediaId !== 'number'
+    || status.mediaId <= 0
+    || typeof status.queueId !== 'number'
+    || status.queueId <= 0
+    || typeof status.position !== 'number'
+    || !Number.isFinite(status.position)
+    || typeof status.statusAt !== 'number'
+    || status.statusAt <= 0
+  ) {
+    return null
+  }
+
+  return {
+    mediaId: status.mediaId,
+    mediaType: 'mp4',
+    queueId: status.queueId,
+    position: status.position,
+    isPlaying: status.isPlaying === true,
+    statusAt: status.statusAt,
+  }
+}
+
+function usePlayerMediaShadowVideo (clock: PlayerMediaClockState | null): HTMLVideoElement | null {
+  const [video, setVideo] = useState<HTMLVideoElement | null>(null)
+  const mediaId = clock?.mediaId ?? null
+
+  useEffect(() => {
+    if (!clock || typeof mediaId !== 'number') {
+      setVideo(null)
+      return
+    }
+
+    const el = document.createElement('video')
+    el.muted = true
+    el.playsInline = true
+    el.preload = 'auto'
+    el.crossOrigin = 'anonymous'
+    el.loop = false
+    el.setAttribute('src', getPlayerMediaShadowVideoUrl(mediaId))
+    el.currentTime = estimatePlayerMediaPosition(clock)
+    if (clock.isPlaying) {
+      el.play()?.catch(() => {})
+    }
+    setVideo(el)
+
+    return () => {
+      setVideo(null)
+      el.pause()
+      el.removeAttribute('src')
+      try {
+        el.load()
+      } catch {
+        // Ignore jsdom/detached media cleanup failures.
+      }
+    }
+  // Recreate only when the media identity changes; clock drift is handled below.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mediaId])
+
+  useEffect(() => {
+    if (!video || !clock) return
+
+    const sync = () => {
+      const target = estimatePlayerMediaPosition(clock)
+      if (Math.abs(video.currentTime - target) > SHADOW_VIDEO_DRIFT_THRESHOLD_SECONDS) {
+        video.currentTime = target
+      }
+      if (clock.isPlaying) {
+        video.play()?.catch(() => {})
+      } else {
+        video.pause()
+      }
+    }
+
+    sync()
+    if (!clock.isPlaying) return
+    const interval = window.setInterval(sync, 1000)
+    return () => window.clearInterval(interval)
+  }, [video, clock])
+
+  return video
 }
 
 function mapFftToAudioData (fft: { fft: number[], bass: number, mid: number, treble: number, beat: number, energy: number, bpm: number, bright: number }): AudioData {
@@ -47,6 +151,8 @@ const HydraPreview = ({
 }: HydraPreviewProps) => {
   const status = useAppSelector(state => state.status)
   const isHydraActive = isEnabled && mode === 'hydra'
+  const playerMediaClock = useMemo(() => getPlayerMediaClockFromStatus(status), [status])
+  const playerMediaVideoElement = usePlayerMediaShadowVideo(playerMediaClock)
 
   const isLive = status.isPlayerPresent && status.fftData !== null
   const overrideData = isLive && status.fftData ? mapFftToAudioData(status.fftData) : null
@@ -171,6 +277,8 @@ const HydraPreview = ({
           allowCamera={allowCamera}
           overrideData={overrideData}
           remoteVideoElement={previewVideoElement}
+          playerMediaVideoElement={playerMediaVideoElement}
+          playerMediaClock={playerMediaClock}
           onCameraSourcesBoundChange={onCameraBoundSourcesChange}
         />
       )}

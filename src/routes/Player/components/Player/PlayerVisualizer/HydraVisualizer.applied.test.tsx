@@ -107,6 +107,7 @@ describe('HydraVisualizer applied emit', () => {
       payload: {
         visualizerRunId: 'run-1',
         playerInstanceId: 'player-instance-a',
+        sourceBindingStatus: 'not-tracked',
       },
     })
 

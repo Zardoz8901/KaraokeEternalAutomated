@@ -5,6 +5,7 @@ import MP4AlphaPlayer from './MP4Player/MP4AlphaPlayer'
 import { type PlayerState } from '../../modules/player'
 import { type PlayerVisualizerState } from '../../modules/playerVisualizer'
 import type { PlayerInstanceId } from 'shared/types'
+import { shouldMountPlayerVisualizer } from './playerVisualizerMountPolicy'
 
 const PlayerVisualizer = React.lazy(() => import('./PlayerVisualizer/PlayerVisualizer'))
 
@@ -16,11 +17,13 @@ interface PlayerProps {
   isReplayGainEnabled: boolean
   isVideoKeyingEnabled: boolean
   isWebGLSupported: boolean
-  mediaId: number
-  mediaKey: number
+  mediaId: number | null
+  mediaKey: number | null
   mediaReplayKey?: number
   mediaType?: string
   playerInstanceId?: PlayerInstanceId | null
+  position: number
+  statusAt: number
   mp4Alpha: number
   rgTrackGain?: number
   rgTrackPeak?: number
@@ -39,6 +42,7 @@ interface PlayerProps {
 
 interface State {
   visualizerAudioSourceNode: MediaElementAudioSourceNode | null
+  playerMediaVideoElement: HTMLVideoElement | null
 }
 
 class Player extends React.Component<PlayerProps> {
@@ -49,6 +53,7 @@ class Player extends React.Component<PlayerProps> {
 
   state: State = {
     visualizerAudioSourceNode: null,
+    playerMediaVideoElement: null,
   }
 
   componentDidMount () {
@@ -81,6 +86,13 @@ class Player extends React.Component<PlayerProps> {
   }
 
   handleAudioElement = (el: HTMLVideoElement | HTMLAudioElement) => {
+    const playerMediaVideoElement = el instanceof HTMLVideoElement && this.props.mediaType === 'mp4'
+      ? el
+      : null
+    if (this.state.playerMediaVideoElement !== playerMediaVideoElement) {
+      this.setState({ playerMediaVideoElement })
+    }
+
     if (!this.audioCtx || (this.audioSourceNode && this.audioSourceNode.mediaElement === el)) {
       return
     }
@@ -118,7 +130,7 @@ class Player extends React.Component<PlayerProps> {
   }
 
   render () {
-    if (!this.props.isVisible || typeof this.props.mediaId !== 'number') return null
+    if (!this.props.isVisible || typeof this.props.mediaId !== 'number' || typeof this.props.mediaKey !== 'number') return null
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let PlayerComponent: React.ComponentType<any> | undefined
@@ -131,10 +143,13 @@ class Player extends React.Component<PlayerProps> {
       return null
     }
 
-    const isVisualizerActive = (this.props.mediaType === 'cdg' || this.props.isVideoKeyingEnabled)
-      && this.props.isWebGLSupported
-      && this.props.visualizer.isEnabled
-      && this.state.visualizerAudioSourceNode
+    const isVisualizerActive = shouldMountPlayerVisualizer({
+      mediaType: this.props.mediaType,
+      isVideoKeyingEnabled: this.props.isVideoKeyingEnabled,
+      isWebGLSupported: this.props.isWebGLSupported,
+      isVisualizerEnabled: this.props.visualizer.isEnabled,
+      hasVisualizerAudioSource: Boolean(this.state.visualizerAudioSourceNode),
+    })
 
     return (
       <>
@@ -155,6 +170,15 @@ class Player extends React.Component<PlayerProps> {
               hydraCode={this.props.visualizer.hydraCode}
               allowCamera={this.props.visualizer.allowCamera}
               remoteVideoElement={this.props.remoteVideoElement}
+              playerMediaVideoElement={this.state.playerMediaVideoElement}
+              playerMediaClock={{
+                mediaId: this.props.mediaType === 'mp4' ? this.props.mediaId : null,
+                mediaType: this.props.mediaType === 'mp4' ? 'mp4' : null,
+                queueId: this.props.mediaKey ?? -1,
+                position: this.props.position,
+                isPlaying: this.props.isPlaying,
+                statusAt: this.props.statusAt,
+              }}
               playerInstanceId={this.props.playerInstanceId}
               visualizerRunId={this.props.visualizer.visualizerRunId}
             />

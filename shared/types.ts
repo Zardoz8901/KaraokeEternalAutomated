@@ -113,6 +113,14 @@ export type VisualizerRunId = string
 
 export type PlayerInstanceId = string
 
+export type HydraVideoSourceKey = 's0' | 's1' | 's2' | 's3'
+
+export type PlayerVisualizerSourceBindingStatus
+  = 'not-tracked'
+    | 'player-media'
+    | 'fallback-external'
+    | 'unavailable'
+
 export interface PlayerVisualizerAcceptedState {
   visualizerRunId: VisualizerRunId
   visualizerCodeHash: string
@@ -129,7 +137,12 @@ export interface PlayerVisualizerAppliedState extends PlayerVisualizerAcceptedSt
   visualizerAppliedAt: number
   playerSocketId: string
   playerInstanceId: PlayerInstanceId
-  sourceBindingStatus?: 'not-tracked'
+  sourceBindingStatus?: PlayerVisualizerSourceBindingStatus
+  sourceBindingMediaId?: number
+  sourceBindingQueueId?: number
+  sourceBindingPosition?: number
+  sourceBindingStatusAt?: number
+  sourceBindingSourceKeys?: HydraVideoSourceKey[]
 }
 
 export interface PlayerMediaClockState {
@@ -142,7 +155,7 @@ export interface PlayerMediaClockState {
 }
 
 export interface HydraVideoSourceBinding {
-  sourceKey: 's0' | 's1' | 's2' | 's3'
+  sourceKey: HydraVideoSourceKey
   mediaId: number
   position: number
   statusAt: number

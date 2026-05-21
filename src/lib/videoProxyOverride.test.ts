@@ -357,6 +357,61 @@ describe('videoProxyOverride', () => {
     })
   })
 
+  describe('player media provider', () => {
+    it('binds provider-returned player media instead of creating an external video and suppresses random seek', () => {
+      const videos = spyOnCreateElement()
+      const source = makeSource()
+      const playerVideo = document.createElement('video')
+      Object.defineProperty(playerVideo, 'videoWidth', { value: 1280, writable: true, configurable: true })
+      Object.defineProperty(playerVideo, 'videoHeight', { value: 720, writable: true, configurable: true })
+      setReadyState(playerVideo, 2)
+      Object.defineProperty(playerVideo, 'duration', { value: 90, writable: true })
+      const randomSpy = vi.spyOn(Math, 'random')
+      const onPlayerMediaSourceBound = vi.fn()
+      const globals: Record<string, unknown> = { s0: source }
+      const overrides = new Map<string, unknown>()
+
+      applyVideoProxyOverride(['s0'], globals, overrides, {
+        getPlayerMediaVideoElement: () => playerVideo,
+        onPlayerMediaSourceBound,
+      })
+      source.initVideo('https://example.com/ignored.mp4', { startTime: 'random' })
+
+      expect(source.src).toBe(playerVideo)
+      expect(source.dynamic).toBe(true)
+      expect(source.regl.texture).toHaveBeenCalledWith({ data: playerVideo })
+      expect(videos).toHaveLength(1) // the provider element only
+      expect(randomSpy).not.toHaveBeenCalled()
+      expect(onPlayerMediaSourceBound).toHaveBeenCalledWith('s0', playerVideo)
+    })
+
+    it('treats provider-returned player media as borrowed during later cleanup', () => {
+      spyOnCreateElement()
+      const source = makeSource()
+      const playerVideo = document.createElement('video')
+      Object.defineProperty(playerVideo, 'videoWidth', { value: 1280, writable: true, configurable: true })
+      Object.defineProperty(playerVideo, 'videoHeight', { value: 720, writable: true, configurable: true })
+      setReadyState(playerVideo, 2)
+      const pauseSpy = vi.spyOn(playerVideo, 'pause')
+      const loadSpy = vi.spyOn(playerVideo, 'load')
+      const globals: Record<string, unknown> = { s0: source }
+      const overrides = new Map<string, unknown>()
+      let providePlayerVideo = true
+
+      applyVideoProxyOverride(['s0'], globals, overrides, {
+        getPlayerMediaVideoElement: () => providePlayerVideo ? playerVideo : null,
+      })
+      source.initVideo('https://example.com/player-wins.mp4')
+
+      providePlayerVideo = false
+      source.initVideo('https://example.com/fallback.mp4')
+
+      expect(pauseSpy).not.toHaveBeenCalled()
+      expect(loadSpy).not.toHaveBeenCalled()
+      expect(playerVideo.hasAttribute('src')).toBe(false)
+    })
+  })
+
   describe('epoch guard (stale race prevention)', () => {
     it('ignores stale loadeddata callback', () => {
       const videos = spyOnCreateElement()

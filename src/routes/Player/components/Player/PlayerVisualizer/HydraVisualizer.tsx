@@ -3,7 +3,7 @@ import Hydra from 'hydra-synth'
 import throttle from 'lodash/throttle'
 import { useDispatch } from 'react-redux'
 import { PLAYER_EMIT_FFT, PLAYER_EMIT_VISUALIZER_APPLIED } from 'shared/actionTypes'
-import type { PlayerInstanceId, VisualizerRunId } from 'shared/types'
+import type { HydraVideoSourceKey, PlayerInstanceId, PlayerMediaClockState, VisualizerRunId } from 'shared/types'
 import { type AudioData } from './hooks/useAudioAnalyser'
 import { useHydraAudio } from './hooks/useHydraAudio'
 import { getHydraEvalCode, DEFAULT_PATCH } from './hydraEvalCode'
@@ -41,6 +41,10 @@ function isRemoteVideoRenderable (videoEl: HTMLVideoElement | null) {
   return videoEl.readyState >= 2
     && videoEl.videoWidth > 0
     && videoEl.videoHeight > 0
+}
+
+function isHydraVideoSourceKey (value: string): value is HydraVideoSourceKey {
+  return value === 's0' || value === 's1' || value === 's2' || value === 's3'
 }
 
 // Audio globals exposed on window for Hydra code to reference.
@@ -127,6 +131,10 @@ interface HydraVisualizerProps {
   overrideData?: AudioData | null
   /** Remote camera video element from WebRTC (replaces local initCam) */
   remoteVideoElement?: HTMLVideoElement | null
+  /** Borrowed Player/shadow MP4 element used as the default initVideo source. */
+  playerMediaVideoElement?: HTMLVideoElement | null
+  /** Player media clock associated with playerMediaVideoElement. */
+  playerMediaClock?: PlayerMediaClockState | null
   /** Emits currently bound camera sources (s0-s3) after init/rebind passes */
   onCameraSourcesBoundChange?: (sources: string[]) => void
   /** Player runtime identity; only Player instances provide this. */
@@ -147,6 +155,8 @@ function HydraVisualizer ({
   emitFft,
   overrideData,
   remoteVideoElement,
+  playerMediaVideoElement,
+  playerMediaClock,
   onCameraSourcesBoundChange,
   playerInstanceId,
   visualizerRunId,
@@ -166,6 +176,10 @@ function HydraVisualizer ({
   const cameraOverrideRef = useRef<Map<string, unknown>>(new Map())
   const videoProxyOverrideRef = useRef<Map<string, unknown>>(new Map())
   const prevRemoteVideoRef = useRef<HTMLVideoElement | null>(null)
+  const playerMediaVideoElementRef = useRef<HTMLVideoElement | null>(playerMediaVideoElement ?? null)
+  const playerMediaClockRef = useRef<PlayerMediaClockState | null>(playerMediaClock ?? null)
+  const playerMediaSourceKeysRef = useRef<Set<HydraVideoSourceKey>>(new Set())
+  const fallbackVideoSourceKeysRef = useRef<Set<HydraVideoSourceKey>>(new Set())
   const compatRef = useRef<HydraAudioCompat | null>(null)
   const timerOwnerRef = useRef<HydraTimerOwner>(Symbol('hydraTimers'))
   const appliedRunIdsRef = useRef<Set<VisualizerRunId>>(new Set())
@@ -177,11 +191,41 @@ function HydraVisualizer ({
     if (!runId || !currentPlayerInstanceId) return
     if (appliedRunIdsRef.current.has(runId)) return
     appliedRunIdsRef.current.add(runId)
+    const playerMediaKeys = Array.from(playerMediaSourceKeysRef.current).sort()
+    const fallbackVideoKeys = Array.from(fallbackVideoSourceKeysRef.current).sort()
+    const clock = playerMediaClockRef.current
+    const sourceBindingPayload = playerMediaKeys.length > 0
+      && clock?.mediaType === 'mp4'
+      && typeof clock.mediaId === 'number'
+      && clock.mediaId > 0
+      && typeof clock.queueId === 'number'
+      && clock.queueId > 0
+      && Number.isFinite(clock.position)
+      && typeof clock.statusAt === 'number'
+      && clock.statusAt > 0
+      ? {
+          sourceBindingStatus: 'player-media',
+          sourceBindingMediaId: clock.mediaId,
+          sourceBindingQueueId: clock.queueId,
+          sourceBindingPosition: clock.position,
+          sourceBindingStatusAt: clock.statusAt,
+          sourceBindingSourceKeys: playerMediaKeys,
+        }
+      : fallbackVideoKeys.length > 0
+        ? {
+            sourceBindingStatus: 'fallback-external',
+            sourceBindingSourceKeys: fallbackVideoKeys,
+          }
+        : {
+            sourceBindingStatus: 'not-tracked',
+          }
+
     dispatchRef.current({
       type: PLAYER_EMIT_VISUALIZER_APPLIED,
       payload: {
         visualizerRunId: runId,
         playerInstanceId: currentPlayerInstanceId,
+        ...sourceBindingPayload,
       },
     })
   }, [])
@@ -242,7 +286,9 @@ function HydraVisualizer ({
   useEffect(() => {
     dispatchRef.current = dispatch
     playerInstanceIdRef.current = playerInstanceId
-  }, [dispatch, playerInstanceId])
+    playerMediaVideoElementRef.current = playerMediaVideoElement ?? null
+    playerMediaClockRef.current = playerMediaClock ?? null
+  }, [dispatch, playerInstanceId, playerMediaVideoElement, playerMediaClock])
 
   // Override initCam() to use remote video when present
   useEffect(() => {
@@ -346,7 +392,19 @@ function HydraVisualizer ({
     const w = window as unknown as Record<string, unknown>
     const videoSources = ['s0', 's1', 's2', 's3']
     const videoProxyOverrides = videoProxyOverrideRef.current
-    applyVideoProxyOverride(videoSources, w, videoProxyOverrides)
+    applyVideoProxyOverride(videoSources, w, videoProxyOverrides, {
+      getPlayerMediaVideoElement: () => playerMediaVideoElementRef.current,
+      onPlayerMediaSourceBound: (sourceKey) => {
+        if (!isHydraVideoSourceKey(sourceKey)) return
+        playerMediaSourceKeysRef.current.add(sourceKey)
+        fallbackVideoSourceKeysRef.current.delete(sourceKey)
+      },
+      onFallbackVideoSourceBound: (sourceKey) => {
+        if (!isHydraVideoSourceKey(sourceKey)) return
+        fallbackVideoSourceKeysRef.current.add(sourceKey)
+        playerMediaSourceKeysRef.current.delete(sourceKey)
+      },
+    })
     patchHydraSourceTick(videoSources, w)
 
     // If remote camera is already attached before Hydra init, apply override now.
@@ -356,6 +414,8 @@ function HydraVisualizer ({
     }
 
     // Execute initial patch and render first frame immediately
+    playerMediaSourceKeysRef.current.clear()
+    fallbackVideoSourceKeysRef.current.clear()
     const timerOwner = timerOwnerRef.current
     const evalResult = executeHydraCode(hydra, codeRef.current, compatRef.current ?? undefined, timerOwner)
     if (evalResult.ok && tickHydraOnce(hydra, timerOwner)) {
@@ -504,6 +564,8 @@ function HydraVisualizer ({
     // on loadeddata; hush nulls it before the video loads, causing 10 tick
     // errors and fallback to DEFAULT_PATCH).
     softHush(hydra)
+    playerMediaSourceKeysRef.current.clear()
+    fallbackVideoSourceKeysRef.current.clear()
 
     // Re-check camera init when code changes with camera enabled
     if (allowCamera || remoteVideoElement) {
