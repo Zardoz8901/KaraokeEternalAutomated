@@ -293,13 +293,13 @@
     - cleanup
 
 - id: orchestrator-workspace-model
-  status: in_progress
+  status: merged_to_main
   owner: codex
   branch: phase-4-orchestrator-workspace-model
   base: main
   worktree:
-    path: /home/steph/projects/KaraokeEternalAutomated-phase-4-orchestrator-workspace-model
-    state: present
+    path: null
+    state: not_required
   merge_order: 70
   goal: Extract Orchestrator runtime decisions into tested pure workspace models plus a thin integration hook while preserving visualizer, camera, and preset behavior.
   write_scope:
@@ -344,9 +344,9 @@
     - This slice overlaps blocked redux-modernization Orchestrator component/view paths; serialize this slice ahead of redux-modernization and do not run both branches in parallel.
     - High-risk because useCameraSender ownership moves behind the workspace facade; keep the camera hook unchanged and record manual validation outcomes.
     - The hook must return typed plain prop objects and state, not JSX.
+    - Merged to main on 2026-05-21 as d322f8cb.
   next:
-    - implementation
-    - review
+    - cleanup
 
 - id: rollback-2026-02-12-cleanup
   status: merged_to_main
