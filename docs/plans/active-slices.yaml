@@ -292,6 +292,62 @@
   next:
     - cleanup
 
+- id: orchestrator-workspace-model
+  status: planned
+  owner: codex
+  branch: phase-4-orchestrator-workspace-model
+  base: main
+  worktree:
+    path: /home/steph/projects/KaraokeEternalAutomated-phase-4-orchestrator-workspace-model
+    state: missing
+  merge_order: 70
+  goal: Extract Orchestrator runtime decisions into tested pure workspace models plus a thin integration hook while preserving visualizer, camera, and preset behavior.
+  write_scope:
+    - docs/plans/active-slices.yaml
+    - docs/analysis/
+    - src/routes/Orchestrator/views/
+    - src/routes/Orchestrator/components/
+    - e2e/
+  protected_paths:
+    - server/
+    - shared/actionTypes.ts
+    - shared/types.ts
+    - src/routes/Player/
+    - src/routes/Queue/
+    - src/routes/Account/
+    - package.json
+    - package-lock.json
+    - flake.nix
+    - .github/workflows/
+  verification:
+    - npm test -- src/routes/Orchestrator
+    - npm test
+    - npm run typecheck
+    - npm run lint
+    - npm run slices:check
+    - npm run build
+    - nix develop -c npm run test:e2e -- --project=chromium
+  acceptance:
+    - OrchestratorView delegates runtime decisions to a workspace hook/model while still composing StagePanel, CodeEditor, PresetBrowser, ApiReference, and OrchestratorStatusStrip directly.
+    - useOrchestratorWorkspace remains a thin integration facade over Redux, reducer injection, current-room fetch, camera sender wiring, timers, and pure helper state machines.
+    - Focused tests preserve send ack timing, remote replacement/counting, pre-edit sync, preset-index auto-apply, resize bounds, and panel normalization behavior.
+    - Camera relay lifecycle remains unchanged and manual camera/orchestrator validation is logged in the analysis note.
+    - No backend, socket, shared contract, package, Nix, or workflow changes are introduced.
+  non_goals:
+    - Do not change backend socket contracts or enforcement.
+    - Do not change room prefs APIs, route guards, or admin room-policy management.
+    - Do not introduce a player-applied visualizer ack protocol.
+    - Do not add new user-visible preset indicators in this slice.
+    - Do not resume or merge redux-modernization.
+  notes:
+    - "User decision locked 2026-05-21: next architecture slice is Orchestrator workspace-model extraction after Visuals productization."
+    - This slice overlaps blocked redux-modernization Orchestrator component/view paths; serialize this slice ahead of redux-modernization and do not run both branches in parallel.
+    - High-risk because useCameraSender ownership moves behind the workspace facade; keep the camera hook unchanged and record manual validation outcomes.
+    - The hook must return typed plain prop objects and state, not JSX.
+  next:
+    - implementation
+    - review
+
 - id: rollback-2026-02-12-cleanup
   status: merged_to_main
   owner: unassigned
