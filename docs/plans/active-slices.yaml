@@ -349,13 +349,13 @@
     - cleanup
 
 - id: orchestrator-preset-operator-ux-spec
-  status: planned
+  status: in_progress
   owner: codex
   branch: phase-5-orchestrator-preset-operator-ux-spec
   base: main
   worktree:
     path: /home/steph/projects/KaraokeEternalAutomated-phase-5-orchestrator-preset-operator-ux-spec
-    state: missing
+    state: present
   merge_order: 80
   goal: Define the Preset operator and Browse-only Orchestrator UX contract before runtime UI implementation.
   write_scope:
