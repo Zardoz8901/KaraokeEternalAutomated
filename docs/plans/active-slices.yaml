@@ -522,13 +522,13 @@
     - cleanup
 
 - id: player-video-source-sync
-  status: in_progress
+  status: merged_to_main
   owner: codex
   branch: phase-7b-player-video-source-sync
   base: main
   worktree:
-    path: /home/steph/projects/KaraokeEternalAutomated-phase-7b-player-video-source-sync
-    state: present
+    path: null
+    state: not_required
   merge_order: 110
   goal: Sync Hydra initVideo sources in Player and Orchestrator preview to the current Player MP4 media clock after applied-runtime truth lands.
   write_scope:
@@ -578,8 +578,9 @@
     - "The explicit source policy is product intent: Player MP4 wins over artist-authored initVideo URLs while current MP4 media is available."
     - "Red-team revision 2026-05-21: include source-binding protocol truth, borrowed media element cleanup rules, exact clock units, and Player identity race hardening."
     - Overlaps blocked redux-modernization Player visualizer and Orchestrator paths; serialize ahead of redux-modernization.
+    - Merged to main on 2026-05-21 as bfa265c1.
   next:
-    - implementation
+    - cleanup
 
 - id: rollback-2026-02-12-cleanup
   status: merged_to_main
