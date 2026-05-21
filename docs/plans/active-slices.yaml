@@ -641,13 +641,13 @@
     - cleanup
 
 - id: orchestrator-preview-output-model
-  status: planned
+  status: in_progress
   owner: codex
   branch: docs/orchestrator-preview-output-model
   base: main
   worktree:
     path: /home/steph/projects/KaraokeEternalAutomated-orchestrator-preview-output-model
-    state: missing
+    state: present
   merge_order: 120
   goal: Define the Orchestrator preview/output mental model before any Player Live mirroring work.
   write_scope:

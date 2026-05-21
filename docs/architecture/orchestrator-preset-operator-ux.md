@@ -92,11 +92,11 @@ The UI must not collapse these states into one label:
 | Loaded locally | Local Orchestrator workspace state after Load | This client's Stage preview uses the preset code. | "Loaded in preview" |
 | Sent | Client dispatch of an allowed visualizer payload | A room broadcast request was made. | "Sending" |
 | Synced | Current client observed remote Hydra code matching the last sent code | The broadcast echoed back to this client. | "Synced" |
-| Applied on Player | Player/display confirms applying a specific preset/code | The display actually applied it. | Protocol-dependent |
+| Applied on Player | Phase 7A Player-applied runtime ack with matching run/preset/gallery metadata | The Player evaluated and ticked the accepted run. This is not pixel-perfect Player Output proof. | "Applied on Player" |
 
 `Load` is locked to this exact behavior: **set this client's local Stage preview and selected preset only; do not broadcast to the room; do not claim player-applied state.**
 
-The current implementation can safely show Selected, Loaded locally, Sent, Synced, failed send, and remote update available. It must not show "Live", "Now playing", "Applied", or "On Player" for a preset unless a future protocol provides proof.
+The current implementation can safely show Selected, Loaded locally, Sent, Synced, failed send, remote update available, and Applied on Player when the Player-applied metadata matches the preset or gallery key. It must not show "Live", "Now playing", "On Display", or "Player Output" for a preset unless a future Player-output mirror provides proof.
 
 ## State Copy Matrix
 
@@ -109,6 +109,7 @@ Use these short labels in the runtime slice:
 | Browse-only authority | Browse only | Stage status strip |
 | Policy blocked | Policy blocked | Stage status strip only when route/render defensively reaches blocked state |
 | Local preset audition | Loaded in preview | Preset row or Presets panel, not Stage authority |
+| Player applied ack | Applied on Player | Preset row only when applied metadata matches the preset/gallery key |
 | Saved preset can send | Send | Primary row action |
 | Saved preset blocked by room policy | Send disabled by room policy | Near disabled Send or Presets panel policy notice |
 | Saved preset outside party folder | Not in party folder | Near disabled Send or row detail |
@@ -146,23 +147,26 @@ The next runtime slice should classify work this way:
 | Disable or hide saved preset Send based on existing `canSendPreset` | client-only |
 | Explain party-folder restriction in Presets panel or row detail | client-only |
 | Separate Selected from Loaded locally in labels | client-only |
-| Show exact player-applied preset | protocol-dependent |
+| Show exact player-applied preset | runtime-supported when Phase 7A applied metadata exactly matches the saved preset or gallery key |
 | Show "currently live preset" for arbitrary code broadcasts | protocol-dependent |
 | Let collaborators send bundled gallery presets | protocol-dependent |
 | Let admins manage another room's visual policy through current own-room API | out-of-scope |
 
 ## Protocol Gaps
 
-The current client receives enough state to mirror local send echo and remote code updates. It does not prove that a specific player display applied a named preset.
+The current client receives enough state to mirror local send echo, remote code updates, and Phase 7A Player-applied runtime acknowledgements for exact preset/gallery matches. The older docs-first analysis treated "Applied on Player" as future-only; that point is superseded by Phase 7A. The historical analysis remains valid for the rest of its Preset operator decisions.
 
-Do not implement these labels without a protocol change:
+Applied on Player means the Player evaluated and ticked the accepted visualizer run. It does not prove that the local preview pixels match the Player, and it does not provide a live mirror of the audience display.
 
-- "Applied on Player"
+Do not implement these labels without a future Player-output mirror or equivalent protocol:
+
 - "Live preset"
 - "Now on display"
 - "Currently playing visual"
+- "Player Live"
+- "Player Output" as a preview-panel label
 
-A future protocol may add a player-applied ack with preset id, code hash, source, timestamp, and player socket identity. That is outside this slice and outside the immediate Preset operator runtime polish unless explicitly planned.
+A future Player Live slice may add a mirror, stream, snapshot, or equivalent Player-output proof. That is outside this spec unless explicitly planned.
 
 ## Acceptance Criteria
 
