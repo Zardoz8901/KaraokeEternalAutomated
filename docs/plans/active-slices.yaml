@@ -293,13 +293,13 @@
     - cleanup
 
 - id: orchestrator-workspace-model
-  status: planned
+  status: in_progress
   owner: codex
   branch: phase-4-orchestrator-workspace-model
   base: main
   worktree:
     path: /home/steph/projects/KaraokeEternalAutomated-phase-4-orchestrator-workspace-model
-    state: missing
+    state: present
   merge_order: 70
   goal: Extract Orchestrator runtime decisions into tested pure workspace models plus a thin integration hook while preserving visualizer, camera, and preset behavior.
   write_scope:
