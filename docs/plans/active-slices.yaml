@@ -349,13 +349,13 @@
     - cleanup
 
 - id: orchestrator-preset-operator-ux-spec
-  status: in_progress
+  status: merged_to_main
   owner: codex
   branch: phase-5-orchestrator-preset-operator-ux-spec
   base: main
   worktree:
-    path: /home/steph/projects/KaraokeEternalAutomated-phase-5-orchestrator-preset-operator-ux-spec
-    state: present
+    path: null
+    state: not_required
   merge_order: 80
   goal: Define the Preset operator and Browse-only Orchestrator UX contract before runtime UI implementation.
   write_scope:
@@ -393,9 +393,9 @@
     - "User decision locked 2026-05-21: Preset operator is the next UX priority, docs first."
     - The next runtime slice should consume this spec and add focused tests for component/helper changes.
     - Existing stale merged worktrees and branches are cleanup candidates but outside this slice.
+    - Merged to main on 2026-05-21 as dfd692ef.
   next:
-    - implementation
-    - review
+    - cleanup
 
 - id: rollback-2026-02-12-cleanup
   status: merged_to_main
