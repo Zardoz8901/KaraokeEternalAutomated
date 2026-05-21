@@ -2,13 +2,15 @@ import React, { useCallback } from 'react'
 import clsx from 'clsx'
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd'
 import Icon from 'components/Icon/Icon'
+import { getPresetKey, type PresetKey, type PresetRowUx } from './presetOperatorUx'
 import type { PresetLeaf, PresetTreeNode } from './presetTree'
 import styles from './PresetTree.css'
 
 interface PresetTreeProps {
   nodes: PresetTreeNode[]
   expanded: Set<string>
-  selectedPresetId?: number | null
+  selectedPresetKey?: PresetKey | null
+  loadedPreviewPresetKey?: PresetKey | null
   startingPresetId?: number | null
   playerPresetFolderId?: number | null
   isDndEnabled: boolean
@@ -31,12 +33,14 @@ interface PresetTreeProps {
   canSendPreset?: (preset: PresetLeaf) => boolean
   canSetStartingPreset?: (preset: PresetLeaf) => boolean
   canSetPlayerPresetFolder?: (folder: PresetTreeNode) => boolean
+  getPresetRowUx?: (preset: PresetLeaf) => PresetRowUx
 }
 
 function PresetTree ({
   nodes,
   expanded,
-  selectedPresetId,
+  selectedPresetKey,
+  loadedPreviewPresetKey,
   startingPresetId,
   playerPresetFolderId,
   isDndEnabled,
@@ -59,6 +63,7 @@ function PresetTree ({
   canSendPreset,
   canSetStartingPreset,
   canSetPlayerPresetFolder,
+  getPresetRowUx,
 }: PresetTreeProps) {
   const focusByOffset = useCallback((target: HTMLElement, offset: number) => {
     const treeRoot = target.closest('[data-tree-root="true"]') as HTMLElement | null
@@ -112,7 +117,11 @@ function PresetTree ({
 
     if (event.key === ' ') {
       event.preventDefault()
-      if (canSendPreset?.(preset) ?? true) {
+      const rowUx = getPresetRowUx?.(preset)
+      const canSendFromKeyboard = rowUx
+        ? rowUx.showSend && rowUx.sendEnabled
+        : canSendPreset?.(preset) ?? true
+      if (canSendFromKeyboard) {
         onSend(preset)
       }
       return
@@ -128,7 +137,7 @@ function PresetTree ({
       event.preventDefault()
       focusByOffset(event.currentTarget, -1)
     }
-  }, [canSendPreset, focusByOffset, onLoad, onSend])
+  }, [canSendPreset, focusByOffset, getPresetRowUx, onLoad, onSend])
 
   const droppableId = useCallback((node: PresetTreeNode) => {
     if (node.isGallery) return 'presets:gallery'
@@ -242,11 +251,23 @@ function PresetTree ({
                         <div className={styles.empty}>No presets</div>
                       )}
                       {node.children.map((preset, presetIndex) => {
-                        const isSelected = typeof preset.presetId === 'number' && preset.presetId === selectedPresetId
+                        const fallbackCanSend = canSendPreset?.(preset) ?? true
+                        const rowUx = getPresetRowUx?.(preset) ?? {
+                          presetKey: getPresetKey(preset),
+                          showLoad: true,
+                          showSend: true,
+                          sendEnabled: fallbackCanSend,
+                          sendDisabledReason: fallbackCanSend ? null : 'policy',
+                          sendDisabledMessage: fallbackCanSend ? null : 'Send unavailable for this preset',
+                          showClone: preset.isGallery,
+                          showManagementActions: true,
+                          rowNotice: null,
+                        } satisfies PresetRowUx
+                        const isSelected = rowUx.presetKey !== null && rowUx.presetKey === selectedPresetKey
+                        const isLoadedPreview = rowUx.presetKey !== null && rowUx.presetKey === loadedPreviewPresetKey
                         const isStarting = typeof preset.presetId === 'number' && preset.presetId === startingPresetId
-                        const presetManageAllowed = !preset.isGallery && (canManagePreset?.(preset) ?? true)
+                        const presetManageAllowed = rowUx.showManagementActions && !preset.isGallery && (canManagePreset?.(preset) ?? true)
                         const presetDragDisabled = !isDndEnabled || preset.isGallery || !presetManageAllowed
-                        const presetSendAllowed = canSendPreset?.(preset) ?? true
 
                         return (
                           <Draggable
@@ -282,39 +303,45 @@ function PresetTree ({
                                   <span className={styles.presetName}>{preset.name}</span>
                                   <div className={styles.presetMeta}>
                                     {isSelected && <span className={clsx(styles.badge, styles.badgeSelected)}>Selected</span>}
+                                    {isLoadedPreview && <span className={clsx(styles.badge, styles.badgeLoaded)}>Loaded in preview</span>}
                                     {isStarting && <span className={clsx(styles.badge, styles.badgeStart)}>Start</span>}
                                     {preset.usesCamera && <span className={clsx(styles.badge, styles.badgeCam)}>Cam</span>}
                                   </div>
+                                  {rowUx.rowNotice && <div className={styles.rowNotice}>{rowUx.rowNotice}</div>}
                                 </div>
 
                                 <div className={styles.actions} role='group' aria-label={`${preset.name} actions`}>
-                                  <button
-                                    type='button'
-                                    className={styles.actionButton}
-                                    aria-label='Load preset'
-                                    title='Load preset'
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      onLoad(preset)
-                                    }}
-                                  >
-                                    <span aria-hidden>↓</span>
-                                  </button>
-                                  <button
-                                    type='button'
-                                    className={clsx(styles.actionButton, styles.actionPrimary)}
-                                    aria-label='Send preset'
-                                    title={presetSendAllowed ? 'Send preset' : 'Send unavailable for this preset'}
-                                    disabled={!presetSendAllowed}
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      if (!presetSendAllowed) return
-                                      onSend(preset)
-                                    }}
-                                  >
-                                    <span aria-hidden>↑</span>
-                                  </button>
-                                  {!preset.isGallery && onSetStartingPreset && (canSetStartingPreset?.(preset) ?? true) && (
+                                  {rowUx.showLoad && (
+                                    <button
+                                      type='button'
+                                      className={clsx(styles.actionButton, styles.actionSecondary)}
+                                      aria-label='Load preset'
+                                      title='Load preset'
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        onLoad(preset)
+                                      }}
+                                    >
+                                      Load
+                                    </button>
+                                  )}
+                                  {rowUx.showSend && (
+                                    <button
+                                      type='button'
+                                      className={clsx(styles.actionButton, styles.actionPrimary)}
+                                      aria-label='Send preset'
+                                      title={rowUx.sendEnabled ? 'Send preset' : rowUx.sendDisabledMessage ?? 'Send unavailable for this preset'}
+                                      disabled={!rowUx.sendEnabled}
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        if (!rowUx.sendEnabled) return
+                                        onSend(preset)
+                                      }}
+                                    >
+                                      Send
+                                    </button>
+                                  )}
+                                  {!preset.isGallery && rowUx.showManagementActions && onSetStartingPreset && (canSetStartingPreset?.(preset) ?? true) && (
                                     <button
                                       type='button'
                                       className={clsx(styles.actionButton, isStarting && styles.actionActive)}
@@ -356,7 +383,7 @@ function PresetTree ({
                                       <span aria-hidden>✎</span>
                                     </button>
                                   )}
-                                  {preset.isGallery && onClone && (
+                                  {preset.isGallery && onClone && rowUx.showClone && (
                                     <button
                                       type='button'
                                       className={styles.actionButton}
@@ -370,7 +397,7 @@ function PresetTree ({
                                       <span aria-hidden>⧉</span>
                                     </button>
                                   )}
-                                  {!preset.isGallery && onDeletePreset && (canDeletePreset?.(preset) ?? true) && (
+                                  {!preset.isGallery && rowUx.showManagementActions && onDeletePreset && (canDeletePreset?.(preset) ?? true) && (
                                     <button
                                       type='button'
                                       className={clsx(styles.actionButton, styles.actionDanger)}

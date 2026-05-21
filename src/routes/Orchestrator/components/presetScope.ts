@@ -6,17 +6,8 @@ interface PresetScopeOptions {
   roomPrefs?: Partial<IRoomPrefs> | null
 }
 
-export function scopePresetTreeForRoom (nodes: PresetTreeNode[], { isPrivileged, roomPrefs }: PresetScopeOptions): PresetTreeNode[] {
-  if (isPrivileged) return nodes
-
-  if (roomPrefs?.restrictCollaboratorsToPartyPresetFolder !== true) {
-    return nodes
-  }
-
-  const folderId = roomPrefs.partyPresetFolderId
-  if (typeof folderId !== 'number') {
-    return []
-  }
-
-  return nodes.filter(node => node.isGallery === false && node.folderId === folderId)
+export function scopePresetTreeForRoom (nodes: PresetTreeNode[], options: PresetScopeOptions): PresetTreeNode[] {
+  // Phase 6 keeps browsing/local preview broad; send restrictions are explained per row.
+  void options
+  return nodes
 }

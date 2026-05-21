@@ -12,3 +12,23 @@ describe('PresetBrowser modal styling contract', () => {
     expect(scopedModalCount).toBe(modalCount)
   })
 })
+
+describe('Preset operator visual contract', () => {
+  it('keeps named row actions and mobile touch targets in the PresetTree CSS contract', () => {
+    const source = fs.readFileSync(path.join(process.cwd(), 'src/routes/Orchestrator/components/PresetTree.css'), 'utf8')
+
+    expect(source).toContain('min-height: 3.25rem')
+    expect(source).toContain('min-height: 4rem')
+    expect(source).toContain('min-width: 2.25rem')
+    expect(source).toContain('min-width: 2.75rem')
+    expect(source).toContain('@media (prefers-reduced-motion: reduce)')
+    expect(source).toContain('--orch-blue')
+    expect(source).toContain('--orch-warning')
+  })
+
+  it('keeps the non-host Presets panel from reserving hidden toolbar space', () => {
+    const source = fs.readFileSync(path.join(process.cwd(), 'src/routes/Orchestrator/components/PresetBrowser.tsx'), 'utf8')
+
+    expect(source).toContain('toolbarUx.showManagementToolbar &&')
+  })
+})

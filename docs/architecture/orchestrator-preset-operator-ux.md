@@ -18,6 +18,14 @@ The Player is not an Orchestrator user mode. It is a runtime display role that r
 
 Guest users inherit either Preset operator or Browse-only workspace mode from room policy, but they also have stricter management limits. Guests must not see preset creation, folder creation, rename, move, delete, starting preset, or player preset folder controls.
 
+## Phase 6 Runtime Decision
+
+Phase 6 intentionally narrows non-host runtime management: Preset operator and Browse-only workspaces hide `New Folder`, `Save Preset`, gallery `Save copy`, rename, move, delete, set start, and set player folder controls, even when a non-host user authored a preset. These workspaces are audition/send surfaces, not reduced host tools.
+
+Party-folder restriction limits what non-host users can send, not what they can locally browse or audition. Rows outside the party folder remain visible for local preview and explain the blocked Send action with `Not in party folder`.
+
+Author/admin preset management for non-host users remains technically possible but is deferred to a later Host/preset-management slice. Do not restore those controls in Operator or Browse-only runtime UI without a new design decision.
+
 ## Action Matrix
 
 Definitions:

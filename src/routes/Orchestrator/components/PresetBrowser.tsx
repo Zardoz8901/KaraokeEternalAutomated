@@ -9,6 +9,14 @@ import { HYDRA_GALLERY } from './hydraGallery'
 import PresetTree from './PresetTree'
 import { buildPresetTree, type PresetLeaf, type PresetTreeNode, type PresetFolder, type PresetItem } from './presetTree'
 import { getOrchestratorCapabilities } from './orchestratorCapabilities'
+import {
+  collectPresetKeys,
+  getPresetKey,
+  getPresetPanelNotice,
+  getPresetRowUx,
+  getPresetToolbarUx,
+  type PresetKey,
+} from './presetOperatorUx'
 import { scopePresetTreeForRoom } from './presetScope'
 import { buildPresetDraft } from './presetDraft'
 import { countPresetLeaves, getPresetPanelState } from './presetEmptyState'
@@ -56,7 +64,9 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
     user,
   ])
   const isPrivilegedPresetUser = orchestratorCapabilities.isManager
+  const canUsePresetManagement = orchestratorCapabilities.isManager
   const canManageRoomPolicy = orchestratorCapabilities.canManageRoomVisualPolicy
+  const toolbarUx = useMemo(() => getPresetToolbarUx(orchestratorCapabilities), [orchestratorCapabilities])
   const startingPresetId = typeof currentRoomPrefs?.startingPresetId === 'number'
     ? currentRoomPrefs.startingPresetId
     : null
@@ -68,7 +78,8 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
   const [presets, setPresets] = useState<PresetItem[]>([])
   const [query, setQuery] = useState('')
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set(['gallery']))
-  const [selectedPresetId, setSelectedPresetId] = useState<number | null>(null)
+  const [selectedPresetKey, setSelectedPresetKey] = useState<PresetKey | null>(null)
+  const [loadedPreviewPresetKey, setLoadedPreviewPresetKey] = useState<PresetKey | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -95,6 +106,15 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
   const [moving, setMoving] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
 
+  useEffect(() => {
+    if (canUsePresetManagement) return
+    setShowNewFolder(false)
+    setShowSavePreset(false)
+    setPendingDelete(null)
+    setPendingRename(null)
+    setPendingMove(null)
+  }, [canUsePresetManagement])
+
   const refresh = useCallback(async ({ silent = false } = {}) => {
     try {
       if (!silent) setLoading(true)
@@ -118,13 +138,6 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
     refresh()
   }, [refresh])
 
-  useEffect(() => {
-    if (selectedPresetId === null) return
-    if (!presets.some(preset => preset.presetId === selectedPresetId)) {
-      setSelectedPresetId(null)
-    }
-  }, [presets, selectedPresetId])
-
   const tree = useMemo(
     () => {
       const rawTree = buildPresetTree(folders, presets, HYDRA_GALLERY)
@@ -136,15 +149,22 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
     [folders, presets, isPrivilegedPresetUser, currentRoomPrefs],
   )
 
+  const visiblePresetKeys = useMemo(() => collectPresetKeys(tree), [tree])
+
+  useEffect(() => {
+    setSelectedPresetKey(prev => (prev !== null && !visiblePresetKeys.has(prev) ? null : prev))
+    setLoadedPreviewPresetKey(prev => (prev !== null && !visiblePresetKeys.has(prev) ? null : prev))
+  }, [visiblePresetKeys])
+
   const selectedPreset = useMemo(() => {
-    if (selectedPresetId === null) return null
+    if (selectedPresetKey === null) return null
     for (const node of tree) {
       for (const child of node.children) {
-        if (child.presetId === selectedPresetId) return child
+        if (getPresetKey(child) === selectedPresetKey) return child
       }
     }
     return null
-  }, [tree, selectedPresetId])
+  }, [tree, selectedPresetKey])
 
   const filteredTree = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -173,6 +193,14 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
     query,
     scopedPresetCount,
   ])
+  const presetPanelNotice = useMemo(
+    () => getPresetPanelNotice(orchestratorCapabilities),
+    [orchestratorCapabilities],
+  )
+  const getPresetRowUxModel = useCallback(
+    (preset: PresetLeaf) => getPresetRowUx(preset, orchestratorCapabilities),
+    [orchestratorCapabilities],
+  )
 
   const toggleFolder = useCallback((id: string) => {
     setExpanded((prev) => {
@@ -184,27 +212,31 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
   }, [])
 
   const handleLoad = useCallback((preset: PresetLeaf) => {
-    setSelectedPresetId(preset.presetId ?? null)
+    const presetKey = getPresetKey(preset)
+    setSelectedPresetKey(presetKey)
+    setLoadedPreviewPresetKey(presetKey)
     onLoad(preset.code)
   }, [onLoad])
 
   const handleSend = useCallback((preset: PresetLeaf) => {
     if (!orchestratorCapabilities.canSendPreset(preset)) return
-    setSelectedPresetId(preset.presetId ?? null)
+    setSelectedPresetKey(getPresetKey(preset))
     onSend(preset)
   }, [onSend, orchestratorCapabilities])
 
   const canDeletePreset = useCallback((preset: PresetLeaf) => {
+    if (!canUsePresetManagement) return false
     if (preset.isGallery) return false
     if (user.isAdmin) return true
     return preset.authorUserId === user.userId
-  }, [user])
+  }, [canUsePresetManagement, user])
 
   const canDeleteFolder = useCallback((node: PresetTreeNode) => {
+    if (!canUsePresetManagement) return false
     if (node.isGallery) return false
     if (user.isAdmin) return true
     return node.authorUserId === user.userId
-  }, [user])
+  }, [canUsePresetManagement, user])
 
   const canManagePreset = canDeletePreset
   const canManageFolder = canDeleteFolder
@@ -220,14 +252,16 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
   }, [canManageRoomPolicy])
 
   const requestDeletePreset = useCallback((preset: PresetLeaf) => {
+    if (!canDeletePreset(preset)) return
     if (!preset.presetId) return
     setPendingDelete({ type: 'preset', preset })
-  }, [])
+  }, [canDeletePreset])
 
   const requestDeleteFolder = useCallback((node: PresetTreeNode) => {
+    if (!canDeleteFolder(node)) return
     if (!node.folderId) return
     setPendingDelete({ type: 'folder', folder: node })
-  }, [])
+  }, [canDeleteFolder])
 
   const confirmDelete = useCallback(async () => {
     if (!pendingDelete || deleting) return
@@ -254,16 +288,18 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
   }, [pendingDelete, deleting, refresh])
 
   const requestRenamePreset = useCallback((preset: PresetLeaf) => {
+    if (!canManagePreset(preset)) return
     if (!preset.presetId) return
     setPendingRename({ type: 'preset', preset })
     setRenameValue(preset.name)
-  }, [])
+  }, [canManagePreset])
 
   const requestRenameFolder = useCallback((folder: PresetTreeNode) => {
+    if (!canManageFolder(folder)) return
     if (!folder.folderId || folder.isGallery) return
     setPendingRename({ type: 'folder', folder })
     setRenameValue(folder.name)
-  }, [])
+  }, [canManageFolder])
 
   const confirmRename = useCallback(async () => {
     const name = renameValue.trim()
@@ -292,6 +328,7 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
   }, [pendingRename, renameValue, renaming, refresh])
 
   const handleDragEnd = useCallback(async (result: DropResult) => {
+    if (!canUsePresetManagement) return
     if (!result.destination) return
     const { source, destination, type } = result
 
@@ -362,9 +399,10 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
         await refresh({ silent: true })
       }
     }
-  }, [folders, presets, filteredTree, refresh])
+  }, [canUsePresetManagement, folders, presets, filteredTree, refresh])
 
   const openSavePreset = useCallback((preset?: PresetLeaf) => {
+    if (!canUsePresetManagement) return
     const draft = buildPresetDraft({ currentCode, preset })
 
     if (preset?.folderId && folders.some(folder => folder.folderId === preset.folderId)) {
@@ -376,13 +414,14 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
     setPresetName(draft.name)
     setDraftCode(draft.code)
     setShowSavePreset(true)
-  }, [currentCode, folders, currentRoomPrefs])
+  }, [canUsePresetManagement, currentCode, folders, currentRoomPrefs])
 
   const handleClonePreset = useCallback((preset: PresetLeaf) => {
     openSavePreset(preset)
   }, [openSavePreset])
 
   const handleCreateFolder = useCallback(async () => {
+    if (!canUsePresetManagement) return
     const name = newFolderName.trim()
     if (!name || savingFolder) return
 
@@ -399,9 +438,10 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
     } finally {
       setSavingFolder(false)
     }
-  }, [newFolderName, refresh, savingFolder])
+  }, [canUsePresetManagement, newFolderName, refresh, savingFolder])
 
   const handleSavePreset = useCallback(async () => {
+    if (!canUsePresetManagement) return
     const name = presetName.trim()
     if (!name || !presetFolderId || savingPreset) return
 
@@ -416,7 +456,15 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
       })
 
       setExpanded(prev => new Set(prev).add(`folder:${presetFolderId}`))
-      setSelectedPresetId(created.presetId)
+      setSelectedPresetKey(getPresetKey({
+        id: `preset:${created.presetId}`,
+        presetId: created.presetId,
+        folderId: created.folderId,
+        name: created.name,
+        code: created.code,
+        isGallery: false,
+        usesCamera: false,
+      }))
       setShowSavePreset(false)
       setPresetName('')
       setDraftCode('')
@@ -426,9 +474,10 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
     } finally {
       setSavingPreset(false)
     }
-  }, [presetName, presetFolderId, draftCode, refresh, savingPreset])
+  }, [canUsePresetManagement, presetName, presetFolderId, draftCode, refresh, savingPreset])
 
   const handleOverwritePreset = useCallback(async () => {
+    if (!canUsePresetManagement) return
     if (!selectedPreset || !selectedPreset.presetId || selectedPreset.isGallery || savingPreset) return
 
     try {
@@ -443,7 +492,7 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
     } finally {
       setSavingPreset(false)
     }
-  }, [selectedPreset, draftCode, refresh, savingPreset])
+  }, [canUsePresetManagement, selectedPreset, draftCode, refresh, savingPreset])
 
   const handleSetStartingPreset = useCallback(async (preset: PresetLeaf) => {
     if (!canManageRoomPolicy || preset.isGallery || !preset.presetId) return
@@ -488,10 +537,11 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
   }, [canManageRoomPolicy, playerPresetFolderId, dispatch])
 
   const requestMoveToFolder = useCallback((preset: PresetLeaf) => {
+    if (!canManagePreset(preset)) return
     if (!preset.presetId || preset.isGallery) return
     setPendingMove(preset)
     setMoveFolderId('')
-  }, [])
+  }, [canManagePreset])
 
   const confirmMoveToFolder = useCallback(async () => {
     if (!pendingMove?.presetId || !moveFolderId || moving) return
@@ -572,15 +622,21 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
 
   return (
     <div className={styles.panel}>
-      <div className={styles.toolbar}>
-        <button type='button' className={styles.toolbarButton} onClick={() => setShowNewFolder(true)}>
-          New Folder
-        </button>
-        <button type='button' className={styles.toolbarButtonPrimary} onClick={() => openSavePreset()}>
-          Save Preset
-        </button>
-        {updatingRoomPresetPolicy && <span className={styles.toolbarHint}>Updating room presets...</span>}
-      </div>
+      {toolbarUx.showManagementToolbar && (
+        <div className={styles.toolbar}>
+          {toolbarUx.showNewFolder && (
+            <button type='button' className={styles.toolbarButton} onClick={() => setShowNewFolder(true)}>
+              New Folder
+            </button>
+          )}
+          {toolbarUx.showSavePreset && (
+            <button type='button' className={styles.toolbarButtonPrimary} onClick={() => openSavePreset()}>
+              Save Preset
+            </button>
+          )}
+          {updatingRoomPresetPolicy && <span className={styles.toolbarHint}>Updating room presets...</span>}
+        </div>
+      )}
 
       <div className={styles.searchWrap}>
         <input
@@ -619,8 +675,8 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
 
       {error && <div className={styles.error}>{error}</div>}
 
-      {!loading && !error && presetPanelState?.kind === 'policy-blocked' && (
-        <div className={styles.policyNotice}>{presetPanelState.message}</div>
+      {!loading && !error && presetPanelNotice && (
+        <div className={styles.policyNotice}>{presetPanelNotice.message}</div>
       )}
 
       {!loading && !error && filteredTree.length === 0 && (
@@ -631,10 +687,11 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
         <PresetTree
           nodes={filteredTree}
           expanded={expanded}
-          selectedPresetId={selectedPresetId}
+          selectedPresetKey={selectedPresetKey}
+          loadedPreviewPresetKey={loadedPreviewPresetKey}
           startingPresetId={startingPresetId}
           playerPresetFolderId={playerPresetFolderId}
-          isDndEnabled={query === '' && !refreshing}
+          isDndEnabled={query === '' && !refreshing && canUsePresetManagement}
           onToggleFolder={toggleFolder}
           onLoad={handleLoad}
           onSend={handleSend}
@@ -654,6 +711,7 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
           canSendPreset={orchestratorCapabilities.canSendPreset}
           canSetStartingPreset={canSetStartingPreset}
           canSetPlayerPresetFolder={canSetPlayerPresetFolder}
+          getPresetRowUx={getPresetRowUxModel}
         />
       )}
 

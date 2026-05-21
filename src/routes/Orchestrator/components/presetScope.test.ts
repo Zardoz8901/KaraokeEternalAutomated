@@ -82,7 +82,7 @@ describe('scopePresetTreeForRoom', () => {
     expect(result).toEqual(nodes)
   })
 
-  it('scopes collaborators to the configured party folder', () => {
+  it('keeps the full tree for collaborators under party-folder restriction so row actions can explain send limits', () => {
     const nodes = makeNodes()
     const result = scopePresetTreeForRoom(nodes, {
       isPrivileged: false,
@@ -92,10 +92,10 @@ describe('scopePresetTreeForRoom', () => {
       },
     })
 
-    expect(result.map(node => node.name)).toEqual(['Party Gold'])
+    expect(result).toEqual(nodes)
   })
 
-  it('returns empty tree when configured folder is missing', () => {
+  it('keeps the full tree when the configured party folder is missing so browse and local preview remain available', () => {
     const nodes = makeNodes()
     const result = scopePresetTreeForRoom(nodes, {
       isPrivileged: false,
@@ -105,6 +105,6 @@ describe('scopePresetTreeForRoom', () => {
       },
     })
 
-    expect(result).toEqual([])
+    expect(result).toEqual(nodes)
   })
 })
