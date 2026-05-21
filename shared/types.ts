@@ -107,6 +107,47 @@ export type VisualizerMode
   = 'hydra' // Hydra video synth
     | 'off'
 
+export type HydraPresetSource = 'gallery' | 'folder' | 'raw'
+
+export type VisualizerRunId = string
+
+export type PlayerInstanceId = string
+
+export interface PlayerVisualizerAcceptedState {
+  visualizerRunId: VisualizerRunId
+  visualizerCodeHash: string
+  visualizerAcceptedAt: number
+  hydraPresetIndex?: number
+  hydraPresetName?: string
+  hydraPresetId?: number | null
+  hydraPresetFolderId?: number | null
+  hydraPresetSource?: HydraPresetSource
+  hydraGalleryId?: string
+}
+
+export interface PlayerVisualizerAppliedState extends PlayerVisualizerAcceptedState {
+  visualizerAppliedAt: number
+  playerSocketId: string
+  playerInstanceId: PlayerInstanceId
+  sourceBindingStatus?: 'not-tracked'
+}
+
+export interface PlayerMediaClockState {
+  mediaId: number | null
+  mediaType: MediaType | null
+  queueId: number
+  position: number
+  isPlaying: boolean
+  statusAt: number
+}
+
+export interface HydraVideoSourceBinding {
+  sourceKey: 's0' | 's1' | 's2' | 's3'
+  mediaId: number
+  position: number
+  statusAt: number
+}
+
 export interface PlaybackOptions {
   cdgAlpha?: number
   cdgSize?: number

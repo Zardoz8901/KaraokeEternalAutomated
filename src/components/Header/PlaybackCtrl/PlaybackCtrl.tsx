@@ -74,6 +74,7 @@ const PlaybackCtrl = () => {
         hydraPresetId: preset.presetId,
         hydraPresetFolderId: preset.folderId,
         hydraPresetSource: preset.source,
+        hydraGalleryId: preset.galleryId,
       },
     })
   }, [dispatch, runtimePresetPool, status.visualizer.hydraPresetIndex])

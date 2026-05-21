@@ -42,6 +42,19 @@ let mockState: {
       }
     }>
   }
+  status: {
+    visualizerApplied: null | {
+      visualizerRunId: string
+      visualizerCodeHash: string
+      visualizerAcceptedAt: number
+      visualizerAppliedAt: number
+      playerSocketId: string
+      playerInstanceId: string
+      hydraPresetSource?: 'gallery' | 'folder' | 'raw'
+      hydraPresetId?: number | null
+      hydraGalleryId?: string
+    }
+  }
 }
 
 vi.mock('store/hooks', () => ({
@@ -77,6 +90,7 @@ vi.mock('./PresetTree', async () => {
       nodes: PresetTreeNode[]
       selectedPresetKey?: string | null
       loadedPreviewPresetKey?: string | null
+      appliedPresetKey?: string | null
       onLoad: (preset: PresetLeaf) => void
       onSend: (preset: PresetLeaf) => void
       onRenamePreset?: (preset: PresetLeaf) => void
@@ -156,6 +170,10 @@ vi.mock('./PresetTree', async () => {
             children.push(ReactModule.createElement('span', { key: 'loaded' }, 'Loaded in preview'))
           }
 
+          if (props.appliedPresetKey === preset.id) {
+            children.push(ReactModule.createElement('span', { key: 'applied' }, 'Applied on Player'))
+          }
+
           return ReactModule.createElement('div', { 'key': preset.id, 'data-testid': `row-${preset.id}` }, children)
         }),
       )
@@ -204,6 +222,9 @@ describe('PresetBrowser runtime UX', () => {
             },
           },
         },
+      },
+      status: {
+        visualizerApplied: null,
       },
     }
     apiMock.fetchFolders.mockResolvedValue([
@@ -282,6 +303,29 @@ describe('PresetBrowser runtime UX', () => {
     const disabledSend = container.querySelector('button[data-testid="send-preset:10"]') as HTMLButtonElement | null
     expect(disabledSend?.disabled).toBe(true)
     expect((container.textContent?.match(/Send disabled by room policy/g) ?? []).length).toBe(0)
+
+    await act(async () => {
+      root.unmount()
+    })
+  })
+
+  it('passes player-applied saved preset state to the tree without changing selected or loaded state', async () => {
+    mockState.status.visualizerApplied = {
+      visualizerRunId: 'run-10',
+      visualizerCodeHash: 'hash-10',
+      visualizerAcceptedAt: 1,
+      visualizerAppliedAt: 2,
+      playerSocketId: 'player-sock',
+      playerInstanceId: 'player-instance',
+      hydraPresetSource: 'folder',
+      hydraPresetId: 10,
+    }
+
+    const { container, root } = await renderBrowser()
+
+    expect(container.querySelector('[data-testid="row-preset:10"]')?.textContent).toContain('Applied on Player')
+    expect(container.querySelector('[data-testid="row-preset:10"]')?.textContent).not.toContain('Selected')
+    expect(container.querySelector('[data-testid="row-preset:10"]')?.textContent).not.toContain('Loaded in preview')
 
     await act(async () => {
       root.unmount()

@@ -457,4 +457,34 @@ describe('PresetTree', () => {
       root.unmount()
     })
   })
+
+  it('shows Applied on Player separately from selected and loaded preview state', async () => {
+    const container = document.createElement('div')
+    const root = createRoot(container)
+
+    await act(async () => {
+      root.render(
+        <PresetTree
+          nodes={makeNodes()}
+          expanded={new Set(['folder:1'])}
+          selectedPresetKey='preset:1'
+          loadedPreviewPresetKey={null}
+          appliedPresetKey='preset:1'
+          onToggleFolder={() => {}}
+          onLoad={() => {}}
+          onSend={() => {}}
+          isDndEnabled={false}
+          onDragEnd={() => {}}
+        />,
+      )
+    })
+
+    expect(container.textContent).toContain('Selected')
+    expect(container.textContent).not.toContain('Loaded in preview')
+    expect(container.textContent).toContain('Applied on Player')
+
+    await act(async () => {
+      root.unmount()
+    })
+  })
 })

@@ -1,3 +1,4 @@
+import type { PlayerVisualizerAppliedState } from 'shared/types'
 import type { OrchestratorCapabilities } from './orchestratorCapabilities'
 import type { PresetLeaf, PresetTreeNode } from './presetTree'
 
@@ -42,6 +43,23 @@ export function getPresetKey (preset: PresetLeaf): PresetKey | null {
 
   if (!isPositiveInteger(preset.presetId)) return null
   return `preset:${preset.presetId}`
+}
+
+export function getAppliedPresetKey (applied: PlayerVisualizerAppliedState | null | undefined): PresetKey | null {
+  if (!applied) return null
+
+  if (applied.hydraPresetSource === 'folder' && isPositiveInteger(applied.hydraPresetId)) {
+    return `preset:${applied.hydraPresetId}`
+  }
+
+  if (applied.hydraPresetSource === 'gallery') {
+    const galleryId = typeof applied.hydraGalleryId === 'string'
+      ? applied.hydraGalleryId.trim()
+      : ''
+    return galleryId.length > 0 ? `gallery:${galleryId}` : null
+  }
+
+  return null
 }
 
 export function collectPresetKeys (nodes: PresetTreeNode[]): Set<PresetKey> {

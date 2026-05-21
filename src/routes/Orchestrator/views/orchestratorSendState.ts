@@ -1,3 +1,4 @@
+import type { HydraPresetSource } from 'shared/types'
 import { normalizeCodeForAck } from './orchestratorViewHelpers'
 
 export type OrchestratorSendStatus = 'idle' | 'sending' | 'synced' | 'error'
@@ -7,7 +8,8 @@ export interface SendHydraPayload {
   hydraPresetName?: string
   hydraPresetId?: number | null
   hydraPresetFolderId?: number | null
-  hydraPresetSource?: 'gallery' | 'folder'
+  hydraPresetSource?: HydraPresetSource
+  hydraGalleryId?: string
 }
 
 export interface OrchestratorSendState {

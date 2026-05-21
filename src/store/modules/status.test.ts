@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import statusReducer, { type StatusState } from './status'
-import { PLAYER_FFT, PLAYER_LEAVE, VISUALIZER_HYDRA_CODE } from 'shared/actionTypes'
+import { PLAYER_FFT, PLAYER_LEAVE, PLAYER_VISUALIZER_APPLIED, VISUALIZER_HYDRA_CODE } from 'shared/actionTypes'
 import { type FftPayload } from 'shared/fftPayload'
 
 describe('status reducer', () => {
@@ -22,6 +22,7 @@ describe('status reducer', () => {
     position: 0,
     queueId: -1,
     visualizer: {},
+    visualizerApplied: null,
     volume: 1,
   }
 
@@ -56,6 +57,9 @@ describe('status reducer', () => {
           hydraPresetId: 42,
           hydraPresetFolderId: 1,
           hydraPresetSource: 'folder' as const,
+          visualizerRunId: 'run-42',
+          visualizerCodeHash: 'hash-42',
+          visualizerAcceptedAt: 1234,
         },
       })
 
@@ -64,6 +68,9 @@ describe('status reducer', () => {
       expect(nextState.visualizer.hydraPresetId).toBe(42)
       expect(nextState.visualizer.hydraPresetFolderId).toBe(1)
       expect(nextState.visualizer.hydraPresetSource).toBe('folder')
+      expect(nextState.visualizer.visualizerRunId).toBe('run-42')
+      expect(nextState.visualizer.visualizerCodeHash).toBe('hash-42')
+      expect(nextState.visualizer.visualizerAcceptedAt).toBe(1234)
     })
 
     it('does not merge hydraCode into status.visualizer', () => {
@@ -124,10 +131,43 @@ describe('status reducer', () => {
     })
   })
 
+  describe('PLAYER_VISUALIZER_APPLIED', () => {
+    it('stores applied visualizer truth separately from status.visualizer metadata', () => {
+      const payload = {
+        visualizerRunId: 'run-42',
+        visualizerCodeHash: 'hash-42',
+        visualizerAcceptedAt: 1234,
+        visualizerAppliedAt: 1300,
+        playerSocketId: 'player-sock',
+        playerInstanceId: 'player-instance',
+        hydraPresetId: 42,
+        hydraPresetFolderId: 1,
+        hydraPresetName: 'Blue Grid',
+        hydraPresetSource: 'folder' as const,
+      }
+
+      const nextState = statusReducer(initialState, {
+        type: PLAYER_VISUALIZER_APPLIED,
+        payload,
+      })
+
+      expect(nextState.visualizerApplied).toEqual(payload)
+      expect(nextState.visualizer.hydraPresetName).toBeUndefined()
+    })
+  })
+
   it('should clear fftData on PLAYER_LEAVE', () => {
     const stateWithFft: StatusState = {
       ...initialState,
       isPlayerPresent: true,
+      visualizerApplied: {
+        visualizerRunId: 'run-42',
+        visualizerCodeHash: 'hash-42',
+        visualizerAcceptedAt: 1234,
+        visualizerAppliedAt: 1300,
+        playerSocketId: 'player-sock',
+        playerInstanceId: 'player-instance',
+      },
       fftData: {
         fft: [0, 1],
         bass: 0.5,
@@ -146,5 +186,6 @@ describe('status reducer', () => {
 
     expect(nextState.isPlayerPresent).toBe(false)
     expect(nextState.fftData).toBeNull()
+    expect(nextState.visualizerApplied).toBeNull()
   })
 })

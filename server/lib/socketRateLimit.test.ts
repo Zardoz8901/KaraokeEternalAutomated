@@ -8,6 +8,7 @@ import {
 import {
   PLAYER_EMIT_FFT,
   PLAYER_EMIT_STATUS,
+  PLAYER_EMIT_VISUALIZER_APPLIED,
   VISUALIZER_HYDRA_CODE_REQ,
   CAMERA_OFFER_REQ,
   CAMERA_ICE_REQ,
@@ -32,6 +33,8 @@ describe('socketRateLimit', () => {
     it('has rate limits for expensive actions', () => {
       expect(SOCKET_RATE_LIMITS[VISUALIZER_HYDRA_CODE_REQ]).toBeDefined()
       expect(SOCKET_RATE_LIMITS[VISUALIZER_HYDRA_CODE_REQ].rate).toBeLessThanOrEqual(5)
+      expect(SOCKET_RATE_LIMITS[PLAYER_EMIT_VISUALIZER_APPLIED]).toBeDefined()
+      expect(SOCKET_RATE_LIMITS[PLAYER_EMIT_VISUALIZER_APPLIED].rate).toBeLessThanOrEqual(5)
     })
 
     it('has rate limits for camera signaling actions', () => {

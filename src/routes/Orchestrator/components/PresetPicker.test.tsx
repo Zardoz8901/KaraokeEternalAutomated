@@ -3,6 +3,7 @@ import React, { act } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { createRoot } from 'react-dom/client'
 import PresetPicker from './PresetPicker'
+import { HYDRA_GALLERY } from './hydraGallery'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -52,7 +53,16 @@ describe('PresetPicker', () => {
       sendButton?.click()
     })
 
+    const firstVisibleGalleryItem = HYDRA_GALLERY
+      .slice()
+      .sort((a, b) => a.sketch_id.localeCompare(b.sketch_id))[0]
+
     expect(onSend).toHaveBeenCalledTimes(1)
+    expect(onSend).toHaveBeenCalledWith(expect.objectContaining({
+      id: `gallery:${firstVisibleGalleryItem.sketch_id}`,
+      name: firstVisibleGalleryItem.sketch_id,
+      isGallery: true,
+    }))
 
     await act(async () => {
       root.unmount()

@@ -4,6 +4,7 @@ import MP4Player from './MP4Player/MP4Player'
 import MP4AlphaPlayer from './MP4Player/MP4AlphaPlayer'
 import { type PlayerState } from '../../modules/player'
 import { type PlayerVisualizerState } from '../../modules/playerVisualizer'
+import type { PlayerInstanceId } from 'shared/types'
 
 const PlayerVisualizer = React.lazy(() => import('./PlayerVisualizer/PlayerVisualizer'))
 
@@ -19,6 +20,7 @@ interface PlayerProps {
   mediaKey: number
   mediaReplayKey?: number
   mediaType?: string
+  playerInstanceId?: PlayerInstanceId | null
   mp4Alpha: number
   rgTrackGain?: number
   rgTrackPeak?: number
@@ -153,6 +155,8 @@ class Player extends React.Component<PlayerProps> {
               hydraCode={this.props.visualizer.hydraCode}
               allowCamera={this.props.visualizer.allowCamera}
               remoteVideoElement={this.props.remoteVideoElement}
+              playerInstanceId={this.props.playerInstanceId}
+              visualizerRunId={this.props.visualizer.visualizerRunId}
             />
           </React.Suspense>
         )}

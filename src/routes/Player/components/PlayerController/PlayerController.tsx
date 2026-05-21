@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useAppDispatch, useAppSelector } from 'store/hooks'
 import { useCameraReceiver } from 'lib/webrtc/useCameraReceiver'
 import { VISUALIZER_HYDRA_CODE_REQ } from 'shared/actionTypes'
@@ -17,12 +17,19 @@ import PlayerQR from '../PlayerQR/PlayerQR'
 import getRoundRobinQueue from 'routes/Queue/selectors/getRoundRobinQueue'
 import { playerLeave, playerError, playerLoad, playerPlay, playerStatus, type PlayerState } from '../../modules/player'
 import getRoomPrefs from '../../selectors/getRoomPrefs'
-import type { QueueItem } from 'shared/types'
+import type { PlayerInstanceId, QueueItem } from 'shared/types'
 import { shouldApplyFolderDefaultAtSessionStart, shouldApplyFolderDefaultOnIdle, shouldApplyFolderDefaultOnPoolReady, shouldQueueFolderDefaultAtSessionStart, shouldApplyStartingPresetAtSessionStart, shouldApplyStartingPresetOnIdle, shouldCyclePresetOnSongTransition } from './transitionPolicy'
 
 interface PlayerControllerProps {
   width: number
   height: number
+}
+
+function createPlayerInstanceId (): PlayerInstanceId {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return `player-${Date.now()}-${Math.random().toString(36).slice(2)}`
 }
 
 const PlayerController = (props: PlayerControllerProps) => {
@@ -42,10 +49,14 @@ const PlayerController = (props: PlayerControllerProps) => {
   const startingPresetRetryCountRef = useRef(0)
   const pendingFolderDefaultSessionStartRef = useRef(false)
   const lastTransitionKeyRef = useRef<string | null>(null)
+  const [playerInstanceId] = useState<PlayerInstanceId>(() => createPlayerInstanceId())
 
   const { videoElement: remoteVideoElement } = useCameraReceiver()
   const dispatch = useAppDispatch()
-  const handleStatus = useCallback<(status?: Partial<PlayerState>) => void>(status => dispatch(playerStatus(status)), [dispatch])
+  const handleStatus = useCallback<(status?: Partial<PlayerState>) => void>(status => dispatch(playerStatus({
+    ...status,
+    playerInstanceId,
+  })), [dispatch, playerInstanceId])
   const handleLoad = useCallback(() => dispatch(playerLoad()), [dispatch])
   const handlePlay = useCallback(() => dispatch(playerPlay()), [dispatch])
   const handleError = useCallback((msg: string) => {
@@ -70,6 +81,7 @@ const PlayerController = (props: PlayerControllerProps) => {
         hydraPresetId: preset.presetId,
         hydraPresetFolderId: preset.folderId,
         hydraPresetSource: preset.source,
+        hydraGalleryId: preset.galleryId,
       },
     })
   }, [dispatch, runtimePresetPool])
@@ -385,6 +397,7 @@ const PlayerController = (props: PlayerControllerProps) => {
         mediaReplayKey={player._lastReplayTime}
         mediaType={queueItem ? queueItem.mediaType : null}
         mp4Alpha={player.mp4Alpha}
+        playerInstanceId={playerInstanceId}
         onEnd={handleLoadNext}
         onError={handleError}
         onLoad={handleLoad}

@@ -6,7 +6,7 @@ import jsonWebToken from 'jsonwebtoken'
 import parseCookie from './lib/parseCookie.js'
 import Library from './Library/Library.js'
 import LibrarySocket from './Library/socket.js'
-import PlayerSocket, { cleanupCameraPublisher, cleanupCameraSubscriber, getLastVisualizerCode, clearVisualizerState } from './Player/socket.js'
+import PlayerSocket, { cleanupCameraPublisher, cleanupCameraSubscriber, cleanupPlayerIdentity, getLastVisualizerCode, getLastAppliedVisualizerState, clearVisualizerState } from './Player/socket.js'
 import Prefs from './Prefs/Prefs.js'
 import PrefsSocket from './Prefs/socket.js'
 import Rooms from './Rooms/Rooms.js'
@@ -20,6 +20,7 @@ import {
   STARS_PUSH,
   STAR_COUNTS_PUSH,
   PLAYER_STATUS,
+  PLAYER_VISUALIZER_APPLIED,
   PLAYER_LEAVE,
   PREFS_PUSH,
   SOCKET_AUTH_ERROR,
@@ -176,6 +177,8 @@ export default function (io, jwtKey, validateProxySource: (ip: string) => boolea
       cleanupCameraPublisher(roomId, sock.id, io)
       // If this socket was the pinned subscriber, clear the pin
       cleanupCameraSubscriber(roomId, sock.id)
+      // If this socket was the active player, clear its runtime identity
+      cleanupPlayerIdentity(roomId, sock.id)
 
       // any players left in room?
       if (!Rooms.isPlayerPresent(io, roomId)) {
@@ -342,6 +345,14 @@ export default function (io, jwtKey, validateProxySource: (ip: string) => boolea
       io.to(sock.id).emit('action', {
         type: VISUALIZER_HYDRA_CODE,
         payload: lastViz,
+      })
+    }
+
+    const lastAppliedViz = getLastAppliedVisualizerState(sock.user.roomId)
+    if (lastAppliedViz) {
+      io.to(sock.id).emit('action', {
+        type: PLAYER_VISUALIZER_APPLIED,
+        payload: lastAppliedViz,
       })
     }
 

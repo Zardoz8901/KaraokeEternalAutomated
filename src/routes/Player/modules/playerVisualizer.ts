@@ -6,6 +6,7 @@ import {
   VISUALIZER_HYDRA_CODE,
 } from 'shared/actionTypes'
 import type { PlaybackOptions, VisualizerMode } from 'shared/types'
+import type { HydraPresetSource, VisualizerRunId } from 'shared/types'
 import { getPresetLabel } from 'routes/Orchestrator/components/hydraPresets'
 import type { InjectionLevel } from 'routes/Player/components/Player/PlayerVisualizer/hooks/audioInjectProfiles'
 import type { PresetCategory } from 'routes/Player/components/Player/PlayerVisualizer/hooks/presetClassifier'
@@ -20,7 +21,11 @@ const hydraCodeReceived = createAction<{
   hydraPresetName?: string
   hydraPresetId?: number | null
   hydraPresetFolderId?: number | null
-  hydraPresetSource?: 'gallery' | 'folder'
+  hydraPresetSource?: HydraPresetSource
+  hydraGalleryId?: string
+  visualizerRunId?: VisualizerRunId
+  visualizerCodeHash?: string
+  visualizerAcceptedAt?: number
   injectionLevel?: InjectionLevel
 }>(VISUALIZER_HYDRA_CODE)
 export const playerLoad = createAction(PLAYER_LOAD)
@@ -39,7 +44,11 @@ export interface PlayerVisualizerState {
   hydraPresetName: string
   hydraPresetId?: number | null
   hydraPresetFolderId?: number | null
-  hydraPresetSource?: 'gallery' | 'folder'
+  hydraPresetSource?: HydraPresetSource
+  hydraGalleryId?: string
+  visualizerRunId?: VisualizerRunId
+  visualizerCodeHash?: string
+  visualizerAcceptedAt?: number
   hasHydraUpdate: boolean
   allowCamera: boolean
   cycleOnSongTransition: boolean
@@ -58,6 +67,10 @@ const initialState: PlayerVisualizerState = {
   hydraPresetId: null,
   hydraPresetFolderId: null,
   hydraPresetSource: undefined,
+  hydraGalleryId: undefined,
+  visualizerRunId: undefined,
+  visualizerCodeHash: undefined,
+  visualizerAcceptedAt: undefined,
   hasHydraUpdate: false,
   allowCamera: false,
   cycleOnSongTransition: false,
@@ -108,8 +121,20 @@ const playerVisualizerReducer = createReducer(initialState, (builder) => {
       if ('hydraPresetFolderId' in payload) {
         state.hydraPresetFolderId = typeof payload.hydraPresetFolderId === 'number' ? payload.hydraPresetFolderId : null
       }
-      if (payload.hydraPresetSource === 'gallery' || payload.hydraPresetSource === 'folder') {
+      if (payload.hydraPresetSource === 'gallery' || payload.hydraPresetSource === 'folder' || payload.hydraPresetSource === 'raw') {
         state.hydraPresetSource = payload.hydraPresetSource
+      }
+      if (typeof payload.hydraGalleryId === 'string' && payload.hydraGalleryId.trim()) {
+        state.hydraGalleryId = payload.hydraGalleryId
+      }
+      if (typeof payload.visualizerRunId === 'string' && payload.visualizerRunId.trim()) {
+        state.visualizerRunId = payload.visualizerRunId
+      }
+      if (typeof payload.visualizerCodeHash === 'string' && payload.visualizerCodeHash.trim()) {
+        state.visualizerCodeHash = payload.visualizerCodeHash
+      }
+      if (typeof payload.visualizerAcceptedAt === 'number') {
+        state.visualizerAcceptedAt = payload.visualizerAcceptedAt
       }
       if (payload.injectionLevel) {
         state.injectionLevel = payload.injectionLevel

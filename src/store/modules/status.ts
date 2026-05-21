@@ -11,10 +11,11 @@ import {
   PLAYER_REQ_VOLUME,
   PLAYER_STATUS,
   PLAYER_FFT,
+  PLAYER_VISUALIZER_APPLIED,
   PLAYER_LEAVE,
   VISUALIZER_HYDRA_CODE,
 } from 'shared/actionTypes'
-import { MediaType, PlaybackOptions } from 'shared/types'
+import { MediaType, PlaybackOptions, type HydraPresetSource, type PlayerVisualizerAppliedState, type VisualizerRunId } from 'shared/types'
 
 export interface StatusState {
   cdgAlpha: number
@@ -34,6 +35,7 @@ export interface StatusState {
   position: number
   queueId: number
   visualizer: Partial<PlayerVisualizerState>
+  visualizerApplied: PlayerVisualizerAppliedState | null
   volume: number
 }
 
@@ -55,12 +57,14 @@ const initialState: StatusState = {
   position: 0,
   queueId: -1,
   visualizer: {},
+  visualizerApplied: null,
   volume: 1,
 }
 
 const playerLeaveInternal = createAction(PLAYER_LEAVE)
 const playerStatusInternal = createAction<Partial<StatusState>>(PLAYER_STATUS)
 const playerFftInternal = createAction<FftPayload>(PLAYER_FFT)
+const playerVisualizerAppliedInternal = createAction<PlayerVisualizerAppliedState>(PLAYER_VISUALIZER_APPLIED)
 const playerCmdOptionsInternal = createAction<{ visualizer?: Partial<PlayerVisualizerState> }>(PLAYER_CMD_OPTIONS)
 const hydraCodeInternal = createAction<{
   code: string
@@ -68,7 +72,11 @@ const hydraCodeInternal = createAction<{
   hydraPresetName?: string
   hydraPresetId?: number | null
   hydraPresetFolderId?: number | null
-  hydraPresetSource?: 'gallery' | 'folder'
+  hydraPresetSource?: HydraPresetSource
+  hydraGalleryId?: string
+  visualizerRunId?: VisualizerRunId
+  visualizerCodeHash?: string
+  visualizerAcceptedAt?: number
 }>(VISUALIZER_HYDRA_CODE)
 
 const statusSlice = createSlice({
@@ -80,6 +88,7 @@ const statusSlice = createSlice({
       .addCase(playerLeaveInternal, (state) => {
         state.isPlayerPresent = false
         state.fftData = null
+        state.visualizerApplied = null
       })
       .addCase(playerStatusInternal, (state, action: PayloadAction<Partial<StatusState>>) => ({
         ...state,
@@ -88,6 +97,9 @@ const statusSlice = createSlice({
       }))
       .addCase(playerFftInternal, (state, action: PayloadAction<FftPayload>) => {
         state.fftData = action.payload
+      })
+      .addCase(playerVisualizerAppliedInternal, (state, action: PayloadAction<PlayerVisualizerAppliedState>) => {
+        state.visualizerApplied = action.payload
       })
       .addCase(
         playerCmdOptionsInternal,
@@ -117,8 +129,20 @@ const statusSlice = createSlice({
         if ('hydraPresetFolderId' in payload) {
           viz.hydraPresetFolderId = typeof payload.hydraPresetFolderId === 'number' ? payload.hydraPresetFolderId : null
         }
-        if (payload.hydraPresetSource === 'gallery' || payload.hydraPresetSource === 'folder') {
+        if (payload.hydraPresetSource === 'gallery' || payload.hydraPresetSource === 'folder' || payload.hydraPresetSource === 'raw') {
           viz.hydraPresetSource = payload.hydraPresetSource
+        }
+        if (typeof payload.hydraGalleryId === 'string' && payload.hydraGalleryId.trim()) {
+          viz.hydraGalleryId = payload.hydraGalleryId
+        }
+        if (typeof payload.visualizerRunId === 'string' && payload.visualizerRunId.trim()) {
+          viz.visualizerRunId = payload.visualizerRunId
+        }
+        if (typeof payload.visualizerCodeHash === 'string' && payload.visualizerCodeHash.trim()) {
+          viz.visualizerCodeHash = payload.visualizerCodeHash
+        }
+        if (typeof payload.visualizerAcceptedAt === 'number') {
+          viz.visualizerAcceptedAt = payload.visualizerAcceptedAt
         }
         if (Object.keys(viz).length > 0) {
           state.visualizer = { ...state.visualizer, ...viz }

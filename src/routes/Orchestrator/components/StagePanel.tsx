@@ -6,6 +6,7 @@ import styles from './StagePanel.css'
 import { BUFFER_OPTIONS, buildPreviewCode, type StageBuffer } from './stagePanelUtils'
 import PresetPicker from './PresetPicker'
 import { getCameraPipelineState, type CameraRelayStatus } from './hydraPreviewUtils'
+import type { PresetLeaf } from './presetTree'
 
 interface StagePanelProps {
   code: string
@@ -15,7 +16,7 @@ interface StagePanelProps {
   onBufferChange: (buffer: StageBuffer) => void
   localCameraStream?: MediaStream | null
   onPresetLoad?: (code: string) => void
-  onPresetSend?: (code: string) => void
+  onPresetSend?: (preset: PresetLeaf) => void
   onRandomize?: () => void
   statusStrip?: React.ReactNode
   visualizerMode: VisualizerMode

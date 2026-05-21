@@ -2,6 +2,13 @@ import Rooms from '../Rooms/Rooms.js'
 import HydraPresets from '../HydraPresets/HydraPresets.js'
 import { resolveRoomAccessPrefs } from '../../shared/roomAccess.js'
 import getLogger from '../lib/Log.js'
+import { createHash, randomUUID } from 'node:crypto'
+import type {
+  HydraPresetSource,
+  PlayerInstanceId,
+  PlayerVisualizerAppliedState,
+  VisualizerRunId,
+} from '../../shared/types.js'
 import {
   isValidPayloadSize,
   isValidCameraOffer,
@@ -27,9 +34,11 @@ import {
   PLAYER_EMIT_STATUS,
   PLAYER_EMIT_FFT,
   PLAYER_EMIT_LEAVE,
+  PLAYER_EMIT_VISUALIZER_APPLIED,
   PLAYER_STATUS,
   PLAYER_FFT,
   PLAYER_LEAVE,
+  PLAYER_VISUALIZER_APPLIED,
   VISUALIZER_HYDRA_CODE_REQ,
   VISUALIZER_HYDRA_CODE,
   CAMERA_OFFER_REQ,
@@ -52,6 +61,15 @@ const roomCameraSubscribers = new Map<number, string>() // roomId → subscriber
 
 interface HydraBroadcastPayload extends Record<string, unknown> {
   code: string
+  visualizerRunId?: VisualizerRunId
+  visualizerCodeHash?: string
+  visualizerAcceptedAt?: number
+  hydraPresetIndex?: number
+  hydraPresetName?: string
+  hydraPresetId?: number | null
+  hydraPresetFolderId?: number | null
+  hydraPresetSource?: HydraPresetSource
+  hydraGalleryId?: string
 }
 
 export interface RoomVisualizerState {
@@ -64,6 +82,17 @@ export interface RoomVisualizerState {
 
 // Track last visualizer state per room for replay to new connections
 const roomVisualizerStates = new Map<number, RoomVisualizerState>() // roomId → state
+
+// Track last player-applied visualizer state per room for truthful UI state.
+const roomAppliedVisualizerStates = new Map<number, PlayerVisualizerAppliedState>() // roomId → state
+
+interface PlayerIdentity {
+  socketId: string
+  playerInstanceId: PlayerInstanceId
+}
+
+// Track the concrete player instance that is allowed to report applied state.
+const roomPlayerIdentities = new Map<number, PlayerIdentity>() // roomId → identity
 
 interface RoomControlSocket {
   id?: string
@@ -141,6 +170,79 @@ function getSocketUserName (sock: RoomControlSocket): string {
   return sock.user?.name ?? sock.user?.username ?? 'Unknown'
 }
 
+function isPlainObject (value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function isNonEmptyString (value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0
+}
+
+function hashVisualizerCode (code: string): string {
+  return createHash('sha256').update(code).digest('hex')
+}
+
+function isHydraPresetSource (value: unknown): value is HydraPresetSource {
+  return value === 'gallery' || value === 'folder' || value === 'raw'
+}
+
+function sanitizeManagerHydraPayload (payload: Record<string, unknown>): HydraBroadcastPayload | null {
+  if (!isValidHydraCode(payload)) return null
+
+  const next: HydraBroadcastPayload = {
+    code: payload.code as string,
+  }
+
+  if (typeof payload.hydraPresetIndex === 'number') {
+    next.hydraPresetIndex = payload.hydraPresetIndex
+  }
+  if (isNonEmptyString(payload.hydraPresetName)) {
+    next.hydraPresetName = payload.hydraPresetName
+  }
+  if ('hydraPresetId' in payload) {
+    next.hydraPresetId = typeof payload.hydraPresetId === 'number' ? payload.hydraPresetId : null
+  }
+  if ('hydraPresetFolderId' in payload) {
+    next.hydraPresetFolderId = typeof payload.hydraPresetFolderId === 'number' ? payload.hydraPresetFolderId : null
+  }
+  if (isHydraPresetSource(payload.hydraPresetSource)) {
+    next.hydraPresetSource = payload.hydraPresetSource
+  }
+  if (isNonEmptyString(payload.hydraGalleryId)) {
+    next.hydraGalleryId = payload.hydraGalleryId
+  }
+
+  if (!next.hydraPresetSource) {
+    next.hydraPresetSource = next.hydraPresetId ? 'folder' : next.hydraGalleryId ? 'gallery' : 'raw'
+  }
+
+  return next
+}
+
+function withServerVisualizerRunMetadata (payload: HydraBroadcastPayload): HydraBroadcastPayload {
+  const code = payload.code
+  return {
+    ...payload,
+    visualizerRunId: randomUUID(),
+    visualizerCodeHash: hashVisualizerCode(code),
+    visualizerAcceptedAt: Date.now(),
+  }
+}
+
+function extractPlayerInstanceId (payload: unknown): PlayerInstanceId | null {
+  if (!isPlainObject(payload)) return null
+  return isNonEmptyString(payload.playerInstanceId) ? payload.playerInstanceId : null
+}
+
+function isPinnedPlayerIdentity (
+  roomId: number,
+  sock: RoomControlSocket,
+  playerInstanceId: PlayerInstanceId,
+): boolean {
+  const identity = roomPlayerIdentities.get(roomId)
+  return identity?.socketId === sock.id && identity.playerInstanceId === playerInstanceId
+}
+
 function toVisualizerBroadcastPayload (state: RoomVisualizerState): Record<string, unknown> {
   return {
     ...state.payload,
@@ -171,8 +273,7 @@ async function resolveHydraBroadcastPayload (
   if (!access.hasRoom) return null
 
   if (access.canManage) {
-    if (!isValidHydraCode(payload)) return null
-    return { ...payload, code: payload.code as string }
+    return sanitizeManagerHydraPayload(payload)
   }
 
   if (!access.accessPrefs.allowGuestOrchestrator) return null
@@ -250,6 +351,13 @@ export function getLastVisualizerCode (roomId: number): Record<string, unknown> 
 }
 
 /**
+ * Get the last player-applied visualizer state for a room.
+ */
+export function getLastAppliedVisualizerState (roomId: number): PlayerVisualizerAppliedState | undefined {
+  return roomAppliedVisualizerStates.get(roomId)
+}
+
+/**
  * Get the full attributed visualizer state for a room.
  */
 export function getVisualizerState (roomId: number): RoomVisualizerState | undefined {
@@ -261,6 +369,19 @@ export function getVisualizerState (roomId: number): RoomVisualizerState | undef
  */
 export function clearVisualizerState (roomId: number): void {
   roomVisualizerStates.delete(roomId)
+  roomAppliedVisualizerStates.delete(roomId)
+  roomPlayerIdentities.delete(roomId)
+}
+
+/**
+ * If the disconnecting/leaving socket was the pinned player, clear its identity.
+ */
+export function cleanupPlayerIdentity (
+  roomId: number,
+  socketId: string,
+): void {
+  if (roomPlayerIdentities.get(roomId)?.socketId !== socketId) return
+  roomPlayerIdentities.delete(roomId)
 }
 
 /**
@@ -336,6 +457,15 @@ const ACTION_HANDLERS = {
   [PLAYER_EMIT_STATUS]: async (sock, { payload }) => {
     if (!(await canManageRoom(sock))) return
 
+    const roomId = sock.user?.roomId
+    const playerInstanceId = extractPlayerInstanceId(payload)
+    if (typeof roomId === 'number' && playerInstanceId) {
+      roomPlayerIdentities.set(roomId, {
+        socketId: sock.id,
+        playerInstanceId,
+      })
+    }
+
     // so we can tell the room when players leave and
     // relay last known player status on client join
     sock._lastPlayerStatus = payload
@@ -345,11 +475,65 @@ const ACTION_HANDLERS = {
       payload,
     })
   },
+  [PLAYER_EMIT_VISUALIZER_APPLIED]: async (sock, { payload }) => {
+    if (!isValidPayloadSize(payload)) return
+    if (!(await canManageRoom(sock))) return
+
+    const roomId = sock.user?.roomId
+    if (typeof roomId !== 'number') return
+    if (!isPlainObject(payload)) return
+
+    const playerInstanceId = extractPlayerInstanceId(payload)
+    const visualizerRunId = payload.visualizerRunId
+    if (!playerInstanceId || !isNonEmptyString(visualizerRunId)) return
+    if (!isPinnedPlayerIdentity(roomId, sock, playerInstanceId)) return
+
+    const accepted = roomVisualizerStates.get(roomId)
+    if (!accepted?.payload.visualizerRunId) return
+    if (accepted.payload.visualizerRunId !== visualizerRunId) return
+
+    const applied: PlayerVisualizerAppliedState = {
+      visualizerRunId: accepted.payload.visualizerRunId,
+      visualizerCodeHash: accepted.payload.visualizerCodeHash ?? '',
+      visualizerAcceptedAt: accepted.payload.visualizerAcceptedAt ?? accepted.updatedAt,
+      visualizerAppliedAt: Date.now(),
+      playerSocketId: sock.id,
+      playerInstanceId,
+      sourceBindingStatus: 'not-tracked',
+    }
+
+    if (typeof accepted.payload.hydraPresetIndex === 'number') {
+      applied.hydraPresetIndex = accepted.payload.hydraPresetIndex
+    }
+    if (isNonEmptyString(accepted.payload.hydraPresetName)) {
+      applied.hydraPresetName = accepted.payload.hydraPresetName
+    }
+    if ('hydraPresetId' in accepted.payload) {
+      applied.hydraPresetId = typeof accepted.payload.hydraPresetId === 'number' ? accepted.payload.hydraPresetId : null
+    }
+    if ('hydraPresetFolderId' in accepted.payload) {
+      applied.hydraPresetFolderId = typeof accepted.payload.hydraPresetFolderId === 'number' ? accepted.payload.hydraPresetFolderId : null
+    }
+    if (isHydraPresetSource(accepted.payload.hydraPresetSource)) {
+      applied.hydraPresetSource = accepted.payload.hydraPresetSource
+    }
+    if (isNonEmptyString(accepted.payload.hydraGalleryId)) {
+      applied.hydraGalleryId = accepted.payload.hydraGalleryId
+    }
+
+    roomAppliedVisualizerStates.set(roomId, applied)
+
+    sock.server.to(Rooms.prefix(roomId)).emit('action', {
+      type: PLAYER_VISUALIZER_APPLIED,
+      payload: applied,
+    })
+  },
   [VISUALIZER_HYDRA_CODE_REQ]: async (sock, { payload }) => {
     if (!isValidPayloadSize(payload)) return
     const payloadObject = payload as Record<string, unknown>
     const access = await getRoomControlAccess(sock)
-    const broadcastPayload = await resolveHydraBroadcastPayload(access, payloadObject)
+    const resolvedPayload = await resolveHydraBroadcastPayload(access, payloadObject)
+    const broadcastPayload = resolvedPayload ? withServerVisualizerRunMetadata(resolvedPayload) : null
     if (!broadcastPayload) return
 
     const roomId = sock.user.roomId
@@ -454,6 +638,7 @@ const ACTION_HANDLERS = {
   },
   [PLAYER_EMIT_LEAVE]: async (sock) => {
     sock._lastPlayerStatus = null
+    cleanupPlayerIdentity(sock.user.roomId, sock.id)
 
     // any players left in room?
     if (!Rooms.isPlayerPresent(sock.server, sock.user.roomId)) {

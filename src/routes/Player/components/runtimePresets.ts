@@ -1,5 +1,6 @@
 import type { IRoomPrefs } from 'shared/types'
 import type { PresetFolder, PresetItem } from 'routes/Orchestrator/components/presetTree'
+import { HYDRA_GALLERY } from 'routes/Orchestrator/components/hydraGallery'
 import { PRESETS, PRESET_LABELS } from 'routes/Orchestrator/components/hydraPresets'
 
 export type RuntimePresetSource = 'gallery' | 'folder'
@@ -10,6 +11,7 @@ export interface RuntimeHydraPreset {
   presetId: number | null
   folderId: number | null
   source: RuntimePresetSource
+  galleryId?: string
 }
 
 export interface RuntimeHydraPresetPool {
@@ -42,6 +44,7 @@ function getGalleryPool (): RuntimeHydraPresetPool {
       presetId: null,
       folderId: null,
       source: 'gallery',
+      galleryId: HYDRA_GALLERY[i]?.sketch_id,
     })),
   }
 }

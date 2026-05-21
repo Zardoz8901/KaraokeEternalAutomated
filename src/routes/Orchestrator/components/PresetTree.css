@@ -71,6 +71,12 @@
   color: var(--orch-blue);
 }
 
+.badgeApplied {
+  background: color-mix(in srgb, var(--orch-cyan) 16%, transparent);
+  border-color: color-mix(in srgb, var(--orch-cyan) 42%, transparent);
+  color: var(--orch-cyan);
+}
+
 .badgeCam {
   background: color-mix(in srgb, var(--orch-blue) 14%, transparent);
   color: var(--orch-blue);

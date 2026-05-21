@@ -2,15 +2,17 @@ import React, { useRef, useEffect, useCallback, useMemo, useState } from 'react'
 import Hydra from 'hydra-synth'
 import throttle from 'lodash/throttle'
 import { useDispatch } from 'react-redux'
-import { PLAYER_EMIT_FFT } from 'shared/actionTypes'
+import { PLAYER_EMIT_FFT, PLAYER_EMIT_VISUALIZER_APPLIED } from 'shared/actionTypes'
+import type { PlayerInstanceId, VisualizerRunId } from 'shared/types'
 import { type AudioData } from './hooks/useAudioAnalyser'
 import { useHydraAudio } from './hooks/useHydraAudio'
 import { getHydraEvalCode, DEFAULT_PATCH } from './hydraEvalCode'
-import { installHydraTimerTracking, uninstallHydraTimerTracking, clearHydraTimers, withHydraTimerOwner, type HydraTimerOwner } from './hydraUserTimers'
+import { executeHydraCode } from './hydraCodeExecution'
+import { installHydraTimerTracking, uninstallHydraTimerTracking, withHydraTimerOwner, type HydraTimerOwner } from './hydraUserTimers'
 import { setMouseShims, clearMouseShims } from './mouseShims'
 import { detectCameraUsage } from 'lib/detectCameraUsage'
 import telemetry from 'lib/telemetry'
-import { HYDRA_PRESET_EVAL_START, HYDRA_PRESET_EVAL_SUCCESS, HYDRA_PRESET_EVAL_ERROR, HYDRA_FALLBACK_APPLIED } from 'shared/telemetry'
+import { HYDRA_FALLBACK_APPLIED } from 'shared/telemetry'
 import { applyRemoteCameraOverride, restoreRemoteCameraOverride } from 'lib/remoteCameraOverride'
 import { applyVideoProxyOverride, restoreVideoProxyOverride, patchHydraSourceTick, HYDRA_VIDEO_READY_EVENT, protectVideoElement } from 'lib/videoProxyOverride'
 import { shouldEmitFft } from './hooks/emitFftPolicy'
@@ -97,52 +99,13 @@ function softHush (hydra: Hydra) {
   w.bpm = 30
 }
 
-function clearTrackedTimers (timerOwner?: HydraTimerOwner) {
-  if (timerOwner) {
-    clearHydraTimers(timerOwner)
-    return
-  }
-  const g = globalThis as unknown as Record<string, unknown>
-  const ids = g.__hydraUserTimers
-  if (!(ids instanceof Set) || ids.size === 0) return
-  for (const id of ids) {
-    clearTimeout(id as ReturnType<typeof setTimeout>)
-    clearInterval(id as ReturnType<typeof setInterval>)
-  }
-  ids.clear()
-}
-
-function executeHydraCode (hydra: Hydra, code: string, compat?: HydraAudioCompat, timerOwner?: HydraTimerOwner) {
-  const t0 = performance.now()
-  telemetry.emit(HYDRA_PRESET_EVAL_START, { code_length: code?.length ?? 0 })
-
+function tickHydraOnce (hydra: Hydra, timerOwner: HydraTimerOwner): boolean {
   try {
-    // Reseed audio at each preset boundary so audio is available
-    // even if a previous sketch clobbered window.a or __hydraAudioRef.
-    if (compat) {
-      ;(globalThis as unknown as Record<string, unknown>).__hydraAudioRef = compat
-      ;(window as unknown as Record<string, unknown>).a = compat
-    }
-    const w = window as unknown as Record<string, unknown>
-    if (typeof w.speed !== 'number' || !Number.isFinite(w.speed)) w.speed = 1
-    if (typeof w.bpm !== 'number' || !Number.isFinite(w.bpm)) w.bpm = 30
-    if (typeof w.fps === 'number' && !Number.isFinite(w.fps)) w.fps = undefined
-
-    clearTrackedTimers(timerOwner)
-    const evalCode = getHydraEvalCode(code)
-    if (timerOwner) {
-      withHydraTimerOwner(timerOwner, () => hydra.eval(evalCode))
-    } else {
-      hydra.eval(evalCode)
-    }
-
-    telemetry.emit(HYDRA_PRESET_EVAL_SUCCESS, { duration_ms: Math.round(performance.now() - t0) })
+    withHydraTimerOwner(timerOwner, () => hydra.tick(16.67))
+    return true
   } catch (err) {
-    warn('Code execution error:', err)
-    telemetry.emit(HYDRA_PRESET_EVAL_ERROR, {
-      duration_ms: Math.round(performance.now() - t0),
-      error: (err instanceof Error ? err.message : String(err)),
-    })
+    warn('Initial tick error:', err)
+    return false
   }
 }
 
@@ -166,6 +129,10 @@ interface HydraVisualizerProps {
   remoteVideoElement?: HTMLVideoElement | null
   /** Emits currently bound camera sources (s0-s3) after init/rebind passes */
   onCameraSourcesBoundChange?: (sources: string[]) => void
+  /** Player runtime identity; only Player instances provide this. */
+  playerInstanceId?: PlayerInstanceId | null
+  /** Server-generated accepted visualizer run id. */
+  visualizerRunId?: VisualizerRunId | null
 }
 
 function HydraVisualizer ({
@@ -181,8 +148,11 @@ function HydraVisualizer ({
   overrideData,
   remoteVideoElement,
   onCameraSourcesBoundChange,
+  playerInstanceId,
+  visualizerRunId,
 }: HydraVisualizerProps) {
   const dispatch = useDispatch()
+  const dispatchRef = useRef(dispatch)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const hydraRef = useRef<Hydra | null>(null)
   const rafRef = useRef<number>(0)
@@ -198,7 +168,23 @@ function HydraVisualizer ({
   const prevRemoteVideoRef = useRef<HTMLVideoElement | null>(null)
   const compatRef = useRef<HydraAudioCompat | null>(null)
   const timerOwnerRef = useRef<HydraTimerOwner>(Symbol('hydraTimers'))
+  const appliedRunIdsRef = useRef<Set<VisualizerRunId>>(new Set())
+  const playerInstanceIdRef = useRef<PlayerInstanceId | null | undefined>(playerInstanceId)
   const [remoteVideoEpoch, setRemoteVideoEpoch] = useState(0)
+
+  const emitAppliedForRun = useCallback((runId?: VisualizerRunId | null) => {
+    const currentPlayerInstanceId = playerInstanceIdRef.current
+    if (!runId || !currentPlayerInstanceId) return
+    if (appliedRunIdsRef.current.has(runId)) return
+    appliedRunIdsRef.current.add(runId)
+    dispatchRef.current({
+      type: PLAYER_EMIT_VISUALIZER_APPLIED,
+      payload: {
+        visualizerRunId: runId,
+        playerInstanceId: currentPlayerInstanceId,
+      },
+    })
+  }, [])
 
   const reportCameraSourcesBound = useCallback(() => {
     if (!onCameraSourcesBoundChange) return
@@ -252,6 +238,11 @@ function HydraVisualizer ({
     heightRef.current = height
     codeRef.current = code
   }, [width, height, code])
+
+  useEffect(() => {
+    dispatchRef.current = dispatch
+    playerInstanceIdRef.current = playerInstanceId
+  }, [dispatch, playerInstanceId])
 
   // Override initCam() to use remote video when present
   useEffect(() => {
@@ -366,8 +357,10 @@ function HydraVisualizer ({
 
     // Execute initial patch and render first frame immediately
     const timerOwner = timerOwnerRef.current
-    executeHydraCode(hydra, codeRef.current, compatRef.current ?? undefined, timerOwner)
-    withHydraTimerOwner(timerOwner, () => hydra.tick(16.67))
+    const evalResult = executeHydraCode(hydra, codeRef.current, compatRef.current ?? undefined, timerOwner)
+    if (evalResult.ok && tickHydraOnce(hydra, timerOwner)) {
+      emitAppliedForRun(visualizerRunId)
+    }
 
     const cameraOverrides = cameraOverrideRef.current
     return () => {
@@ -585,17 +578,15 @@ function HydraVisualizer ({
 
     reportCameraSourcesBound()
 
-    executeHydraCode(hydra, code, compatRef.current ?? undefined, timerOwnerRef.current)
+    const evalResult = executeHydraCode(hydra, code, compatRef.current ?? undefined, timerOwnerRef.current)
     errorCountRef.current = 0
 
     // Render one frame immediately so the new graph is visible even when the
     // RAF loop is stopped (isPlaying=false). Matches the mount-only effect.
-    try {
-      withHydraTimerOwner(timerOwnerRef.current, () => hydra.tick(16.67))
-    } catch {
-      // Bad user code — swallow so it doesn't cascade into a hard blank
+    if (evalResult.ok && tickHydraOnce(hydra, timerOwnerRef.current)) {
+      emitAppliedForRun(visualizerRunId)
     }
-  }, [code, allowCamera, remoteVideoElement, reportCameraSourcesBound, pruneStaleCameraBindings])
+  }, [code, allowCamera, remoteVideoElement, reportCameraSourcesBound, pruneStaleCameraBindings, emitAppliedForRun, visualizerRunId])
 
   // Animation tick
   const tick = useCallback((time: number) => {

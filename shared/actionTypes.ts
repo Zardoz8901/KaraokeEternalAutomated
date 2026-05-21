@@ -40,6 +40,7 @@ export const PLAYER_REQ_VOLUME = 'server/PLAYER_REQ_VOLUME'
 export const PLAYER_EMIT_STATUS = 'server/PLAYER_EMIT_STATUS'
 export const PLAYER_EMIT_FFT = 'server/PLAYER_EMIT_FFT'
 export const PLAYER_EMIT_LEAVE = 'server/PLAYER_EMIT_LEAVE'
+export const PLAYER_EMIT_VISUALIZER_APPLIED = 'server/PLAYER_EMIT_VISUALIZER_APPLIED'
 
 // Visualizer Hydra code (orchestrator → server → player)
 export const VISUALIZER_HYDRA_CODE_REQ = 'server/VISUALIZER_HYDRA_CODE'
@@ -63,6 +64,7 @@ export const PLAYER_LEAVE = 'status/PLAYER_LEAVE'
 export const PLAYER_LOAD = 'status/PLAYER_LOAD'
 export const PLAYER_PLAY = 'status/PLAYER_PLAY'
 export const PLAYER_VISUALIZER_ERROR = 'status/PLAYER_VISUALIZER_ERROR'
+export const PLAYER_VISUALIZER_APPLIED = 'status/PLAYER_VISUALIZER_APPLIED'
 
 // User
 export const LOGIN = 'user/LOGIN'

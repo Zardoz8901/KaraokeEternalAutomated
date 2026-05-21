@@ -11,6 +11,7 @@ import { buildPresetTree, type PresetLeaf, type PresetTreeNode, type PresetFolde
 import { getOrchestratorCapabilities } from './orchestratorCapabilities'
 import {
   collectPresetKeys,
+  getAppliedPresetKey,
   getPresetKey,
   getPresetPanelNotice,
   getPresetRowUx,
@@ -59,6 +60,7 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
     if (typeof state.user.roomId !== 'number') return undefined
     return state.rooms.entities[state.user.roomId]?.prefs
   })
+  const appliedVisualizer = useAppSelector(state => state.status.visualizerApplied)
   const orchestratorCapabilities = useMemo(() => getOrchestratorCapabilities(user, currentRoomPrefs), [
     currentRoomPrefs,
     user,
@@ -150,6 +152,7 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
   )
 
   const visiblePresetKeys = useMemo(() => collectPresetKeys(tree), [tree])
+  const appliedPresetKey = useMemo(() => getAppliedPresetKey(appliedVisualizer), [appliedVisualizer])
 
   useEffect(() => {
     setSelectedPresetKey(prev => (prev !== null && !visiblePresetKeys.has(prev) ? null : prev))
@@ -689,6 +692,7 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
           expanded={expanded}
           selectedPresetKey={selectedPresetKey}
           loadedPreviewPresetKey={loadedPreviewPresetKey}
+          appliedPresetKey={appliedPresetKey}
           startingPresetId={startingPresetId}
           playerPresetFolderId={playerPresetFolderId}
           isDndEnabled={query === '' && !refreshing && canUsePresetManagement}

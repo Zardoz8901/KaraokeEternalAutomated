@@ -2,11 +2,12 @@ import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react'
 import { HYDRA_GALLERY } from './hydraGallery'
 import { decodeSketch } from './hydraPresets'
 import { buildPickerOptions, filterPickerOptions } from './presetPicker'
+import type { PresetLeaf } from './presetTree'
 import styles from './PresetPicker.css'
 
 interface PresetPickerProps {
   onLoad?: (code: string) => void
-  onSend?: (code: string) => void
+  onSend?: (preset: PresetLeaf) => void
   onRandomize?: () => void
 }
 
@@ -19,14 +20,24 @@ function PresetPicker ({ onLoad, onSend, onRandomize }: PresetPickerProps) {
   const filtered = useMemo(() => filterPickerOptions(options, query), [options, query])
 
   const handleLoadByIndex = useCallback((index: number) => {
-    const code = decodeSketch(HYDRA_GALLERY[index])
+    const item = HYDRA_GALLERY[index]
+    if (!item) return
+    const code = decodeSketch(item)
     onLoad?.(code)
     setOpen(false)
   }, [onLoad])
 
   const handleSendByIndex = useCallback((index: number) => {
-    const code = decodeSketch(HYDRA_GALLERY[index])
-    onSend?.(code)
+    const item = HYDRA_GALLERY[index]
+    if (!item) return
+    const code = decodeSketch(item)
+    onSend?.({
+      id: `gallery:${item.sketch_id}`,
+      name: item.sketch_id,
+      code,
+      isGallery: true,
+      usesCamera: false,
+    })
     setOpen(false)
   }, [onSend])
 

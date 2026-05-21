@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   collectPresetKeys,
+  getAppliedPresetKey,
   getPresetKey,
   getPresetPanelNotice,
   getPresetRowUx,
@@ -77,6 +78,52 @@ describe('presetOperatorUx', () => {
     ]
 
     expect([...collectPresetKeys(nodes)]).toEqual(['gallery:rainbow', 'preset:10'])
+  })
+
+  it('maps player-applied saved preset and gallery metadata to preset keys', () => {
+    expect(getAppliedPresetKey({
+      visualizerRunId: 'run-saved',
+      visualizerCodeHash: 'hash',
+      visualizerAcceptedAt: 1,
+      visualizerAppliedAt: 2,
+      playerSocketId: 'player-sock',
+      playerInstanceId: 'player-instance',
+      hydraPresetSource: 'folder',
+      hydraPresetId: 10,
+    })).toBe('preset:10')
+
+    expect(getAppliedPresetKey({
+      visualizerRunId: 'run-gallery',
+      visualizerCodeHash: 'hash',
+      visualizerAcceptedAt: 1,
+      visualizerAppliedAt: 2,
+      playerSocketId: 'player-sock',
+      playerInstanceId: 'player-instance',
+      hydraPresetSource: 'gallery',
+      hydraGalleryId: 'rainbow',
+    })).toBe('gallery:rainbow')
+  })
+
+  it('does not map raw or incomplete applied visualizer state to preset rows', () => {
+    expect(getAppliedPresetKey({
+      visualizerRunId: 'run-raw',
+      visualizerCodeHash: 'hash',
+      visualizerAcceptedAt: 1,
+      visualizerAppliedAt: 2,
+      playerSocketId: 'player-sock',
+      playerInstanceId: 'player-instance',
+      hydraPresetSource: 'raw',
+    })).toBeNull()
+
+    expect(getAppliedPresetKey({
+      visualizerRunId: 'run-gallery-missing',
+      visualizerCodeHash: 'hash',
+      visualizerAcceptedAt: 1,
+      visualizerAppliedAt: 2,
+      playerSocketId: 'player-sock',
+      playerInstanceId: 'player-instance',
+      hydraPresetSource: 'gallery',
+    })).toBeNull()
   })
 
   it('keeps host management controls available while hiding all non-host management controls', () => {

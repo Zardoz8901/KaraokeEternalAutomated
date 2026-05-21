@@ -10,6 +10,7 @@ import { useVisualViewport } from 'lib/useVisualViewport'
 import { DEFAULT_SKETCH, getRandomSketch } from '../components/hydraSketchBook'
 import type { PresetLeaf } from '../components/presetTree'
 import { canSendHydraInput, getOrchestratorCapabilities, type OrchestratorCapabilities } from '../components/orchestratorCapabilities'
+import { getPresetKey } from '../components/presetOperatorUx'
 import { getOrchestratorStatusModel, type OrchestratorStatusModel } from '../components/orchestratorStatus'
 import { type CameraRelayStatus } from '../components/hydraPreviewUtils'
 import { type StageBuffer } from '../components/stagePanelUtils'
@@ -67,7 +68,7 @@ export interface WorkspaceStagePanelProps {
   onBufferChange: (buffer: StageBuffer) => void
   localCameraStream?: MediaStream | null
   onPresetLoad: (code: string) => void
-  onPresetSend?: (code: string) => void
+  onPresetSend?: (preset: PresetLeaf) => void
   onRandomize: () => void
   visualizerMode: 'hydra' | 'off'
   visualizerEnabled: boolean
@@ -254,15 +255,23 @@ export function useOrchestratorWorkspace (): UseOrchestratorWorkspaceResult {
       return
     }
 
-    const payload: SendHydraPayload = typeof input === 'string'
-      ? { code: input }
-      : {
-          code: input.code,
-          hydraPresetName: input.name,
-          hydraPresetId: input.presetId ?? null,
-          hydraPresetFolderId: input.folderId ?? null,
-          hydraPresetSource: input.isGallery ? 'gallery' : 'folder',
-        }
+    let payload: SendHydraPayload
+    if (typeof input === 'string') {
+      payload = { code: input }
+    } else {
+      const presetKey = getPresetKey(input)
+      const hydraGalleryId = input.isGallery && presetKey?.startsWith('gallery:')
+        ? presetKey.slice('gallery:'.length)
+        : undefined
+      payload = {
+        code: input.code,
+        hydraPresetName: input.name,
+        hydraPresetId: input.presetId ?? null,
+        hydraPresetFolderId: input.folderId ?? null,
+        hydraPresetSource: input.isGallery ? 'gallery' : 'folder',
+        hydraGalleryId,
+      }
+    }
 
     cancelPendingRemoteSync()
     setRemoteState(prev => ({

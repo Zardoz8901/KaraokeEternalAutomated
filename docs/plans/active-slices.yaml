@@ -456,13 +456,13 @@
     - cleanup
 
 - id: visualizer-applied-runtime-truth
-  status: planned
+  status: in_progress
   owner: codex
   branch: phase-7a-visualizer-applied-runtime-truth
   base: main
   worktree:
     path: /home/steph/projects/KaraokeEternalAutomated-phase-7a-visualizer-applied-runtime-truth
-    state: missing
+    state: present
   merge_order: 100
   goal: Make the Player authoritative for visualizer applied state using server-generated run IDs and runtime Player instance identity.
   write_scope:
@@ -470,6 +470,7 @@
     - docs/analysis/
     - shared/actionTypes.ts
     - shared/types.ts
+    - server/socket.ts
     - server/Player/socket.ts
     - server/Player/socket.test.ts
     - server/lib/socketRateLimit.ts

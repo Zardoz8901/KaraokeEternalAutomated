@@ -2,6 +2,7 @@ import { createAction, createReducer } from '@reduxjs/toolkit'
 import { AppThunk } from 'store/store'
 import { CANCEL } from 'redux-throttle'
 import getWebGLSupport from 'lib/getWebGLSupport'
+import type { PlayerInstanceId } from 'shared/types'
 import {
   PLAYER_CMD_NEXT,
   PLAYER_CMD_OPTIONS,
@@ -107,6 +108,7 @@ export interface PlayerState {
   mediaType: string | null
   mp4Alpha: number
   nextUserId: number | null
+  playerInstanceId: PlayerInstanceId | null
   position: number
   queueId: number
   rgTrackGain: number | null
@@ -131,6 +133,7 @@ const initialState: PlayerState = {
   mediaType: null,
   mp4Alpha: 0.5,
   nextUserId: null,
+  playerInstanceId: null,
   position: 0,
   queueId: -1,
   rgTrackGain: null,

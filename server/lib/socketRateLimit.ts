@@ -9,6 +9,7 @@
 import {
   PLAYER_EMIT_FFT,
   PLAYER_EMIT_STATUS,
+  PLAYER_EMIT_VISUALIZER_APPLIED,
   VISUALIZER_HYDRA_CODE_REQ,
   CAMERA_OFFER_REQ,
   CAMERA_ANSWER_REQ,
@@ -71,6 +72,7 @@ export const SOCKET_RATE_LIMITS: Record<string, BucketConfig> = {
   [PLAYER_EMIT_STATUS]: { rate: 5, burst: 10 },
   // Expensive broadcasts
   [VISUALIZER_HYDRA_CODE_REQ]: { rate: 2, burst: 5 },
+  [PLAYER_EMIT_VISUALIZER_APPLIED]: { rate: 2, burst: 5 },
   // Camera signaling
   [CAMERA_OFFER_REQ]: { rate: 5, burst: 10 },
   [CAMERA_ANSWER_REQ]: { rate: 5, burst: 10 },

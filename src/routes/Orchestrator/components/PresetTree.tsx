@@ -11,6 +11,7 @@ interface PresetTreeProps {
   expanded: Set<string>
   selectedPresetKey?: PresetKey | null
   loadedPreviewPresetKey?: PresetKey | null
+  appliedPresetKey?: PresetKey | null
   startingPresetId?: number | null
   playerPresetFolderId?: number | null
   isDndEnabled: boolean
@@ -41,6 +42,7 @@ function PresetTree ({
   expanded,
   selectedPresetKey,
   loadedPreviewPresetKey,
+  appliedPresetKey,
   startingPresetId,
   playerPresetFolderId,
   isDndEnabled,
@@ -265,6 +267,7 @@ function PresetTree ({
                         } satisfies PresetRowUx
                         const isSelected = rowUx.presetKey !== null && rowUx.presetKey === selectedPresetKey
                         const isLoadedPreview = rowUx.presetKey !== null && rowUx.presetKey === loadedPreviewPresetKey
+                        const isApplied = rowUx.presetKey !== null && rowUx.presetKey === appliedPresetKey
                         const isStarting = typeof preset.presetId === 'number' && preset.presetId === startingPresetId
                         const presetManageAllowed = rowUx.showManagementActions && !preset.isGallery && (canManagePreset?.(preset) ?? true)
                         const presetDragDisabled = !isDndEnabled || preset.isGallery || !presetManageAllowed
@@ -304,6 +307,7 @@ function PresetTree ({
                                   <div className={styles.presetMeta}>
                                     {isSelected && <span className={clsx(styles.badge, styles.badgeSelected)}>Selected</span>}
                                     {isLoadedPreview && <span className={clsx(styles.badge, styles.badgeLoaded)}>Loaded in preview</span>}
+                                    {isApplied && <span className={clsx(styles.badge, styles.badgeApplied)}>Applied on Player</span>}
                                     {isStarting && <span className={clsx(styles.badge, styles.badgeStart)}>Start</span>}
                                     {preset.usesCamera && <span className={clsx(styles.badge, styles.badgeCam)}>Cam</span>}
                                   </div>

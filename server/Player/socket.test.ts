@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createHash } from 'node:crypto'
 import {
   CAMERA_ANSWER,
   CAMERA_ANSWER_REQ,
@@ -11,9 +12,11 @@ import {
   PLAYER_CMD_NEXT,
   PLAYER_EMIT_FFT,
   PLAYER_EMIT_STATUS,
+  PLAYER_EMIT_VISUALIZER_APPLIED,
   PLAYER_FFT,
   PLAYER_REQ_NEXT,
   PLAYER_STATUS,
+  PLAYER_VISUALIZER_APPLIED,
   VISUALIZER_HYDRA_CODE,
   VISUALIZER_HYDRA_CODE_REQ,
 } from '../../shared/actionTypes.js'
@@ -42,7 +45,7 @@ vi.mock('../lib/Log.js', () => ({
 
 import Rooms from '../Rooms/Rooms.js'
 import HydraPresets from '../HydraPresets/HydraPresets.js'
-import handlers, { canManageRoom, cleanupCameraPublisher, cleanupCameraSubscriber, getLastVisualizerCode, getVisualizerState, clearVisualizerState } from './socket.js'
+import handlers, { canManageRoom, cleanupCameraPublisher, cleanupCameraSubscriber, getLastVisualizerCode, getLastAppliedVisualizerState, getVisualizerState, clearVisualizerState } from './socket.js'
 
 interface MockSocket {
   id: string
@@ -1049,5 +1052,120 @@ describe('Visualizer state tracking', () => {
     })
 
     expect(getLastVisualizerCode(10)).toBeUndefined()
+  })
+
+  it('adds server-owned run metadata to accepted hydra broadcasts and ignores client values', async () => {
+    allowHydraCode(10)
+    const { sock, broadcastEmit } = createMockSocket({ userId: 999, roomId: 10, isAdmin: false, name: 'Room Owner' })
+
+    await handlers[VISUALIZER_HYDRA_CODE_REQ](sock, {
+      payload: {
+        code: 'osc(10).out()',
+        visualizerRunId: 'client-run',
+        visualizerCodeHash: 'client-hash',
+        visualizerAcceptedAt: 1,
+      },
+    })
+
+    const broadcast = broadcastEmit.mock.calls[0]?.[1] as { payload?: Record<string, unknown> } | undefined
+    expect(broadcast?.payload).toEqual(expect.objectContaining({
+      code: 'osc(10).out()',
+      visualizerCodeHash: createHash('sha256').update('osc(10).out()').digest('hex'),
+    }))
+    expect(typeof broadcast?.payload?.visualizerRunId).toBe('string')
+    expect(broadcast?.payload?.visualizerRunId).not.toBe('client-run')
+    expect(broadcast?.payload?.visualizerCodeHash).not.toBe('client-hash')
+    expect(broadcast?.payload?.visualizerAcceptedAt).not.toBe(1)
+  })
+
+  it('accepts applied visualizer state only from the pinned player instance', async () => {
+    allowHydraCode(10)
+    const { sock, broadcastEmit } = createMockSocket({ userId: 999, roomId: 10, isAdmin: false }, 'player-sock')
+
+    await handlers[PLAYER_EMIT_STATUS](sock, {
+      payload: { queueId: 123, isPlaying: true, playerInstanceId: 'player-instance-a' },
+    })
+    await handlers[VISUALIZER_HYDRA_CODE_REQ](sock, {
+      payload: { code: 'osc(10).out()', hydraPresetId: 44, hydraPresetName: 'Blue Grid', hydraPresetSource: 'folder' },
+    })
+
+    const accepted = getLastVisualizerCode(10)
+    expect(typeof accepted?.visualizerRunId).toBe('string')
+
+    broadcastEmit.mockClear()
+    await handlers[PLAYER_EMIT_VISUALIZER_APPLIED](sock, {
+      payload: {
+        visualizerRunId: accepted?.visualizerRunId,
+        playerInstanceId: 'player-instance-a',
+      },
+    })
+
+    expect(broadcastEmit).toHaveBeenCalledWith('action', {
+      type: PLAYER_VISUALIZER_APPLIED,
+      payload: expect.objectContaining({
+        visualizerRunId: accepted?.visualizerRunId,
+        playerInstanceId: 'player-instance-a',
+        playerSocketId: 'player-sock',
+        hydraPresetId: 44,
+        hydraPresetName: 'Blue Grid',
+      }),
+    })
+    expect(getLastAppliedVisualizerState(10)).toEqual(expect.objectContaining({
+      visualizerRunId: accepted?.visualizerRunId,
+    }))
+  })
+
+  it('rejects applied visualizer emits from a manager socket with the wrong player instance', async () => {
+    allowHydraCode(10)
+    const { sock: playerSock } = createMockSocket({ userId: 999, roomId: 10, isAdmin: false }, 'player-sock')
+    const { sock: otherSock, broadcastEmit } = createMockSocket({ userId: 999, roomId: 10, isAdmin: false }, 'other-sock')
+
+    await handlers[PLAYER_EMIT_STATUS](playerSock, {
+      payload: { queueId: 123, isPlaying: true, playerInstanceId: 'player-instance-a' },
+    })
+    await handlers[VISUALIZER_HYDRA_CODE_REQ](playerSock, {
+      payload: { code: 'osc(10).out()' },
+    })
+
+    const accepted = getLastVisualizerCode(10)
+    await handlers[PLAYER_EMIT_VISUALIZER_APPLIED](otherSock, {
+      payload: {
+        visualizerRunId: accepted?.visualizerRunId,
+        playerInstanceId: 'player-instance-a',
+      },
+    })
+
+    expect(broadcastEmit).not.toHaveBeenCalled()
+    expect(getLastAppliedVisualizerState(10)).toBeUndefined()
+  })
+
+  it('rejects stale applied visualizer runs after a newer run is accepted', async () => {
+    allowHydraCode(10)
+    const { sock, broadcastEmit } = createMockSocket({ userId: 999, roomId: 10, isAdmin: false }, 'player-sock')
+
+    await handlers[PLAYER_EMIT_STATUS](sock, {
+      payload: { queueId: 123, isPlaying: true, playerInstanceId: 'player-instance-a' },
+    })
+    await handlers[VISUALIZER_HYDRA_CODE_REQ](sock, { payload: { code: 'osc(10).out()' } })
+    const runOne = getLastVisualizerCode(10)?.visualizerRunId
+    await handlers[VISUALIZER_HYDRA_CODE_REQ](sock, { payload: { code: 'noise(4).out()' } })
+    const runTwo = getLastVisualizerCode(10)?.visualizerRunId
+
+    broadcastEmit.mockClear()
+    await handlers[PLAYER_EMIT_VISUALIZER_APPLIED](sock, {
+      payload: { visualizerRunId: runOne, playerInstanceId: 'player-instance-a' },
+    })
+
+    expect(broadcastEmit).not.toHaveBeenCalled()
+    expect(getLastAppliedVisualizerState(10)).toBeUndefined()
+
+    await handlers[PLAYER_EMIT_VISUALIZER_APPLIED](sock, {
+      payload: { visualizerRunId: runTwo, playerInstanceId: 'player-instance-a' },
+    })
+
+    expect(broadcastEmit).toHaveBeenCalledWith('action', {
+      type: PLAYER_VISUALIZER_APPLIED,
+      payload: expect.objectContaining({ visualizerRunId: runTwo }),
+    })
   })
 })
