@@ -583,13 +583,13 @@
     - cleanup
 
 - id: deterministic-hydra-video-binding
-  status: in_progress
+  status: merged_to_main
   owner: codex
   branch: phase-7b1-deterministic-hydra-video-binding
   base: main
   worktree:
-    path: /home/steph/projects/KaraokeEternalAutomated-phase-7b1-deterministic-hydra-video-binding
-    state: present
+    path: null
+    state: not_required
   merge_order: 115
   goal: Harden Hydra initVideo binding so Orchestrator waits for required Player MP4 shadow media instead of falling back to random external video.
   write_scope:
@@ -636,8 +636,9 @@
     - Red-team scope covers fallback suppression, borrowed video lifecycle, applied-state truth, and resource cleanup.
     - Cousteau and Close Encounters are manual local-library smoke targets.
     - Overlaps blocked redux-modernization Player visualizer and Orchestrator paths; serialize ahead of redux-modernization.
+    - Merged to main on 2026-05-21 as c8d9f5f1.
   next:
-    - implementation
+    - cleanup
 
 - id: rollback-2026-02-12-cleanup
   status: merged_to_main
