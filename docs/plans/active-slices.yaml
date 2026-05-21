@@ -398,13 +398,13 @@
     - cleanup
 
 - id: orchestrator-preset-operator-runtime-ux
-  status: planned
+  status: in_progress
   owner: codex
   branch: phase-6-orchestrator-preset-operator-runtime-ux
   base: main
   worktree:
     path: /home/steph/projects/KaraokeEternalAutomated-phase-6-orchestrator-preset-operator-runtime-ux
-    state: missing
+    state: present
   merge_order: 90
   goal: Implement the client-only Preset operator and Browse-only runtime UX contract without backend, socket, route guard, package, Nix, workflow, or Player changes.
   write_scope:
