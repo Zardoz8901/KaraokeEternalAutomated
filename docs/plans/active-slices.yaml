@@ -641,13 +641,13 @@
     - cleanup
 
 - id: orchestrator-preview-output-model
-  status: in_progress
+  status: merged_to_main
   owner: codex
   branch: docs/orchestrator-preview-output-model
   base: main
   worktree:
-    path: /home/steph/projects/KaraokeEternalAutomated-orchestrator-preview-output-model
-    state: present
+    path: null
+    state: not_required
   merge_order: 120
   goal: Define the Orchestrator preview/output mental model before any Player Live mirroring work.
   write_scope:
@@ -686,9 +686,9 @@
     - "Lifecycle requirement 2026-05-21: register planned before creating the worktree, mark in_progress only after the worktree exists, and mark merged_to_main only after the slice lands."
     - Historical Apple HIG research is archival guidance for visible state, clear mental models, direct manipulation, immediate feedback, and avoiding hidden modes; it is not current Apple platform doctrine.
     - This slice is docs-only and sets product language for later Orchestrator UI work.
+    - Merged to main on 2026-05-21 as 34c859c9.
   next:
-    - implementation
-    - review
+    - cleanup
 
 - id: rollback-2026-02-12-cleanup
   status: merged_to_main
