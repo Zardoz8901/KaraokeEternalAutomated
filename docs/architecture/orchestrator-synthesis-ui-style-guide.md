@@ -16,6 +16,7 @@ This guide adapts these references:
 - Ethan Schoonover, [Solarized](https://ethanschoonover.com/solarized/)
 - Figma Learn, [Overview of variables, collections, and modes](https://help.figma.com/hc/en-us/articles/14506821864087-Overview-of-variables-collections-and-modes)
 - Figma Learn, [The difference between variables and styles](https://help.figma.com/hc/en-us/articles/15871097384471)
+- Apple Human Interface Guidelines archival references: [1987 Open Library record](https://openlibrary.org/books/OL7406922M/Apple_Human_Interface_Guidelines?show_page_status=1), [1992 Macintosh Human Interface Guidelines PDF](https://vintageapple.org/inside_r/pdf/Human_Interface_Guidelines_1992.pdf), and [archived Apple controls guidance](https://leopard-adc.pepas.com/documentation/UserExperience/Conceptual/AppleHIGuidelines/XHIGControls/XHIGControls.html)
 
 ## Product Model
 
@@ -30,6 +31,23 @@ The Orchestrator has three user-facing workspace modes plus one Player runtime r
 Design work must show the current mode clearly. Do not rely on server rejection as the main user experience. If a control is unavailable because of room policy or authority, hide it when the absence is obvious, or show it disabled with a short policy reason when discovery matters.
 
 Preset operator and Browse-only runtime UI work must follow the [Orchestrator Preset Operator UX](orchestrator-preset-operator-ux.md) decision spec.
+
+Preview, Player-applied state, and future Player Live work must follow the [Orchestrator Preview/Output Model](orchestrator-preview-output-model.md). That model is the durable source of truth for Local Preview, Preview using Player MP4, Applied on Player, Player Output, and Player Live labels.
+
+## Preview/Output Mental Model
+
+The Orchestrator preview is a fast local Hydra render. It can borrow the Player MP4 media source and clock, but it is still a local approximation. It is not the Player's rendered output and must not be labeled as Live, Player Output, Now Playing, or On Display.
+
+Use this split:
+
+- **Local Preview:** immediate edit and preset-audition feedback in this browser.
+- **Applied on Player:** runtime confirmation that the Player evaluated and ticked the accepted visualizer run.
+- **Player Output:** the actual audience display rendered by the Player.
+- **Player Live:** future mirror, stream, or snapshot of Player Output. Do not use this label until that feature exists.
+
+Source binding should be visible when it changes the user's expectation: Preview using Player MP4, Preview waiting for Player media, or Fallback external source. These labels should stay near the preview or the affected preset action, not in detached instructional text.
+
+This follows the archival HIG principles that product state should be visible, modes should not be hidden, direct actions should produce immediate feedback, and labels should match the behavior users can observe.
 
 ## Product Layout Contract
 
@@ -223,6 +241,7 @@ Before merging Orchestrator UI work, verify:
 - Advanced controls are progressively disclosed without blocking expert access.
 - Preset send behavior matches server authority.
 - Local preview and room broadcast state cannot be confused.
+- Local preview, Applied on Player, Player Output, and future Player Live labels follow the Preview/Output Model.
 - Failure states are visible and recoverable.
 - Keyboard and touch interactions are covered.
 - Labels, values, units, and defaults are visible for synthesis parameters.
