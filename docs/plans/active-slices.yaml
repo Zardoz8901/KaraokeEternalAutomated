@@ -398,13 +398,13 @@
     - cleanup
 
 - id: orchestrator-preset-operator-runtime-ux
-  status: in_progress
+  status: merged_to_main
   owner: codex
   branch: phase-6-orchestrator-preset-operator-runtime-ux
   base: main
   worktree:
-    path: /home/steph/projects/KaraokeEternalAutomated-phase-6-orchestrator-preset-operator-runtime-ux
-    state: present
+    path: null
+    state: not_required
   merge_order: 90
   goal: Implement the client-only Preset operator and Browse-only runtime UX contract without backend, socket, route guard, package, Nix, workflow, or Player changes.
   write_scope:
@@ -451,9 +451,9 @@
     - "User decision locked 2026-05-21: Phase 6 hides all non-host management actions so Operator/Browse-only are audition/send surfaces, not reduced host tools."
     - This slice overlaps blocked redux-modernization Orchestrator component paths; serialize this slice ahead of redux-modernization and do not run both branches in parallel.
     - Hidden UI is not authorization; server-side enforcement remains unchanged.
+    - Merged to main on 2026-05-21 as b711ae50.
   next:
-    - implementation
-    - review
+    - cleanup
 
 - id: rollback-2026-02-12-cleanup
   status: merged_to_main
