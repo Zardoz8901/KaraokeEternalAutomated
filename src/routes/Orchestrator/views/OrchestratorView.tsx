@@ -1,417 +1,58 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React from 'react'
 import { Link } from 'react-router'
-import combinedReducer from 'store/reducers'
-import { useAppDispatch, useAppSelector } from 'store/hooks'
-import { VISUALIZER_HYDRA_CODE_REQ } from 'shared/actionTypes'
-import playerVisualizerReducer from 'routes/Player/modules/playerVisualizer'
-import { sliceInjectNoOp } from 'routes/Player/modules/player'
 import Icon from 'components/Icon/Icon'
-import { DEFAULT_SKETCH, getRandomSketch } from '../components/hydraSketchBook'
-import type { PresetLeaf } from '../components/presetTree'
-import { canSendHydraInput, getOrchestratorCapabilities } from '../components/orchestratorCapabilities'
-import { getEffectiveCode, getPendingRemote, normalizeCodeForAck, resolvePreviewHydraState, shouldAutoApplyPreset, shouldShowUnsentDot } from './orchestratorViewHelpers'
-import { getOrchestratorShellModel, normalizeDesktopPanel, normalizeMobileTab, type OrchestratorDesktopPanel, type OrchestratorMobileTab } from './orchestratorShellModel'
 import ApiReference from '../components/ApiReference'
 import PresetBrowser from '../components/PresetBrowser'
 import CodeEditor from '../components/CodeEditor'
 import StagePanel from '../components/StagePanel'
 import OrchestratorStatusStrip from '../components/OrchestratorStatusStrip'
-import { getOrchestratorStatusModel } from '../components/orchestratorStatus'
-import { type StageBuffer } from '../components/stagePanelUtils'
-import { useCameraSender } from 'lib/webrtc/useCameraSender'
-import { fetchCurrentRoom } from 'store/modules/rooms'
-import { getPreviewSize } from './orchestratorLayout'
-import { useVisualViewport } from 'lib/useVisualViewport'
+import { useOrchestratorWorkspace } from './useOrchestratorWorkspace'
 import styles from './OrchestratorView.css'
 
-type SendHydraPayload = {
-  code: string
-  hydraPresetName?: string
-  hydraPresetId?: number | null
-  hydraPresetFolderId?: number | null
-  hydraPresetSource?: 'gallery' | 'folder'
-}
-
 function OrchestratorView () {
-  const dispatch = useAppDispatch()
-  const camera = useCameraSender()
-  const playerVisualizer = useAppSelector(state => state.playerVisualizer)
-  const status = useAppSelector(state => state.status)
-  const user = useAppSelector(state => state.user)
-  const currentRoomPrefs = useAppSelector((state) => {
-    if (typeof state.user.roomId !== 'number') return undefined
-    return state.rooms.entities[state.user.roomId]?.prefs
-  })
-  const orchestratorCapabilities = useMemo(() => getOrchestratorCapabilities(user, currentRoomPrefs), [
-    currentRoomPrefs,
-    user,
-  ])
-  const shellModel = useMemo(() => getOrchestratorShellModel(orchestratorCapabilities), [orchestratorCapabilities])
-
-  // playerVisualizer starts with hasHydraUpdate=false.
-  // Once a VISUALIZER_HYDRA_CODE action arrives, flag is set to true.
-  // Until then, fall back to status.visualizer (hydrated by PLAYER_STATUS).
-  const hasUpdate = playerVisualizer?.hasHydraUpdate === true
-  const remoteHydraCode = hasUpdate
-    ? playerVisualizer.hydraCode
-    : status.visualizer?.hydraCode
-  const remotePresetIndex = hasUpdate
-    ? playerVisualizer.hydraPresetIndex
-    : status.visualizer?.hydraPresetIndex
-  const previewHydraState = resolvePreviewHydraState(hasUpdate, playerVisualizer, status.visualizer)
-
-  const ui = useAppSelector(state => state.ui)
-  const { isKeyboardOpen } = useVisualViewport()
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [localCode, setLocalCode] = useState<string>(DEFAULT_SKETCH)
-  const [previewBuffer, setPreviewBuffer] = useState<StageBuffer>('auto')
-  const [userHasEdited, setUserHasEdited] = useState(false)
-  const [pendingRemoteCode, setPendingRemoteCode] = useState<string | null>(null)
-  const [pendingRemoteCount, setPendingRemoteCount] = useState(0)
-  const [activeTab, setActiveTab] = useState<OrchestratorDesktopPanel>('presets')
-  const [activeMobileTab, setActiveMobileTab] = useState<OrchestratorMobileTab>('stage')
-  const [debouncedCode, setDebouncedCode] = useState<string>(DEFAULT_SKETCH)
-  const [refPanelWidth, setRefPanelWidth] = useState<number>(() => {
-    if (typeof window === 'undefined') return 280
-    const stored = window.localStorage.getItem('orchestratorRefPanelWidth')
-    const width = stored ? Number(stored) : NaN
-    if (!Number.isFinite(width)) return 280
-    return Math.min(520, Math.max(240, width))
-  })
-  const [isResizingPanel, setIsResizingPanel] = useState(false)
-  const [sendStatus, setSendStatus] = useState<'idle' | 'sending' | 'synced' | 'error'>('idle')
-  const prevRemoteRef = useRef<string | undefined>(undefined)
-  const prevPresetIndexRef = useRef<number | undefined>(undefined)
-  const lastSentRef = useRef<string | null>(null)
-  const remoteSyncRafRef = useRef<number | null>(null)
-
-  const dispatchHydraPayload = useCallback((payload: SendHydraPayload) => {
-    lastSentRef.current = normalizeCodeForAck(payload.code)
-    setSendStatus('sending')
-    dispatch({
-      type: VISUALIZER_HYDRA_CODE_REQ,
-      payload,
-    })
-  }, [dispatch])
-
-  const rejectHydraSend = useCallback(() => {
-    lastSentRef.current = null
-    setSendStatus('error')
-  }, [])
-
-  const handleSendCode = useCallback((input: string | SendHydraPayload) => {
-    if (!orchestratorCapabilities.canLiveCode) {
-      rejectHydraSend()
-      return
-    }
-
-    const payload = typeof input === 'string' ? { code: input } : input
-    dispatchHydraPayload(payload)
-  }, [dispatchHydraPayload, orchestratorCapabilities.canLiveCode, rejectHydraSend])
-
-  const cancelPendingRemoteSync = useCallback(() => {
-    if (remoteSyncRafRef.current !== null) {
-      cancelAnimationFrame(remoteSyncRafRef.current)
-      remoteSyncRafRef.current = null
-    }
-  }, [])
-
-  const handleCodeChange = useCallback((code: string) => {
-    cancelPendingRemoteSync()
-    setUserHasEdited(true)
-    setLocalCode(code)
-    if (sendStatus === 'synced' || sendStatus === 'error') {
-      setSendStatus('idle')
-      lastSentRef.current = null
-    }
-  }, [cancelPendingRemoteSync, sendStatus])
-
-  /**
-   * Random is LOCAL-ONLY: changes the editor code but does NOT dispatch to
-   * the server. The user must explicitly Send (Ctrl+Enter) to share with
-   * other clients. This avoids spamming collaborators with rapid clicks.
-   */
-  const handleRandomize = useCallback(() => {
-    const sketch = getRandomSketch()
-    cancelPendingRemoteSync()
-    setLocalCode(sketch)
-    setDebouncedCode(sketch)
-    setUserHasEdited(true)
-  }, [cancelPendingRemoteSync])
-
-  const handleCameraToggle = useCallback(async () => {
-    if (camera.status === 'idle' || camera.status === 'error') {
-      await camera.start()
-    } else {
-      camera.stop()
-    }
-  }, [camera])
-
-  const handleLoadPreset = useCallback((code: string) => {
-    cancelPendingRemoteSync()
-    setLocalCode(code)
-    setDebouncedCode(code)
-    setUserHasEdited(true)
-    if (ui.innerWidth < 980) {
-      setActiveMobileTab('stage')
-    }
-  }, [cancelPendingRemoteSync, ui.innerWidth])
-
-  const handleSendPreset = useCallback((input: PresetLeaf | string) => {
-    if (!canSendHydraInput(input, orchestratorCapabilities)) {
-      rejectHydraSend()
-      return
-    }
-
-    const payload: SendHydraPayload = typeof input === 'string'
-      ? { code: input }
-      : {
-          code: input.code,
-          hydraPresetName: input.name,
-          hydraPresetId: input.presetId ?? null,
-          hydraPresetFolderId: input.folderId ?? null,
-          hydraPresetSource: input.isGallery ? 'gallery' : 'folder',
-        }
-
-    cancelPendingRemoteSync()
-    setLocalCode(payload.code)
-    setDebouncedCode(payload.code)
-    setUserHasEdited(true)
-    dispatchHydraPayload(payload)
-    if (ui.innerWidth < 980) {
-      setActiveMobileTab('stage')
-    }
-  }, [cancelPendingRemoteSync, dispatchHydraPayload, orchestratorCapabilities, rejectHydraSend, ui.innerWidth])
-
-  const handleInsertApiExample = useCallback((snippet: string) => {
-    const trimmed = snippet.trim()
-    if (trimmed.length === 0) return
-    const base = (userHasEdited ? localCode : (remoteHydraCode ?? localCode)).trimEnd()
-    const nextCode = base.length > 0 ? `${base}\n\n${trimmed}` : trimmed
-    cancelPendingRemoteSync()
-    setLocalCode(nextCode)
-    setDebouncedCode(nextCode)
-    setUserHasEdited(true)
-    if (ui.innerWidth < 980) {
-      setActiveMobileTab('code')
-    }
-  }, [cancelPendingRemoteSync, localCode, remoteHydraCode, ui.innerWidth, userHasEdited])
-
-  const handleReplaceApiExample = useCallback((snippet: string) => {
-    const nextCode = snippet.trim()
-    if (nextCode.length === 0) return
-    cancelPendingRemoteSync()
-    setLocalCode(nextCode)
-    setDebouncedCode(nextCode)
-    setUserHasEdited(true)
-    if (ui.innerWidth < 980) {
-      setActiveMobileTab('code')
-    }
-  }, [cancelPendingRemoteSync, ui.innerWidth])
-
-  const handleResend = useCallback(() => {
-    if (!orchestratorCapabilities.canLiveCode) {
-      rejectHydraSend()
-      return
-    }
-
-    handleSendCode(localCode)
-  }, [handleSendCode, localCode, orchestratorCapabilities.canLiveCode, rejectHydraSend])
-
-  const handleApplyRemote = useCallback(() => {
-    if (pendingRemoteCode) {
-      setLocalCode(pendingRemoteCode)
-      setDebouncedCode(pendingRemoteCode)
-    }
-    setPendingRemoteCode(null)
-    setPendingRemoteCount(0)
-  }, [pendingRemoteCode])
-
-  const handleDismissRemote = useCallback(() => {
-    setPendingRemoteCode(null)
-    setPendingRemoteCount(0)
-  }, [])
-
-  if (!playerVisualizer) {
-    combinedReducer.inject({ reducerPath: 'playerVisualizer', reducer: playerVisualizerReducer })
-    dispatch(sliceInjectNoOp())
-  }
-
-  useEffect(() => {
-    dispatch(fetchCurrentRoom())
-  }, [dispatch])
-
-  // Persist ref panel width
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    window.localStorage.setItem('orchestratorRefPanelWidth', String(refPanelWidth))
-  }, [refPanelWidth])
-
-  // Handle ref panel resize drag
-  useEffect(() => {
-    if (!isResizingPanel) return
-    const handleMove = (event: PointerEvent) => {
-      const rect = containerRef.current?.getBoundingClientRect()
-      if (!rect) return
-      const next = Math.min(520, Math.max(240, event.clientX - rect.left))
-      setRefPanelWidth(next)
-    }
-    const handleUp = () => {
-      setIsResizingPanel(false)
-    }
-    window.addEventListener('pointermove', handleMove)
-    window.addEventListener('pointerup', handleUp)
-    document.body.style.cursor = 'col-resize'
-    document.body.style.userSelect = 'none'
-    return () => {
-      window.removeEventListener('pointermove', handleMove)
-      window.removeEventListener('pointerup', handleUp)
-      document.body.style.cursor = ''
-      document.body.style.userSelect = ''
-    }
-  }, [isResizingPanel])
-
-  // Sync remote code to local (audioized) before user edits — runs once per remote change
-  useEffect(() => {
-    if (userHasEdited) return
-    if (!remoteHydraCode || remoteHydraCode.trim() === '') return
-    if (remoteHydraCode === localCode) return
-
-    remoteSyncRafRef.current = requestAnimationFrame(() => {
-      setLocalCode(remoteHydraCode)
-      setDebouncedCode(remoteHydraCode)
-      remoteSyncRafRef.current = null
-    })
-
-    return () => {
-      if (remoteSyncRafRef.current !== null) {
-        cancelAnimationFrame(remoteSyncRafRef.current)
-        remoteSyncRafRef.current = null
-      }
-    }
-  }, [remoteHydraCode, userHasEdited, localCode])
-
-  // Mark send status as synced when remote matches last sent code
-  useEffect(() => {
-    if (!lastSentRef.current || !remoteHydraCode) return
-    const normalizedRemote = normalizeCodeForAck(remoteHydraCode)
-    if (!normalizedRemote || normalizedRemote !== lastSentRef.current) return
-    let timeoutId: number | null = null
-    const rafId = requestAnimationFrame(() => {
-      setSendStatus('synced')
-      lastSentRef.current = null
-      timeoutId = window.setTimeout(() => setSendStatus('idle'), 1500)
-    })
-    return () => {
-      cancelAnimationFrame(rafId)
-      if (timeoutId) window.clearTimeout(timeoutId)
-    }
-  }, [remoteHydraCode])
-
-  // If no ack arrives, show error
-  useEffect(() => {
-    if (sendStatus !== 'sending') return
-    const id = window.setTimeout(() => {
-      if (sendStatus === 'sending') setSendStatus('error')
-    }, 4000)
-    return () => window.clearTimeout(id)
-  }, [sendStatus])
-
-  // Track remote code changes — uses async callback to satisfy lint
-  useEffect(() => {
-    if (remoteHydraCode === prevRemoteRef.current) return
-    prevRemoteRef.current = remoteHydraCode
-
-    if (!userHasEdited) return
-
-    const pending = getPendingRemote(remoteHydraCode ?? null, localCode, userHasEdited)
-    if (pending === null) return
-
-    // Schedule state update asynchronously (external system sync pattern)
-    const id = requestAnimationFrame(() => {
-      setPendingRemoteCode(pending)
-      setPendingRemoteCount(c => c + 1)
-    })
-    return () => cancelAnimationFrame(id)
-  }, [remoteHydraCode, localCode, userHasEdited])
-
-  // Auto-apply when player navigates presets (index changes)
-  useEffect(() => {
-    const prevIdx = prevPresetIndexRef.current
-    prevPresetIndexRef.current = remotePresetIndex
-
-    if (!shouldAutoApplyPreset(prevIdx, remotePresetIndex, userHasEdited, remoteHydraCode)) return
-
-    const id = requestAnimationFrame(() => {
-      setLocalCode(remoteHydraCode!)
-      setUserHasEdited(false)
-      setPendingRemoteCode(null)
-      setPendingRemoteCount(0)
-    })
-    return () => cancelAnimationFrame(id)
-  }, [remotePresetIndex, remoteHydraCode, userHasEdited])
-
-  // Debounce preview at 150ms
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedCode(localCode)
-    }, 150)
-    return () => clearTimeout(timer)
-  }, [localCode])
-
-  const effectiveCode = getEffectiveCode(
-    userHasEdited ? debouncedCode : localCode,
-    remoteHydraCode,
-    userHasEdited,
-  )
-
-  const previewSize = getPreviewSize(ui.innerWidth)
-  const isMobile = ui.innerWidth < 980
-  const activeDesktopPanel = normalizeDesktopPanel(activeTab, shellModel)
-  const activeMobilePanel = normalizeMobileTab(activeMobileTab, shellModel)
-  const canShowApiPanel = shellModel.visibleDesktopPanels.includes('api')
-  const canShowCodePanel = shellModel.visibleMobileTabs.includes('code')
-  const orchestratorStatusModel = useMemo(() => getOrchestratorStatusModel({
-    capabilities: orchestratorCapabilities,
-    sendStatus,
-    userHasEdited,
+  const {
+    containerRef,
+    containerStyle,
+    workspaceModel,
+    orchestratorStatusModel,
+    presetBrowserProps,
+    apiReferenceProps,
+    stagePanelProps,
+    codeEditorProps,
+    activeDesktopPanel,
+    activeMobilePanel,
+    setActiveDesktopPanel,
+    setActiveMobilePanel,
+    isKeyboardOpen,
+    isMobile,
+    isRefOpen,
+    isResizingPanel,
+    startRefPanelResize,
+    pendingRemoteCode,
     pendingRemoteCount,
-    cameraStatus: camera.status,
-  }), [
-    camera.status,
-    orchestratorCapabilities,
-    pendingRemoteCount,
-    sendStatus,
-    userHasEdited,
-  ])
-
-  const isRefOpen = isMobile && activeMobilePanel === 'ref'
+    handleApplyRemote,
+    handleDismissRemote,
+    showUnsentMobileDot,
+  } = useOrchestratorWorkspace()
+  const { shellModel } = workspaceModel
   const refPanelClass = isRefOpen
     ? `${styles.refPanel} ${styles.refPanelOpen}`
     : styles.refPanel
-  let tabContent: React.ReactNode
-  if (activeDesktopPanel === 'presets') {
-    tabContent = (
-      <PresetBrowser
-        currentCode={localCode}
-        onLoad={handleLoadPreset}
-        onSend={handleSendPreset}
-      />
-    )
-  } else {
-    tabContent = (
-      <ApiReference
-        onInsertExample={handleInsertApiExample}
-        onReplaceWithExample={handleReplaceApiExample}
-      />
-    )
-  }
+  const containerClass = [
+    styles.container,
+    shellModel.desktopLayout === 'operatorStageExpanded' ? styles.containerOperatorStageExpanded : '',
+    isResizingPanel ? styles.containerResizing : '',
+    pendingRemoteCode ? styles.containerWithBanner : '',
+    isKeyboardOpen ? styles.containerKeyboardOpen : '',
+  ].filter(Boolean).join(' ')
 
-  const containerStyle = { ['--ref-panel-width' as string]: `${refPanelWidth}px` } as React.CSSProperties
+  const tabContent = activeDesktopPanel === 'presets'
+    ? <PresetBrowser {...presetBrowserProps} />
+    : <ApiReference {...apiReferenceProps} />
 
   return (
     <div
-      className={`${styles.container} ${shellModel.desktopLayout === 'operatorStageExpanded' ? styles.containerOperatorStageExpanded : ''} ${isResizingPanel ? styles.containerResizing : ''} ${pendingRemoteCode ? styles.containerWithBanner : ''} ${isKeyboardOpen ? styles.containerKeyboardOpen : ''}`}
+      className={containerClass}
       ref={containerRef}
       style={containerStyle}
     >
@@ -427,17 +68,17 @@ function OrchestratorView () {
               role='tab'
               aria-selected={activeDesktopPanel === 'presets'}
               className={`${styles.tab} ${activeDesktopPanel === 'presets' ? styles.tabActive : ''}`}
-              onClick={() => setActiveTab('presets')}
+              onClick={() => setActiveDesktopPanel('presets')}
             >
               Presets
             </button>
-            {canShowApiPanel && (
+            {workspaceModel.canShowApiPanel && (
               <button
                 type='button'
                 role='tab'
                 aria-selected={activeDesktopPanel === 'api'}
                 className={`${styles.tab} ${activeDesktopPanel === 'api' ? styles.tabActive : ''}`}
-                onClick={() => setActiveTab('api')}
+                onClick={() => setActiveDesktopPanel('api')}
               >
                 API
               </button>
@@ -450,7 +91,7 @@ function OrchestratorView () {
         {!isMobile && (
           <div
             className={styles.refPanelResize}
-            onPointerDown={() => setIsResizingPanel(true)}
+            onPointerDown={startRefPanelResize}
             role='separator'
             aria-orientation='vertical'
             aria-label='Resize presets panel'
@@ -461,7 +102,7 @@ function OrchestratorView () {
       {isMobile && activeMobilePanel === 'ref' && (
         <div
           className={styles.refPanelOverlay}
-          onClick={() => setActiveMobileTab('stage')}
+          onClick={() => setActiveMobilePanel('stage')}
           role='presentation'
         />
       )}
@@ -481,37 +122,14 @@ function OrchestratorView () {
       {(!isMobile || activeMobilePanel === 'stage') && (
         <div className={styles.stageDock}>
           <StagePanel
-            code={effectiveCode}
-            width={previewSize.width}
-            height={previewSize.height}
-            buffer={previewBuffer}
-            onBufferChange={setPreviewBuffer}
-            localCameraStream={camera.stream}
-            onPresetLoad={handleLoadPreset}
-            onPresetSend={orchestratorCapabilities.canSendGalleryPreset ? handleSendPreset : undefined}
-            onRandomize={handleRandomize}
+            {...stagePanelProps}
             statusStrip={<OrchestratorStatusStrip model={orchestratorStatusModel} />}
-            visualizerMode={previewHydraState.mode}
-            visualizerEnabled={previewHydraState.isEnabled}
-            visualizerSensitivity={previewHydraState.sensitivity}
-            visualizerAllowCamera={previewHydraState.allowCamera}
-            cameraRelayStatus={camera.status}
           />
         </div>
       )}
-      {canShowCodePanel && (!isMobile || activeMobilePanel === 'code') && (
+      {workspaceModel.canShowCodePanel && (!isMobile || activeMobilePanel === 'code') && (
         <div className={styles.codeDock}>
-          <CodeEditor
-            code={userHasEdited ? localCode : effectiveCode}
-            onCodeChange={handleCodeChange}
-            onSend={handleSendCode}
-            canSend={orchestratorCapabilities.canLiveCode}
-            sendStatus={sendStatus}
-            onResend={handleResend}
-            onRandomize={handleRandomize}
-            cameraStatus={camera.status}
-            onCameraToggle={handleCameraToggle}
-          />
+          <CodeEditor {...codeEditorProps} />
         </div>
       )}
 
@@ -528,24 +146,24 @@ function OrchestratorView () {
               aria-selected={activeMobilePanel === 'stage'}
               aria-label='Stage'
               className={`${styles.mobileTab} ${activeMobilePanel === 'stage' ? styles.mobileTabActive : ''}`}
-              onClick={() => setActiveMobileTab('stage')}
+              onClick={() => setActiveMobilePanel('stage')}
             >
               <span className={styles.mobileTabIcon}>{'\u25b6'}</span>
               <span>Stage</span>
             </button>
-            {canShowCodePanel && (
+            {workspaceModel.canShowCodePanel && (
               <button
                 type='button'
                 role='tab'
                 aria-selected={activeMobilePanel === 'code'}
                 aria-label='Code'
                 className={`${styles.mobileTab} ${activeMobilePanel === 'code' ? styles.mobileTabActive : ''}`}
-                onClick={() => setActiveMobileTab('code')}
+                onClick={() => setActiveMobilePanel('code')}
               >
                 <span className={styles.mobileTabIcon}>{'\u003c\u002f\u003e'}</span>
                 <span>Code</span>
-                {shouldShowUnsentDot(activeMobilePanel, userHasEdited, sendStatus) && (
-                  <span className={`${styles.mobileTabDot} ${sendStatus === 'error' ? styles.mobileTabDotError : ''}`} />
+                {showUnsentMobileDot && (
+                  <span className={`${styles.mobileTabDot} ${codeEditorProps.sendStatus === 'error' ? styles.mobileTabDotError : ''}`} />
                 )}
               </button>
             )}
@@ -555,7 +173,7 @@ function OrchestratorView () {
               aria-selected={activeMobilePanel === 'ref'}
               aria-label='Presets'
               className={`${styles.mobileTab} ${activeMobilePanel === 'ref' ? styles.mobileTabActive : ''}`}
-              onClick={() => setActiveMobileTab('ref')}
+              onClick={() => setActiveMobilePanel('ref')}
             >
               <span className={styles.mobileTabIcon}>{'\u2630'}</span>
               <span>Presets</span>
