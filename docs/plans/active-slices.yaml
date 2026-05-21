@@ -640,6 +640,56 @@
   next:
     - cleanup
 
+- id: orchestrator-preview-output-model
+  status: planned
+  owner: codex
+  branch: docs/orchestrator-preview-output-model
+  base: main
+  worktree:
+    path: /home/steph/projects/KaraokeEternalAutomated-orchestrator-preview-output-model
+    state: missing
+  merge_order: 120
+  goal: Define the Orchestrator preview/output mental model before any Player Live mirroring work.
+  write_scope:
+    - docs/plans/active-slices.yaml
+    - docs/ARCHITECTURE.md
+    - docs/architecture/orchestrator-preview-output-model.md
+    - docs/architecture/orchestrator-synthesis-ui-style-guide.md
+    - docs/architecture/orchestrator-preset-operator-ux.md
+    - docs/analysis/orchestrator_preview_output_model_2026_05_21.md
+    - docs/analysis/current_state_2026_03_05.md
+  protected_paths:
+    - src/
+    - server/
+    - shared/
+    - package.json
+    - package-lock.json
+    - flake.nix
+    - e2e/
+    - .github/workflows/
+  verification:
+    - rg -n "orchestrator-preview-output-model" docs/ARCHITECTURE.md docs/architecture
+    - rg -n "Local Preview|Player Output|Player Live|Applied on Player" docs/architecture docs/analysis
+    - npm run slices:check
+    - npm run typecheck
+  acceptance:
+    - Durable docs define Local Preview, Preview using Player MP4, Preview waiting for Player media, Fallback external source, Applied on Player, Player Output, and Player Live.
+    - The local Hydra preview is never described as Live, Player Output, Now Playing, or On Display.
+    - Preset operator docs are reconciled with Phase 7A applied-state truth without rewriting historical analysis.
+    - The architecture index links the new durable guide.
+  non_goals:
+    - Do not implement Player Live streaming, snapshots, or mirroring.
+    - Do not change server/socket protocol, shared action types, runtime rendering, route guards, preset CRUD, package, Nix, workflow, or e2e files.
+    - Do not rewrite historical dated analysis; supersede only the Applied-is-future-only point in a new dated note.
+    - Do not resume or merge redux-modernization.
+  notes:
+    - "Lifecycle requirement 2026-05-21: register planned before creating the worktree, mark in_progress only after the worktree exists, and mark merged_to_main only after the slice lands."
+    - Historical Apple HIG research is archival guidance for visible state, clear mental models, direct manipulation, immediate feedback, and avoiding hidden modes; it is not current Apple platform doctrine.
+    - This slice is docs-only and sets product language for later Orchestrator UI work.
+  next:
+    - implementation
+    - review
+
 - id: rollback-2026-02-12-cleanup
   status: merged_to_main
   owner: unassigned
