@@ -582,6 +582,63 @@
   next:
     - cleanup
 
+- id: deterministic-hydra-video-binding
+  status: planned
+  owner: codex
+  branch: phase-7b1-deterministic-hydra-video-binding
+  base: main
+  worktree:
+    path: /home/steph/projects/KaraokeEternalAutomated-phase-7b1-deterministic-hydra-video-binding
+    state: missing
+  merge_order: 115
+  goal: Harden Hydra initVideo binding so Orchestrator waits for required Player MP4 shadow media instead of falling back to random external video.
+  write_scope:
+    - docs/plans/active-slices.yaml
+    - docs/analysis/
+    - src/lib/detectCameraUsage.ts
+    - src/lib/detectCameraUsage.test.ts
+    - src/lib/videoProxyOverride.ts
+    - src/lib/videoProxyOverride.test.ts
+    - src/routes/Orchestrator/components/HydraPreview.tsx
+    - src/routes/Orchestrator/components/HydraPreview.test.tsx
+    - src/routes/Player/components/Player/PlayerVisualizer/HydraVisualizer.tsx
+    - src/routes/Player/components/Player/PlayerVisualizer/HydraVisualizer.applied.test.tsx
+    - src/routes/Player/components/Player/PlayerVisualizer/HydraVisualizer.camera.test.tsx
+    - e2e/fixtures/
+  protected_paths:
+    - server/
+    - shared/actionTypes.ts
+    - shared/types.ts
+    - package.json
+    - package-lock.json
+    - flake.nix
+    - .github/workflows/
+    - e2e/*.spec.ts
+  verification:
+    - npm test -- src/lib/detectCameraUsage.test.ts src/lib/videoProxyOverride.test.ts src/routes/Orchestrator/components/HydraPreview.test.tsx src/routes/Player/components/Player/PlayerVisualizer/HydraVisualizer.applied.test.tsx src/routes/Player/components/Player/PlayerVisualizer/HydraVisualizer.camera.test.tsx
+    - npm run slices:check
+    - npm run typecheck
+    - npm run lint
+    - npm test
+  acceptance:
+    - HydraPreview waits for a Player MP4 shadow provider only when current Hydra code uses s0-s3.initVideo.
+    - Audio-only, mouse-only, initImage, and initScreen patches render immediately under a current Player MP4 clock.
+    - Required provider missing never creates fallback videos, calls Math.random, emits fallback binding, video-ready, or applied state.
+    - Provider null-to-present and media identity changes re-evaluate once and bind all s0-s3 initVideo sources to the current borrowed provider.
+    - Position/statusAt-only drift updates do not re-evaluate Hydra code or spam applied emits.
+    - Shadow video cleanup removes only HydraPreview-owned shadow elements from the hidden Hydra video mount.
+  non_goals:
+    - Do not change server socket protocol, shared action constants, room policy, preset CRUD, package, Nix, workflows, or route guards.
+    - Do not add exact frame sync.
+    - Do not add media files for manual smoke targets.
+  notes:
+    - High-risk client runtime hardening touches HydraVisualizer and videoProxyOverride.
+    - Red-team scope covers fallback suppression, borrowed video lifecycle, applied-state truth, and resource cleanup.
+    - Cousteau and Close Encounters are manual local-library smoke targets.
+    - Overlaps blocked redux-modernization Player visualizer and Orchestrator paths; serialize ahead of redux-modernization.
+  next:
+    - implementation
+
 - id: rollback-2026-02-12-cleanup
   status: merged_to_main
   owner: unassigned
