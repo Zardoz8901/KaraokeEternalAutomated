@@ -348,6 +348,55 @@
   next:
     - cleanup
 
+- id: orchestrator-preset-operator-ux-spec
+  status: planned
+  owner: codex
+  branch: phase-5-orchestrator-preset-operator-ux-spec
+  base: main
+  worktree:
+    path: /home/steph/projects/KaraokeEternalAutomated-phase-5-orchestrator-preset-operator-ux-spec
+    state: missing
+  merge_order: 80
+  goal: Define the Preset operator and Browse-only Orchestrator UX contract before runtime UI implementation.
+  write_scope:
+    - docs/plans/active-slices.yaml
+    - docs/ARCHITECTURE.md
+    - docs/architecture/
+    - docs/analysis/
+  protected_paths:
+    - src/
+    - server/
+    - shared/
+    - package.json
+    - package-lock.json
+    - flake.nix
+    - e2e/
+    - .github/workflows/
+  verification:
+    - rg -n "Preset Operator UX|orchestrator-preset-operator-ux" docs
+    - npm run slices:check
+    - npm run typecheck
+    - npm run lint
+  acceptance:
+    - Preset Operator UX spec defines modes, action matrix, state truth model, state copy matrix, placement rules, capability classification, protocol gaps, acceptance criteria, and out-of-scope.
+    - Load is explicitly defined as local Stage preview and selected preset only, with no room broadcast and no player-applied claim.
+    - Toolbar actions and row actions are specified for Host, Operator, Browse-only, and Guest across Gallery presets, Saved DB presets, Folders, and Toolbar.
+    - Style guide links to the spec and separates Orchestrator user modes from the Player runtime role.
+    - No runtime code, backend, socket, package, Nix, e2e, or workflow changes are introduced.
+  non_goals:
+    - Do not implement runtime UI changes in this docs-first slice.
+    - Do not change backend socket contracts or enforcement.
+    - Do not change room prefs APIs, route guards, or admin room-policy management.
+    - Do not introduce a player-applied visualizer ack protocol.
+    - Do not resume or merge redux-modernization.
+  notes:
+    - "User decision locked 2026-05-21: Preset operator is the next UX priority, docs first."
+    - The next runtime slice should consume this spec and add focused tests for component/helper changes.
+    - Existing stale merged worktrees and branches are cleanup candidates but outside this slice.
+  next:
+    - implementation
+    - review
+
 - id: rollback-2026-02-12-cleanup
   status: merged_to_main
   owner: unassigned
