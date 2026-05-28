@@ -690,6 +690,61 @@
   next:
     - cleanup
 
+- id: orchestrator-presentation-truth-model
+  status: planned
+  owner: codex
+  branch: phase-8-orchestrator-presentation-truth-model
+  base: main
+  worktree:
+    path: /home/steph/projects/KaraokeEternalAutomated-phase-8-orchestrator-presentation-truth-model
+    state: missing
+  merge_order: 130
+  goal: Make Orchestrator Stage preview truth legible through a pure presentation model and Local Preview UI labels without Player Live mirroring.
+  write_scope:
+    - docs/plans/active-slices.yaml
+    - docs/analysis/orchestrator_presentation_truth_model_2026_05_28.md
+    - docs/analysis/current_state_2026_03_05.md
+    - src/routes/Orchestrator/components/orchestratorPresentationModel.ts
+    - src/routes/Orchestrator/components/orchestratorPresentationModel.test.ts
+    - src/routes/Orchestrator/components/HydraPreview.tsx
+    - src/routes/Orchestrator/components/HydraPreview.test.tsx
+    - src/routes/Orchestrator/components/HydraPreview.css
+    - src/routes/Orchestrator/components/orchestratorColorAudit.test.ts
+  protected_paths:
+    - server/
+    - shared/actionTypes.ts
+    - shared/types.ts
+    - src/routes/Player/
+    - package.json
+    - package-lock.json
+    - flake.nix
+    - e2e/
+    - .github/workflows/
+  verification:
+    - npm test -- src/routes/Orchestrator/components/orchestratorPresentationModel.test.ts src/routes/Orchestrator/components/HydraPreview.test.tsx src/routes/Orchestrator/components/orchestratorStatus.test.ts
+    - npm test -- src/routes/Orchestrator/components/orchestratorColorAudit.test.ts
+    - npm run slices:check
+    - npm run typecheck
+    - npm run lint
+  acceptance:
+    - HydraPreview overlay labels the current surface as Local Preview and never uses Live, Player Output, Now Playing, or On Display for preview status.
+    - The pure presentation model derives preview, audio, and player-output states from explicit inputs.
+    - Player MP4 plus initVideo shows waiting when the provider is absent and Preview using Player MP4 when the provider exists.
+    - initVideo without current Player MP4 uses safe preset/external video-source copy without claiming successful binding.
+    - Audio-only, mouse-only, initImage, and initScreen patches render immediately and create no shadow MP4 video.
+    - Existing OrchestratorStatusStrip, PresetTree Applied-on-Player behavior, HydraVisualizer props, server/socket/shared contracts, and Player rendering remain unchanged.
+  non_goals:
+    - Do not implement Player Live streaming, snapshots, mirroring, WebRTC transport, or canvas capture.
+    - Do not migrate PresetTree or rewrite OrchestratorStatusStrip.
+    - Do not change server/socket protocol, shared action/type contracts, Player rendering, route guards, preset CRUD, package, Nix, workflow, or e2e files.
+    - Do not claim external video successful binding from HydraPreview.
+  notes:
+    - Standard client UX/runtime slice; no high-risk Player visualizer files are in scope.
+    - This starts the presentation truth architecture while wiring only the Stage/HydraPreview path.
+    - Future Player Live can extend playerOutput states in a later high-risk architecture slice.
+  next:
+    - implementation
+
 - id: rollback-2026-02-12-cleanup
   status: merged_to_main
   owner: unassigned
