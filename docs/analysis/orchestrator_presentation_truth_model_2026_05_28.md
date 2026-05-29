@@ -22,7 +22,8 @@ The Preview/Output mental model docs established that Orchestrator Local Preview
 - PASS: `npm test -- src/routes/Orchestrator/components/orchestratorColorAudit.test.ts`
 - PASS: `npm run typecheck`
 - PASS: `npm run lint`
-- PASS: `npm run slices:check` with only pre-existing merged-branch cleanup warnings.
+- PASS: `npm run slices:check` before final lifecycle marking with only pre-existing merged-branch cleanup warnings.
+- PASS: `npm run slices:check` after final lifecycle marking with the expected Phase 8 merged-branch cleanup warning plus pre-existing cleanup warnings.
 
 ## Rollback
 
