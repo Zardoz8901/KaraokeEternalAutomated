@@ -3,6 +3,7 @@ import React, { act } from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { createRoot } from 'react-dom/client'
 import PresetTree from './PresetTree'
+import { APPLIED_ON_PLAYER_LABEL } from './orchestratorPresentationModel'
 import { getPresetRowUx } from './presetOperatorUx'
 import type { OrchestratorCapabilities } from './orchestratorCapabilities'
 import type { PresetTreeNode } from './presetTree'
@@ -481,7 +482,7 @@ describe('PresetTree', () => {
 
     expect(container.textContent).toContain('Selected')
     expect(container.textContent).not.toContain('Loaded in preview')
-    expect(container.textContent).toContain('Applied on Player')
+    expect(container.textContent).toContain(APPLIED_ON_PLAYER_LABEL)
 
     await act(async () => {
       root.unmount()

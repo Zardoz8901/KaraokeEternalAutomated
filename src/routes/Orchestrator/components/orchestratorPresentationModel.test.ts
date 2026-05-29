@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  APPLIED_ON_PLAYER_LABEL,
+  BROADCAST_READY_LABEL,
   FORBIDDEN_PREVIEW_TERMS,
   getOrchestratorPresentationModel,
+  LOCAL_PREVIEW_LABEL,
 } from './orchestratorPresentationModel'
 
 const baseInput = {
@@ -15,6 +18,26 @@ const baseInput = {
 }
 
 describe('getOrchestratorPresentationModel', () => {
+  it('exports shared label constants for cross-surface vocabulary', () => {
+    expect(LOCAL_PREVIEW_LABEL).toBe('Local Preview')
+    expect(APPLIED_ON_PLAYER_LABEL).toBe('Applied on Player')
+    expect(BROADCAST_READY_LABEL).toBe('Broadcast ready')
+  })
+
+  it('keeps shared preview, applied, and broadcast labels free of forbidden preview terms', () => {
+    const labels = [
+      LOCAL_PREVIEW_LABEL,
+      APPLIED_ON_PLAYER_LABEL,
+      BROADCAST_READY_LABEL,
+    ]
+
+    for (const label of labels) {
+      for (const term of FORBIDDEN_PREVIEW_TERMS) {
+        expect(label).not.toContain(term)
+      }
+    }
+  })
+
   it('labels inactive visualizer preview without audio or player output', () => {
     const model = getOrchestratorPresentationModel({
       ...baseInput,
@@ -25,7 +48,7 @@ describe('getOrchestratorPresentationModel', () => {
     expect(model.preview).toBe('off')
     expect(model.audio).toBe('none')
     expect(model.playerOutput).toBe('noPlayer')
-    expect(model.primaryLabel).toBe('Local Preview')
+    expect(model.primaryLabel).toBe(LOCAL_PREVIEW_LABEL)
     expect(model.secondaryLabels).toEqual(['Visualizer off'])
   })
 

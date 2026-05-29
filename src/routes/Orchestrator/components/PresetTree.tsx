@@ -2,6 +2,7 @@ import React, { useCallback } from 'react'
 import clsx from 'clsx'
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd'
 import Icon from 'components/Icon/Icon'
+import { APPLIED_ON_PLAYER_LABEL } from './orchestratorPresentationModel'
 import { getPresetKey, type PresetKey, type PresetRowUx } from './presetOperatorUx'
 import type { PresetLeaf, PresetTreeNode } from './presetTree'
 import styles from './PresetTree.css'
@@ -307,7 +308,7 @@ function PresetTree ({
                                   <div className={styles.presetMeta}>
                                     {isSelected && <span className={clsx(styles.badge, styles.badgeSelected)}>Selected</span>}
                                     {isLoadedPreview && <span className={clsx(styles.badge, styles.badgeLoaded)}>Loaded in preview</span>}
-                                    {isApplied && <span className={clsx(styles.badge, styles.badgeApplied)}>Applied on Player</span>}
+                                    {isApplied && <span className={clsx(styles.badge, styles.badgeApplied)}>{APPLIED_ON_PLAYER_LABEL}</span>}
                                     {isStarting && <span className={clsx(styles.badge, styles.badgeStart)}>Start</span>}
                                     {preset.usesCamera && <span className={clsx(styles.badge, styles.badgeCam)}>Cam</span>}
                                   </div>

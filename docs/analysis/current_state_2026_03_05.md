@@ -9,6 +9,7 @@
 
 | Date | Change | Scope | Key Files | Ref |
 |------|--------|-------|-----------|-----|
+| 2026-05-29 | Orchestrator status truth vocabulary: shared Local Preview, Broadcast ready, and Applied on Player label constants; idle broadcast copy/tone now avoids Preview/live wording | Standard | `orchestratorPresentationModel.ts`, `orchestratorStatus.ts`, `PresetTree.tsx`, tests | `docs/analysis/orchestrator_status_truth_vocabulary_2026_05_29.md` |
 | 2026-05-28 | Orchestrator Presentation Truth Model + Stage Preview UI: Local Preview labels now reflect source/audio truth, shadow MP4 creation is limited to initVideo patches, and HydraPreview CSS is Solarized-audited | Standard | `HydraPreview.tsx`, `orchestratorPresentationModel.ts`, tests | `docs/analysis/orchestrator_presentation_truth_model_2026_05_28.md` |
 | 2026-05-21 | Orchestrator preview/output mental model documented: Local Preview stays approximate, Applied on Player is runtime confirmation, Player Output is audience truth, and Player Live is reserved for future mirroring | Docs | `docs/architecture/orchestrator-preview-output-model.md`, Orchestrator UX docs | `docs/analysis/orchestrator_preview_output_model_2026_05_21.md` |
 | 2026-05-19 | Work-control slice plane: added active slice/worktree YAML, validator command, tests, CI enforcement, and branch cleanup tracking | Standard | `docs/plans/active-slices.yaml`, `scripts/check-active-slices.mjs`, `package.json`, CI | - |
