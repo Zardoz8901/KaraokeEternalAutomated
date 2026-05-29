@@ -691,13 +691,13 @@
     - cleanup
 
 - id: orchestrator-presentation-truth-model
-  status: planned
+  status: in_progress
   owner: codex
   branch: phase-8-orchestrator-presentation-truth-model
   base: main
   worktree:
     path: /home/steph/projects/KaraokeEternalAutomated-phase-8-orchestrator-presentation-truth-model
-    state: missing
+    state: present
   merge_order: 130
   goal: Make Orchestrator Stage preview truth legible through a pure presentation model and Local Preview UI labels without Player Live mirroring.
   write_scope:

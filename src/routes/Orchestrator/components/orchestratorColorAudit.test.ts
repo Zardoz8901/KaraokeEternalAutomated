@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 const auditedFiles = [
   'src/routes/Orchestrator/views/OrchestratorView.css',
   'src/routes/Orchestrator/components/StagePanel.css',
+  'src/routes/Orchestrator/components/HydraPreview.css',
   'src/routes/Orchestrator/components/OrchestratorStatusStrip.css',
   'src/routes/Orchestrator/components/CodeEditor.css',
   'src/routes/Orchestrator/components/CodeEditor.tsx',

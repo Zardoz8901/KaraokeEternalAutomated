@@ -9,6 +9,7 @@
 
 | Date | Change | Scope | Key Files | Ref |
 |------|--------|-------|-----------|-----|
+| 2026-05-28 | Orchestrator Presentation Truth Model + Stage Preview UI: Local Preview labels now reflect source/audio truth, shadow MP4 creation is limited to initVideo patches, and HydraPreview CSS is Solarized-audited | Standard | `HydraPreview.tsx`, `orchestratorPresentationModel.ts`, tests | `docs/analysis/orchestrator_presentation_truth_model_2026_05_28.md` |
 | 2026-05-21 | Orchestrator preview/output mental model documented: Local Preview stays approximate, Applied on Player is runtime confirmation, Player Output is audience truth, and Player Live is reserved for future mirroring | Docs | `docs/architecture/orchestrator-preview-output-model.md`, Orchestrator UX docs | `docs/analysis/orchestrator_preview_output_model_2026_05_21.md` |
 | 2026-05-19 | Work-control slice plane: added active slice/worktree YAML, validator command, tests, CI enforcement, and branch cleanup tracking | Standard | `docs/plans/active-slices.yaml`, `scripts/check-active-slices.mjs`, `package.json`, CI | - |
 | 2026-05-03 | Queue rotation sphere UX experiment proposal documented as an alternate, flagged queue view rather than a replacement for the existing list | Docs | `docs/analysis/queue_rotation_sphere_experiment_2026_05_03.md` | - |
@@ -80,4 +81,3 @@
 - Update this file when completing work.
 - Each entry should reference a commit hash or analysis doc.
 - When this file grows stale, create a new `current_state_{YYYY_MM_DD}.md` and update the pointer in AGENTS.md.
-

@@ -1,18 +1,60 @@
 .container {
   position: relative;
-  background: #000;
-  border: 1px solid #333;
+  background: var(--orch-black, black);
+  border: 1px solid var(--orch-border-subtle);
   overflow: hidden;
   isolation: isolate;
 }
 
-.label {
+.status {
   position: absolute;
-  top: 4px;
-  right: 8px;
-  color: #666;
-  font-size: 10px;
+  top: var(--orch-gap-xs);
+  right: var(--orch-gap-sm);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+  max-width: min(70%, 22rem);
+  padding: 0.25rem 0.45rem;
+  border: 1px solid var(--orch-preview-border, var(--orch-border-subtle));
+  border-radius: var(--orch-radius-sm);
+  color: var(--orch-preview-color, var(--orch-muted));
+  background: var(--orch-preview-bg, var(--orch-surface-soft));
+  font-size: var(--text-xs);
+  line-height: 1.2;
   pointer-events: none;
   z-index: 10;
-  text-transform: uppercase;
+  text-align: right;
+}
+
+.statusPrimary {
+  color: var(--orch-text);
+  font-weight: 700;
+}
+
+.statusSecondary {
+  color: var(--orch-preview-color, var(--orch-muted));
+  font-weight: 600;
+}
+
+.statusWaitingForPlayerMedia {
+  --orch-preview-border: color-mix(in srgb, var(--orch-yellow) 58%, transparent);
+  --orch-preview-bg: color-mix(in srgb, var(--orch-yellow) 14%, transparent);
+  --orch-preview-color: var(--orch-yellow);
+}
+
+.statusUsingPlayerMp4 {
+  --orch-preview-border: color-mix(in srgb, var(--orch-cyan) 55%, transparent);
+  --orch-preview-bg: color-mix(in srgb, var(--orch-cyan) 14%, transparent);
+  --orch-preview-color: var(--orch-cyan);
+}
+
+.statusExternalVideoSource {
+  --orch-preview-border: color-mix(in srgb, var(--orch-violet) 55%, transparent);
+  --orch-preview-bg: color-mix(in srgb, var(--orch-violet) 14%, transparent);
+  --orch-preview-color: var(--orch-violet);
+}
+
+.statusOff {
+  --orch-preview-color: var(--orch-muted);
 }

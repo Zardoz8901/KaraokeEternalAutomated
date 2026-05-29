@@ -5,6 +5,7 @@ import { ensureHydraVideoMountPoint } from 'lib/videoProxyOverride'
 import { type AudioData } from 'routes/Player/components/Player/PlayerVisualizer/hooks/useAudioAnalyser'
 import type { PlayerMediaClockState, VisualizerMode } from 'shared/types'
 import HydraVisualizer from '../../Player/components/Player/PlayerVisualizer/HydraVisualizer'
+import { getOrchestratorPresentationModel } from './orchestratorPresentationModel'
 import styles from './HydraPreview.css'
 
 interface HydraPreviewProps {
@@ -156,12 +157,15 @@ const HydraPreview = ({
   const status = useAppSelector(state => state.status)
   const isHydraActive = isEnabled && mode === 'hydra'
   const playerMediaClock = useMemo(() => getPlayerMediaClockFromStatus(status), [status])
-  const playerMediaVideoElement = usePlayerMediaShadowVideo(playerMediaClock)
   const codeUsage = useMemo(() => detectCameraUsage(code), [code])
+  const shouldCreatePlayerMediaShadowVideo = Boolean(playerMediaClock && codeUsage.hasInitVideo)
+  const playerMediaVideoElement = usePlayerMediaShadowVideo(
+    shouldCreatePlayerMediaShadowVideo ? playerMediaClock : null,
+  )
   const requirePlayerMediaVideo = Boolean(playerMediaClock && codeUsage.hasInitVideo)
 
-  const isLive = status.isPlayerPresent && status.fftData !== null
-  const overrideData = isLive && status.fftData ? mapFftToAudioData(status.fftData) : null
+  const hasPlayerAudioData = status.isPlayerPresent && status.fftData !== null
+  const overrideData = hasPlayerAudioData && status.fftData ? mapFftToAudioData(status.fftData) : null
 
   const previewVideoElement = useMemo(() => {
     if (!allowCamera || !localCameraStream) {
@@ -224,6 +228,24 @@ const HydraPreview = ({
     getServerSnapshot,
   )
 
+  const presentation = useMemo(() => getOrchestratorPresentationModel({
+    isHydraActive,
+    hasInitVideo: codeUsage.hasInitVideo,
+    hasPlayerMediaClock: Boolean(playerMediaClock),
+    hasPlayerMediaVideoElement: Boolean(playerMediaVideoElement),
+    isPlayerPresent: status.isPlayerPresent,
+    hasFftData: status.fftData !== null,
+    hasSimulatedAudioSource: Boolean(audioSource),
+  }), [
+    audioSource,
+    codeUsage.hasInitVideo,
+    isHydraActive,
+    playerMediaClock,
+    playerMediaVideoElement,
+    status.fftData,
+    status.isPlayerPresent,
+  ])
+
   useEffect(() => {
     const store = audioStoreRef.current
 
@@ -262,18 +284,26 @@ const HydraPreview = ({
     }
   }, [isHydraActive])
 
-  const label = !isHydraActive
-    ? 'Preview (Visualizer Off)'
-    : isLive
-      ? 'Preview (Live Audio)'
-      : 'Preview (Simulated Audio)'
+  const shouldMountHydra = isHydraActive
+    && (audioSource || hasPlayerAudioData)
+    && presentation.preview !== 'waitingForPlayerMedia'
 
   return (
     <div className={styles.container} style={{ width, height }}>
-      <div className={styles.label}>{label}</div>
-      {isHydraActive && (audioSource || isLive) && (!requirePlayerMediaVideo || playerMediaVideoElement) && (
+      <div
+        className={`${styles.status} ${styles[`status${presentation.preview[0].toUpperCase()}${presentation.preview.slice(1)}`] ?? ''}`}
+        data-testid='hydra-preview-status'
+      >
+        <span className={styles.statusPrimary}>{presentation.primaryLabel}</span>
+        {presentation.secondaryLabels.length > 0 && (
+          <span className={styles.statusSecondary}>
+            {presentation.secondaryLabels.join(' / ')}
+          </span>
+        )}
+      </div>
+      {shouldMountHydra && (
         <HydraVisualizer
-          audioSourceNode={isLive ? null : audioSource}
+          audioSourceNode={hasPlayerAudioData ? null : audioSource}
           isPlaying={true}
           sensitivity={sensitivity}
           width={width}
