@@ -27,6 +27,9 @@ export interface OrchestratorPresentationModel {
   secondaryLabels: string[]
 }
 
+export const LOCAL_PREVIEW_LABEL = 'Local Preview'
+export const APPLIED_ON_PLAYER_LABEL = 'Applied on Player'
+export const BROADCAST_READY_LABEL = 'Broadcast ready'
 export const FORBIDDEN_PREVIEW_TERMS = ['Live', 'Player Output', 'Now Playing', 'On Display'] as const
 
 export function getOrchestratorPresentationModel ({
@@ -57,7 +60,7 @@ export function getOrchestratorPresentationModel ({
     preview,
     audio,
     playerOutput,
-    primaryLabel: 'Local Preview',
+    primaryLabel: LOCAL_PREVIEW_LABEL,
     secondaryLabels,
   }
 }

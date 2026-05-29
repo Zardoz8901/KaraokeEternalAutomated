@@ -1,5 +1,6 @@
 import type { OrchestratorCapabilities } from './orchestratorCapabilities'
 import type { CameraRelayStatus } from './hydraPreviewUtils'
+import { BROADCAST_READY_LABEL } from './orchestratorPresentationModel'
 
 export type OrchestratorStatusTone = 'neutral' | 'primary' | 'live' | 'success' | 'warning' | 'danger'
 
@@ -64,7 +65,7 @@ function getBroadcastStatus (
   if (sendStatus === 'synced') return { label: 'Synced', tone: 'success' }
   if (sendStatus === 'error') return { label: 'Failed', tone: 'danger' }
   if (userHasEdited) return { label: 'Local edits', tone: 'warning' }
-  return { label: 'Preview ready', tone: 'live' }
+  return { label: BROADCAST_READY_LABEL, tone: 'neutral' }
 }
 
 function getCameraStatus (cameraStatus: CameraRelayStatus): OrchestratorStatusItem {

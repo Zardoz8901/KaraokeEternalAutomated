@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { getOrchestratorStatusModel } from './orchestratorStatus'
+import {
+  BROADCAST_READY_LABEL,
+  FORBIDDEN_PREVIEW_TERMS,
+} from './orchestratorPresentationModel'
 
 const hostCapabilities = {
   canUseOrchestrator: true,
@@ -84,7 +88,7 @@ describe('getOrchestratorStatusModel', () => {
     ['error', false, 0, 'Failed'],
     ['idle', true, 0, 'Local edits'],
     ['idle', false, 2, 'Remote update'],
-    ['idle', false, 0, 'Preview ready'],
+    ['idle', false, 0, BROADCAST_READY_LABEL],
   ] as const)('derives broadcast label for %s/%s/%s', (sendStatus, userHasEdited, pendingRemoteCount, expected) => {
     const model = getOrchestratorStatusModel({
       capabilities: hostCapabilities,
@@ -95,6 +99,34 @@ describe('getOrchestratorStatusModel', () => {
     })
 
     expect(model.broadcast.label).toBe(expected)
+  })
+
+  it('uses neutral ready copy for idle broadcast state', () => {
+    const model = getOrchestratorStatusModel({
+      capabilities: hostCapabilities,
+      sendStatus: 'idle',
+      userHasEdited: false,
+      pendingRemoteCount: 0,
+      cameraStatus: 'idle',
+    })
+
+    expect(model.broadcast.label).toBe(BROADCAST_READY_LABEL)
+    expect(model.broadcast.tone).toBe('neutral')
+    expect(model.broadcast.tone).not.toBe('live')
+  })
+
+  it('keeps broadcast labels free of forbidden preview terms', () => {
+    const model = getOrchestratorStatusModel({
+      capabilities: hostCapabilities,
+      sendStatus: 'idle',
+      userHasEdited: false,
+      pendingRemoteCount: 0,
+      cameraStatus: 'idle',
+    })
+
+    for (const term of FORBIDDEN_PREVIEW_TERMS) {
+      expect(model.broadcast.label).not.toContain(term)
+    }
   })
 
   it.each([
