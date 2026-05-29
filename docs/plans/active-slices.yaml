@@ -747,13 +747,13 @@
     - cleanup
 
 - id: orchestrator-status-truth-vocabulary
-  status: in_progress
+  status: merged_to_main
   owner: codex
   branch: phase-9-orchestrator-status-truth-vocabulary
   base: main
   worktree:
-    path: /home/steph/projects/KaraokeEternalAutomated
-    state: present
+    path: null
+    state: not_required
   merge_order: 140
   goal: Unify the Orchestrator presentation-truth vocabulary by promoting orchestratorPresentationModel.ts into the single source of label constants and broadcast wording, then sourcing the broadcast status label/tone and the Applied-on-Player badge from it, without touching server/socket/shared contracts, Player rendering, route guards, preset CRUD, or implementing Player Live mirroring.
   write_scope:
@@ -810,8 +810,9 @@
     - Finishes the Phase 8 presentation-truth line by extending the model vocabulary to the two remaining Orchestrator status surfaces (orchestratorStatus.ts line 67 ships 'Preview ready'/tone 'live'; PresetTree.tsx line 310 ships a free 'Applied on Player' literal).
     - "Adversarial hardening locked 2026-05-29: forbidden-term match is case-sensitive on token 'Live' with an explicit allowlist for 'Camera live' and 'Host live coding'; RED tests assert against an exported label constant whose value lands at GREEN so the wording decision does not block RED."
     - The Player Live mirroring architecture spec (the runner-up proposal) is the documented follow-on high-risk docs-first slice and is intentionally deferred until after this coherence finish.
+    - Merged to main on 2026-05-29 as b10a82d0.
   next:
-    - implementation
+    - cleanup
 
 - id: rollback-2026-02-12-cleanup
   status: merged_to_main
