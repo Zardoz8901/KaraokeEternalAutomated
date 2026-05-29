@@ -691,13 +691,13 @@
     - cleanup
 
 - id: orchestrator-presentation-truth-model
-  status: in_progress
+  status: merged_to_main
   owner: codex
   branch: phase-8-orchestrator-presentation-truth-model
   base: main
   worktree:
-    path: /home/steph/projects/KaraokeEternalAutomated-phase-8-orchestrator-presentation-truth-model
-    state: present
+    path: null
+    state: not_required
   merge_order: 130
   goal: Make Orchestrator Stage preview truth legible through a pure presentation model and Local Preview UI labels without Player Live mirroring.
   write_scope:
@@ -742,8 +742,9 @@
     - Standard client UX/runtime slice; no high-risk Player visualizer files are in scope.
     - This starts the presentation truth architecture while wiring only the Stage/HydraPreview path.
     - Future Player Live can extend playerOutput states in a later high-risk architecture slice.
+    - Merged to main on 2026-05-29 as cc373624.
   next:
-    - implementation
+    - cleanup
 
 - id: rollback-2026-02-12-cleanup
   status: merged_to_main
