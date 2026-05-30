@@ -1,10 +1,10 @@
 .workspace {
   display: flex;
   flex-direction: column;
-  gap: 0.9rem;
+  gap: var(--orch-space-2xl);
   height: 100%;
   min-height: 0;
-  padding: 0.9rem;
+  padding: var(--orch-space-2xl);
   color: var(--orch-text);
   font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
   background: linear-gradient(
@@ -17,7 +17,7 @@
 .header {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
+  gap: var(--orch-space-md);
 }
 
 .title {
@@ -30,7 +30,7 @@
 
 .subtitle {
   margin: 0;
-  color: var(--orch-text-muted);
+  color: var(--orch-muted);
   font-size: 0.76rem;
   line-height: 1.45;
 }
@@ -38,7 +38,7 @@
 .searchField {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: var(--orch-space-sm);
 }
 
 .searchLabel {
@@ -46,14 +46,14 @@
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--orch-text-soft);
+  color: var(--orch-muted-soft);
 }
 
 .searchInput {
   width: 100%;
   border: 1px solid var(--orch-border);
-  border-radius: 0.55rem;
-  padding: 0.5rem 0.6rem;
+  border-radius: var(--orch-radius-md);
+  padding: var(--orch-space-md) var(--orch-space-lg);
   background: var(--orch-surface);
   color: var(--orch-text-strong);
   font-size: 0.77rem;
@@ -62,20 +62,20 @@
 
 .searchInput:focus {
   border-color: var(--orch-focus);
-  box-shadow: 0 0 0 0.12rem color-mix(in srgb, var(--orch-focus) 28%, transparent);
+  box-shadow: 0 0 0 var(--orch-focus-ring-width) color-mix(in srgb, var(--orch-focus) 28%, transparent);
 }
 
 .audioStrip {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.45rem;
+  gap: var(--orch-space-md);
 }
 
 .audioCard {
   border: 1px solid var(--orch-border);
-  border-radius: 0.55rem;
+  border-radius: var(--orch-radius-md);
   background: var(--orch-surface-raised);
-  padding: 0.45rem 0.55rem;
+  padding: var(--orch-space-md) var(--orch-space-lg);
   min-height: 4.1rem;
 }
 
@@ -88,20 +88,20 @@
 .audioRange {
   color: var(--orch-text);
   font-size: 0.67rem;
-  margin-top: 0.16rem;
+  margin-top: var(--orch-space-2xs);
 }
 
 .audioDescription {
-  color: var(--orch-text-soft);
+  color: var(--orch-muted-soft);
   font-size: 0.65rem;
   line-height: 1.45;
-  margin-top: 0.2rem;
+  margin-top: var(--orch-space-xs);
 }
 
 .workspaceBody {
   display: grid;
   grid-template-columns: minmax(12rem, 0.95fr) minmax(14rem, 1.15fr);
-  gap: 0.75rem;
+  gap: var(--orch-space-xl);
   flex: 1;
   min-height: 0;
 }
@@ -109,10 +109,10 @@
 .functionList {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
-  padding: 0.5rem;
+  gap: var(--orch-space-md);
+  padding: var(--orch-space-md);
   border: 1px solid var(--orch-border);
-  border-radius: 0.65rem;
+  border-radius: var(--orch-radius-lg);
   background: var(--orch-surface);
   overflow-y: auto;
   min-height: 0;
@@ -121,11 +121,11 @@
 .functionItem {
   display: flex;
   flex-direction: column;
-  gap: 0.28rem;
+  gap: var(--orch-space-xs);
   width: 100%;
-  padding: 0.45rem 0.5rem;
+  padding: var(--orch-space-md);
   border: 1px solid var(--orch-border);
-  border-radius: 0.48rem;
+  border-radius: var(--orch-radius-md);
   background: var(--orch-surface-raised);
   color: var(--orch-text);
   text-align: left;
@@ -138,13 +138,13 @@
 }
 
 .functionItem:focus-visible {
-  outline: 0.12rem solid var(--orch-focus);
-  outline-offset: 0.08rem;
+  outline: var(--orch-focus-ring);
+  outline-offset: var(--orch-focus-ring-offset);
 }
 
 .functionItemActive {
   border-color: var(--orch-focus);
-  box-shadow: inset 0 0 0 0.06rem color-mix(in srgb, var(--orch-focus) 24%, transparent);
+  box-shadow: inset 0 0 0 calc(var(--orch-focus-ring-width) / 2) color-mix(in srgb, var(--orch-focus) 24%, transparent);
   background: color-mix(in srgb, var(--orch-surface-raised) 68%, var(--orch-blue));
 }
 
@@ -152,7 +152,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.35rem;
+  gap: var(--orch-space-sm);
 }
 
 .functionName {
@@ -164,15 +164,15 @@
 .functionCategory {
   border: 1px solid var(--orch-border-strong);
   border-radius: 999px;
-  padding: 0.1rem 0.38rem;
-  color: var(--orch-text-muted);
+  padding: var(--orch-space-2xs) var(--orch-space-sm);
+  color: var(--orch-muted);
   font-size: 0.58rem;
   line-height: 1.3;
   white-space: nowrap;
 }
 
 .functionSignature {
-  color: var(--orch-text-muted);
+  color: var(--orch-muted);
   font-size: 0.62rem;
   line-height: 1.45;
   overflow: hidden;
@@ -181,19 +181,19 @@
 
 .emptyState {
   border: 1px dashed var(--orch-border);
-  border-radius: 0.48rem;
-  padding: 0.65rem;
-  color: var(--orch-text-soft);
+  border-radius: var(--orch-radius-md);
+  padding: var(--orch-space-xl);
+  color: var(--orch-muted-soft);
   font-size: 0.7rem;
 }
 
 .detailPane {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
-  padding: 0.65rem;
+  gap: var(--orch-space-lg);
+  padding: var(--orch-space-xl);
   border: 1px solid var(--orch-border);
-  border-radius: 0.65rem;
+  border-radius: var(--orch-radius-lg);
   background: var(--orch-surface);
   overflow-y: auto;
   min-height: 0;
@@ -202,7 +202,7 @@
 .detailHeader {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: var(--orch-space-xs);
 }
 
 .detailName {
@@ -213,7 +213,7 @@
 
 .detailSummary {
   margin: 0;
-  color: var(--orch-text-muted);
+  color: var(--orch-muted);
   font-size: 0.71rem;
   line-height: 1.5;
 }
@@ -221,12 +221,12 @@
 .detailSection {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: var(--orch-space-sm);
 }
 
 .detailLabel {
   font-size: 0.65rem;
-  color: var(--orch-text-soft);
+  color: var(--orch-muted-soft);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   font-weight: 700;
@@ -242,13 +242,13 @@
 .referenceLinks {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.45rem;
+  gap: var(--orch-space-md);
 }
 
 .referenceLink {
   border: 1px solid var(--orch-border-strong);
   border-radius: 999px;
-  padding: 0.16rem 0.55rem;
+  padding: var(--orch-space-2xs) var(--orch-space-lg);
   color: var(--orch-text);
   font-size: 0.63rem;
   line-height: 1.4;
@@ -264,13 +264,13 @@
 .relatedRow {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.32rem;
+  gap: var(--orch-space-sm);
 }
 
 .relatedChip {
   border: 1px solid var(--orch-border-strong);
   border-radius: 999px;
-  padding: 0.1rem 0.4rem;
+  padding: var(--orch-space-2xs) var(--orch-space-md);
   color: var(--orch-text);
   font-size: 0.62rem;
   background: color-mix(in srgb, var(--orch-surface-raised) 78%, var(--orch-blue));
@@ -282,16 +282,16 @@
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 0.22rem;
+  gap: var(--orch-space-xs);
 }
 
 .paramItem {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.32rem;
+  gap: var(--orch-space-sm);
   border: 1px solid var(--orch-border);
-  border-radius: 0.42rem;
-  padding: 0.35rem 0.42rem;
+  border-radius: var(--orch-radius-sm);
+  padding: var(--orch-space-sm) var(--orch-space-md);
   background: var(--orch-surface-raised);
 }
 
@@ -303,19 +303,19 @@
 
 .paramMeta {
   font-size: 0.64rem;
-  color: var(--orch-text-muted);
+  color: var(--orch-muted);
 }
 
 .noParams {
   margin: 0;
   font-size: 0.68rem;
-  color: var(--orch-text-muted);
+  color: var(--orch-muted);
 }
 
 .exampleBlock {
   margin: 0;
-  padding: 0.55rem;
-  border-radius: 0.5rem;
+  padding: var(--orch-space-lg);
+  border-radius: var(--orch-radius-md);
   border: 1px solid var(--orch-border);
   background: color-mix(in srgb, var(--orch-bg) 84%, var(--orch-black));
   color: var(--orch-cyan);
@@ -326,15 +326,15 @@
 
 .actions {
   display: flex;
-  gap: 0.45rem;
+  gap: var(--orch-space-md);
   margin-top: auto;
 }
 
 .actionButton,
 .actionButtonSecondary {
   border: 1px solid var(--orch-border-strong);
-  border-radius: 0.5rem;
-  padding: 0.45rem 0.62rem;
+  border-radius: var(--orch-radius-md);
+  padding: var(--orch-space-md) var(--orch-space-lg);
   background: color-mix(in srgb, var(--orch-blue) 34%, var(--orch-surface-raised));
   color: var(--orch-text-strong);
   font-size: 0.68rem;
@@ -344,6 +344,12 @@
 .actionButton:hover,
 .actionButtonSecondary:hover {
   background: color-mix(in srgb, var(--orch-blue) 46%, var(--orch-surface-raised));
+}
+
+.actionButton:focus-visible,
+.actionButtonSecondary:focus-visible {
+  outline: var(--orch-focus-ring);
+  outline-offset: var(--orch-focus-ring-offset);
 }
 
 .actionButtonSecondary {
@@ -363,7 +369,7 @@
 
 @media (max-width: 640px) {
   .workspace {
-    padding: 0.75rem;
+    padding: var(--orch-space-xl);
   }
 
   .audioStrip {
