@@ -891,6 +891,146 @@
   next:
     - cleanup
 
+- id: control-plane-merged-branch-cleanup
+  status: planned
+  owner: codex
+  branch: chore/control-plane-cleanup
+  base: main
+  worktree:
+    path: null
+    state: not_required
+  merge_order: 160
+  goal: Clear the merged-branch/worktree cleanup backlog so slices:check emits zero WARNs before the Orchestrator UI push - remove the 11 stale worktrees, delete the 18 merged local branches and their origin counterparts, and prune the corresponding merged_to_main records from the control plane, leaving refactor/redux-modernization untouched.
+  write_scope:
+    - docs/plans/active-slices.yaml
+    - docs/analysis/control_plane_cleanup_2026_05_30.md
+  protected_paths:
+    - src/
+    - server/
+    - shared/
+    - package.json
+    - package-lock.json
+    - flake.nix
+    - .github/workflows/
+    - docs/architecture/
+  verification:
+    - npm run slices:check
+    - npm run typecheck
+  acceptance:
+    - 'git worktree list shows only the main worktree; the 11 stale phase/design/docs worktrees are removed.'
+    - 'All 18 merged local branches are deleted (git branch shows only main plus refactor/redux-modernization); origin counterparts are deleted and git fetch --prune is run.'
+    - 'The 17 merged_to_main records (15 phase/docs/design plus rollback-2026-02-12-cleanup plus style-branch-cleanup) are pruned from active-slices.yaml, leaving only redux-modernization and the planned slices.'
+    - 'npm run slices:check exits 0 with zero WARNs and zero errors.'
+    - 'refactor/redux-modernization (local branch, origin branch, and YAML record) is untouched by this slice.'
+  non_goals:
+    - 'Do not delete, merge, or rescope refactor/redux-modernization; its decommission is the separate redux-modernization-decommission slice.'
+    - Do not change any product code, server, shared, or architecture-doc content.
+    - 'Do not use git branch -D force on any branch; rely on git branch -d merge-safety as the redux guardrail.'
+  notes:
+    - 'User decision locked 2026-05-30: clean now via record-pruning to zero WARNs, redux untouched.'
+    - 'Execution order is load-bearing: (1) git worktree remove each of the 11 stale worktrees (all verified clean, no --force); (2) git worktree prune; (3) git branch -d the 18 merged branches; (4) git push origin --delete the 15 origin-resident merged branches; (5) git fetch --prune; (6) prune the 17 merged_to_main records from active-slices.yaml.'
+    - 'WARN-to-zero requires record-pruning: slices:check branchExists is local-OR-origin, so deleting only local branches leaves WARNs for origin-resident branches.'
+    - 'Recordless debt: chore-work-control-slices is merged plus local plus origin with no slice record - include it in the branch deletions.'
+    - 'Recovery path: all 18 branches are ancestors of main so commits persist on origin/main; record pre-cleanup SHAs and rely on reflog before gc.'
+    - 'Control-plane writes serialize ahead of the other planned docs slices (orchestrator-player-live-decision, redux-modernization-decommission): land this YAML edit first, then they rebase.'
+  next:
+    - implementation
+
+- id: orchestrator-player-live-decision
+  status: planned
+  owner: codex
+  branch: docs/orchestrator-player-live-decision
+  base: main
+  worktree:
+    path: null
+    state: not_required
+  merge_order: 170
+  goal: Decide, docs-first, whether the Orchestrator stays an honest local approximate preview (Option A), adds periodic snapshot/poster frames of actual Player output (Option B), or adds a real stream/mirror of Player output (Option C) - recording the decision in a durable ADR before any UX polish or runtime work.
+  write_scope:
+    - docs/plans/active-slices.yaml
+    - docs/architecture/orchestrator-player-live-decision.md
+    - docs/architecture/orchestrator-preview-output-model.md
+    - docs/architecture/orchestrator-synthesis-ui-style-guide.md
+    - docs/architecture/orchestrator-preset-operator-ux.md
+    - docs/analysis/orchestrator_player_live_decision_2026_05_30.md
+    - docs/analysis/current_state_2026_03_05.md
+  protected_paths:
+    - src/
+    - server/
+    - shared/
+    - package.json
+    - package-lock.json
+    - flake.nix
+    - e2e/
+    - .github/workflows/
+  verification:
+    - rg -n "orchestrator-player-live-decision" docs/architecture docs/ARCHITECTURE.md
+    - npm run slices:check
+    - npm run typecheck
+  acceptance:
+    - 'The ADR (orchestrator-player-live-decision.md) presents Options A/B/C neutrally with evaluation criteria covering engineering cost, security/authz surface, latency/bandwidth, failure/degraded states, multi-Player ambiguity, and browser constraints.'
+    - 'The ADR documents a recommended lean (B as pragmatic target, A as zero-cost fallback, C deferred behind named triggers) while leaving the final decision to user review.'
+    - 'For each option the ADR records the OrchestratorPlayerOutputTruth extension it implies (today noPlayer or playerPresentNotMirrored) as a design artifact only, with no code change.'
+    - 'All existing Player Live references (orchestrator-preview-output-model.md, orchestrator-synthesis-ui-style-guide.md, orchestrator-preset-operator-ux.md) are reconciled to point at the neutral decision ADR instead of pre-assuming mirroring.'
+    - The architecture index links the new ADR.
+  non_goals:
+    - Do not implement Player Live streaming, snapshots, mirroring, WebRTC transport, or canvas capture.
+    - 'Do not change runtime code: no src/, server/, shared/, package, Nix, e2e, or workflow edits.'
+    - Do not edit orchestratorPresentationModel.ts or add playerOutput truth states; the truth-union extension is recorded as a design artifact only.
+    - Do not finalize the Orchestrator UX status language; that is the downstream Gate 3a slice.
+  notes:
+    - 'User decision locked 2026-05-30: present A/B/C neutrally and decide at review, with a documented lean toward B.'
+    - 'Supersedes the unregistered player-live-mirroring-architecture-spec note (Phase 9/10 records) which pre-assumed mirroring (Option C); this is a neutral decision ADR, not a mirroring spec.'
+    - 'Blocks Gate 3a (orchestrator-ux-architecture-pass): the preview-vs-Player-output truth tier and Stage-strip layout cannot be finalized until this lands. Only about 20 percent of the status vocabulary is gated; the rest can be drafted in parallel.'
+    - 'Option C, if ever chosen, becomes a future Security-Sensitive runtime slice (reverse-WebRTC of the Player canvas can re-broadcast a guest-sourced camera feed - full red-team plus High-Risk protocol).'
+    - 'Control-plane writes serialize behind control-plane-merged-branch-cleanup: rebase on it before merge.'
+  next:
+    - implementation
+
+- id: redux-modernization-decommission
+  status: planned
+  owner: codex
+  branch: docs/redux-modernization-decommission
+  base: main
+  worktree:
+    path: null
+    state: not_required
+  merge_order: 175
+  goal: Formally retire the blocked refactor/redux-modernization branch (its headline Orchestrator API-lab feature already shipped on main as 087e3e83; it is 2 ahead and 182 behind main and not an ancestor) so the Gate 3 implementation slices can claim the Orchestrator write scope without a phantom serialization conflict.
+  write_scope:
+    - docs/plans/active-slices.yaml
+    - docs/analysis/redux_modernization_decommission_2026_05_30.md
+    - docs/analysis/current_state_2026_03_05.md
+  protected_paths:
+    - src/
+    - server/
+    - shared/
+    - package.json
+    - package-lock.json
+    - flake.nix
+    - .github/workflows/
+    - docs/architecture/
+  verification:
+    - npm run slices:check
+    - npm run typecheck
+  acceptance:
+    - 'The redux-modernization record status is moved from blocked to a terminal decommissioned state with a decision note (or removed) in active-slices.yaml.'
+    - 'An ADR (redux_modernization_decommission_2026_05_30.md, Context/Decision/Consequences) records that the headline feature already shipped on main as 087e3e83, the branch is 2 ahead and 182 behind and not an ancestor, the conflict surface, and the decision to retire rather than reconcile.'
+    - 'Any genuinely-unique salvageable delta is identified for separate re-implementation off main (do not cherry-pick the stale branch); if none, that is stated explicitly.'
+    - The local and origin refactor/redux-modernization branches are deleted only after the decision is recorded.
+    - The serialize-ahead-of-redux-modernization constraint on prior Orchestrator slices is no longer live once this lands.
+  non_goals:
+    - Do not reconcile or merge the stale branch into main.
+    - 'Do not cherry-pick the 182 stale commits onto a long-lived branch; any salvage is a fresh minimal TDD change off main.'
+    - Do not change product code in this slice; salvage is a separate slice.
+  notes:
+    - 'User decision locked 2026-05-30: register redux decommission as a gating slice before Gate 3 implementation.'
+    - 'Gating prerequisite for Gate 3b..3f: redux-modernization write_scope (src/routes/Orchestrator/components/ plus views/ plus Player/PlayerVisualizer/) is the exact surface those impl slices edit, and slices:check does not enforce write_scope disjointness, so the collision is process-enforced only.'
+    - 'Likely salvage candidate to evaluate: f0614609 send-ack-for-unchanged-code - verify whether main Phase 7A ack/run-id logic already covers it before salvaging.'
+    - 'Control-plane writes serialize with the other planned slices on active-slices.yaml and current_state; rebase as needed.'
+  next:
+    - implementation
+
 - id: rollback-2026-02-12-cleanup
   status: merged_to_main
   owner: unassigned
