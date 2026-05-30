@@ -1,8 +1,12 @@
 // @vitest-environment jsdom
+import fs from 'node:fs'
+import path from 'node:path'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import PresetBrowser from './PresetBrowser'
+import { getPresetPanelState, ROOM_EMPTY_PRESET_PANEL_MESSAGE } from './presetEmptyState'
+import { getPresetPanelNotice } from './presetOperatorUx'
 import type { PresetLeaf, PresetTreeNode } from './presetTree'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
@@ -162,16 +166,14 @@ vi.mock('./PresetTree', async () => {
             ))
           }
 
-          if (props.selectedPresetKey === preset.id) {
-            children.push(ReactModule.createElement('span', { key: 'selected' }, 'Selected'))
-          }
-
-          if (props.loadedPreviewPresetKey === preset.id) {
-            children.push(ReactModule.createElement('span', { key: 'loaded' }, 'Loaded in preview'))
-          }
-
-          if (props.appliedPresetKey === preset.id) {
-            children.push(ReactModule.createElement('span', { key: 'applied' }, 'Applied on Player'))
+          if (props.selectedPresetKey === preset.id || props.loadedPreviewPresetKey === preset.id || props.appliedPresetKey === preset.id) {
+            children.push(ReactModule.createElement('span', {
+              'key': 'state',
+              'data-testid': `state-${preset.id}`,
+              'data-selected': props.selectedPresetKey === preset.id ? 'true' : 'false',
+              'data-loaded': props.loadedPreviewPresetKey === preset.id ? 'true' : 'false',
+              'data-applied': props.appliedPresetKey === preset.id ? 'true' : 'false',
+            }))
           }
 
           return ReactModule.createElement('div', { 'key': preset.id, 'data-testid': `row-${preset.id}` }, children)
@@ -275,8 +277,9 @@ describe('PresetBrowser runtime UX', () => {
     })
 
     expect(onLoad).toHaveBeenCalledTimes(1)
-    expect(container.textContent).toContain('Selected')
-    expect(container.textContent).toContain('Loaded in preview')
+    const galleryState = container.querySelector('[data-testid^="state-gallery:"]')
+    expect(galleryState?.getAttribute('data-selected')).toBe('true')
+    expect(galleryState?.getAttribute('data-loaded')).toBe('true')
 
     const savedSend = container.querySelector('button[data-testid="send-preset:10"]') as HTMLButtonElement | null
     expect(savedSend).not.toBeNull()
@@ -286,8 +289,8 @@ describe('PresetBrowser runtime UX', () => {
     })
 
     expect(onSend).toHaveBeenCalledTimes(1)
-    expect(container.querySelector('[data-testid^="row-gallery:"]')?.textContent).toContain('Loaded in preview')
-    expect(container.querySelector('[data-testid="row-preset:10"]')?.textContent).not.toContain('Loaded in preview')
+    expect(container.querySelector('[data-testid^="state-gallery:"]')?.getAttribute('data-loaded')).toBe('true')
+    expect(container.querySelector('[data-testid="state-preset:10"]')?.getAttribute('data-loaded')).not.toBe('true')
 
     await act(async () => {
       root.unmount()
@@ -299,7 +302,12 @@ describe('PresetBrowser runtime UX', () => {
 
     const { container, root } = await renderBrowser()
 
-    expect(container.textContent).toContain('Room policy blocks collaborator visual sends.')
+    const expectedNotice = getPresetPanelNotice({
+      isManager: false,
+      canSendSavedPresetsByPolicy: false,
+      isRestrictedToPartyPresetFolder: false,
+    })
+    expect(container.textContent).toContain(expectedNotice?.message)
     const disabledSend = container.querySelector('button[data-testid="send-preset:10"]') as HTMLButtonElement | null
     expect(disabledSend?.disabled).toBe(true)
     expect((container.textContent?.match(/Send disabled by room policy/g) ?? []).length).toBe(0)
@@ -323,12 +331,31 @@ describe('PresetBrowser runtime UX', () => {
 
     const { container, root } = await renderBrowser()
 
-    expect(container.querySelector('[data-testid="row-preset:10"]')?.textContent).toContain('Applied on Player')
-    expect(container.querySelector('[data-testid="row-preset:10"]')?.textContent).not.toContain('Selected')
-    expect(container.querySelector('[data-testid="row-preset:10"]')?.textContent).not.toContain('Loaded in preview')
+    const savedPresetState = container.querySelector('[data-testid="state-preset:10"]')
+    expect(savedPresetState?.getAttribute('data-applied')).toBe('true')
+    expect(savedPresetState?.getAttribute('data-selected')).toBe('false')
+    expect(savedPresetState?.getAttribute('data-loaded')).toBe('false')
 
     await act(async () => {
       root.unmount()
     })
+  })
+
+  it('keeps empty-state fallback copy sourced from presetEmptyState', () => {
+    const expectedState = getPresetPanelState({
+      query: '',
+      visibleTreeCount: 0,
+      scopedPresetCount: 0,
+      isRestrictedToPartyPresetFolder: false,
+      partyPresetFolderId: null,
+      canSendSavedPresetsByPolicy: true,
+    })
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'src/routes/Orchestrator/components/PresetBrowser.tsx'),
+      'utf8',
+    )
+
+    expect(expectedState?.message).toBe(ROOM_EMPTY_PRESET_PANEL_MESSAGE)
+    expect(source).not.toContain(`?? '${ROOM_EMPTY_PRESET_PANEL_MESSAGE}'`)
   })
 })

@@ -3,7 +3,14 @@ import React, { act } from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { createRoot } from 'react-dom/client'
 import PresetTree from './PresetTree'
-import { APPLIED_ON_PLAYER_LABEL } from './orchestratorPresentationModel'
+import {
+  APPLIED_ON_PLAYER_LABEL,
+  CAM_BADGE_LABEL,
+  GALLERY_BADGE_LABEL,
+  LOADED_IN_PREVIEW_BADGE_LABEL,
+  SELECTED_BADGE_LABEL,
+  START_BADGE_LABEL,
+} from './orchestratorPresentationModel'
 import { getPresetRowUx } from './presetOperatorUx'
 import type { OrchestratorCapabilities } from './orchestratorCapabilities'
 import type { PresetTreeNode } from './presetTree'
@@ -451,8 +458,8 @@ describe('PresetTree', () => {
       )
     })
 
-    expect(container.textContent).toContain('Selected')
-    expect(container.textContent).toContain('Loaded in preview')
+    expect(container.textContent).toContain(SELECTED_BADGE_LABEL)
+    expect(container.textContent).toContain(LOADED_IN_PREVIEW_BADGE_LABEL)
 
     await act(async () => {
       root.unmount()
@@ -480,9 +487,48 @@ describe('PresetTree', () => {
       )
     })
 
-    expect(container.textContent).toContain('Selected')
-    expect(container.textContent).not.toContain('Loaded in preview')
+    expect(container.textContent).toContain(SELECTED_BADGE_LABEL)
+    expect(container.textContent).not.toContain(LOADED_IN_PREVIEW_BADGE_LABEL)
     expect(container.textContent).toContain(APPLIED_ON_PLAYER_LABEL)
+
+    await act(async () => {
+      root.unmount()
+    })
+  })
+
+  it('renders every row badge from the shared status vocabulary constants', async () => {
+    const container = document.createElement('div')
+    const root = createRoot(container)
+    const nodes = makeNodes()
+    nodes[0].children[0] = {
+      ...nodes[0].children[0],
+      usesCamera: true,
+    }
+
+    await act(async () => {
+      root.render(
+        <PresetTree
+          nodes={[...makeGalleryNodes(), ...nodes]}
+          expanded={new Set(['gallery', 'folder:1'])}
+          selectedPresetKey='preset:1'
+          loadedPreviewPresetKey='preset:1'
+          appliedPresetKey='preset:1'
+          startingPresetId={1}
+          onToggleFolder={() => {}}
+          onLoad={() => {}}
+          onSend={() => {}}
+          isDndEnabled={false}
+          onDragEnd={() => {}}
+        />,
+      )
+    })
+
+    expect(container.textContent).toContain(GALLERY_BADGE_LABEL)
+    expect(container.textContent).toContain(SELECTED_BADGE_LABEL)
+    expect(container.textContent).toContain(LOADED_IN_PREVIEW_BADGE_LABEL)
+    expect(container.textContent).toContain(APPLIED_ON_PLAYER_LABEL)
+    expect(container.textContent).toContain(START_BADGE_LABEL)
+    expect(container.textContent).toContain(CAM_BADGE_LABEL)
 
     await act(async () => {
       root.unmount()

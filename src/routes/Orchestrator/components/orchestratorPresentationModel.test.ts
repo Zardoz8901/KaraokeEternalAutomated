@@ -4,9 +4,14 @@ import { describe, expect, it } from 'vitest'
 import {
   APPLIED_ON_PLAYER_LABEL,
   BROADCAST_READY_LABEL,
+  CAM_BADGE_LABEL,
   FORBIDDEN_PREVIEW_TERMS,
+  GALLERY_BADGE_LABEL,
   getOrchestratorPresentationModel,
+  LOADED_IN_PREVIEW_BADGE_LABEL,
   LOCAL_PREVIEW_LABEL,
+  SELECTED_BADGE_LABEL,
+  START_BADGE_LABEL,
   type OrchestratorPreviewTruth,
 } from './orchestratorPresentationModel'
 import * as presentationModel from './orchestratorPresentationModel'
@@ -34,6 +39,11 @@ describe('getOrchestratorPresentationModel', () => {
     expect(LOCAL_PREVIEW_LABEL).toBe('Local Preview')
     expect(APPLIED_ON_PLAYER_LABEL).toBe('Applied on Player')
     expect(BROADCAST_READY_LABEL).toBe('Broadcast ready')
+    expect(SELECTED_BADGE_LABEL).toBe('Selected')
+    expect(LOADED_IN_PREVIEW_BADGE_LABEL).toBe('Loaded in preview')
+    expect(START_BADGE_LABEL).toBe('Start')
+    expect(CAM_BADGE_LABEL).toBe('Cam')
+    expect(GALLERY_BADGE_LABEL).toBe('Gallery')
   })
 
   it('keeps shared preview, applied, and broadcast labels free of forbidden preview terms', () => {

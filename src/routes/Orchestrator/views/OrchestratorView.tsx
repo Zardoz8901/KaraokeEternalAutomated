@@ -6,6 +6,7 @@ import PresetBrowser from '../components/PresetBrowser'
 import CodeEditor from '../components/CodeEditor'
 import StagePanel from '../components/StagePanel'
 import OrchestratorStatusStrip from '../components/OrchestratorStatusStrip'
+import { REMOTE_UPDATE_BANNER_LABEL } from '../components/orchestratorPresentationModel'
 import { useOrchestratorWorkspace } from './useOrchestratorWorkspace'
 import styles from './OrchestratorView.css'
 
@@ -109,7 +110,7 @@ function OrchestratorView () {
       {pendingRemoteCode && (
         <div className={styles.remoteBanner}>
           <span className={styles.remoteBannerText}>
-            {`Remote update available${pendingRemoteCount > 1 ? ` (\u00d7${pendingRemoteCount})` : ''}`}
+            {`${REMOTE_UPDATE_BANNER_LABEL}${pendingRemoteCount > 1 ? ` (\u00d7${pendingRemoteCount})` : ''}`}
           </span>
           <button type='button' className={styles.remoteBannerApply} onClick={handleApplyRemote}>
             Apply
