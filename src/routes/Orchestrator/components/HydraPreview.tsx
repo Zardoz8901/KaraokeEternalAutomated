@@ -5,7 +5,7 @@ import { ensureHydraVideoMountPoint } from 'lib/videoProxyOverride'
 import { type AudioData } from 'routes/Player/components/Player/PlayerVisualizer/hooks/useAudioAnalyser'
 import type { PlayerMediaClockState, VisualizerMode } from 'shared/types'
 import HydraVisualizer from '../../Player/components/Player/PlayerVisualizer/HydraVisualizer'
-import { getOrchestratorPresentationModel } from './orchestratorPresentationModel'
+import { getOrchestratorPresentationModel, getPreviewStatusClassKey } from './orchestratorPresentationModel'
 import styles from './HydraPreview.css'
 
 interface HydraPreviewProps {
@@ -21,9 +21,40 @@ interface HydraPreviewProps {
 }
 
 const SHADOW_VIDEO_DRIFT_THRESHOLD_SECONDS = 0.75
+const PLAYER_MEDIA_RENDERABLE_EVENTS = ['loadedmetadata', 'loadeddata', 'canplay', 'playing', 'timeupdate'] as const
 
 function getPlayerMediaShadowVideoUrl (mediaId: number): string {
   return `/api/media/${mediaId}?type=video`
+}
+
+function isPlayerMediaVideoRenderable (video: HTMLVideoElement | null): boolean {
+  return Boolean(video && video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0)
+}
+
+function usePlayerMediaVideoRenderable (video: HTMLVideoElement | null): boolean {
+  const [isRenderable, setIsRenderable] = useState(false)
+
+  useEffect(() => {
+    const update = () => {
+      const next = isPlayerMediaVideoRenderable(video)
+      setIsRenderable(current => current === next ? current : next)
+    }
+
+    update()
+    if (!video) return
+
+    for (const eventName of PLAYER_MEDIA_RENDERABLE_EVENTS) {
+      video.addEventListener(eventName, update)
+    }
+
+    return () => {
+      for (const eventName of PLAYER_MEDIA_RENDERABLE_EVENTS) {
+        video.removeEventListener(eventName, update)
+      }
+    }
+  }, [video])
+
+  return isRenderable
 }
 
 function estimatePlayerMediaPosition (clock: PlayerMediaClockState, nowMs = Date.now()): number {
@@ -162,6 +193,7 @@ const HydraPreview = ({
   const playerMediaVideoElement = usePlayerMediaShadowVideo(
     shouldCreatePlayerMediaShadowVideo ? playerMediaClock : null,
   )
+  const hasRenderablePlayerMediaVideoElement = usePlayerMediaVideoRenderable(playerMediaVideoElement)
   const requirePlayerMediaVideo = Boolean(playerMediaClock && codeUsage.hasInitVideo)
 
   const hasPlayerAudioData = status.isPlayerPresent && status.fftData !== null
@@ -232,16 +264,16 @@ const HydraPreview = ({
     isHydraActive,
     hasInitVideo: codeUsage.hasInitVideo,
     hasPlayerMediaClock: Boolean(playerMediaClock),
-    hasPlayerMediaVideoElement: Boolean(playerMediaVideoElement),
+    hasPlayerMediaVideoElement: hasRenderablePlayerMediaVideoElement,
     isPlayerPresent: status.isPlayerPresent,
     hasFftData: status.fftData !== null,
     hasSimulatedAudioSource: Boolean(audioSource),
   }), [
     audioSource,
     codeUsage.hasInitVideo,
+    hasRenderablePlayerMediaVideoElement,
     isHydraActive,
     playerMediaClock,
-    playerMediaVideoElement,
     status.fftData,
     status.isPlayerPresent,
   ])
@@ -291,7 +323,7 @@ const HydraPreview = ({
   return (
     <div className={styles.container} style={{ width, height }}>
       <div
-        className={`${styles.status} ${styles[`status${presentation.preview[0].toUpperCase()}${presentation.preview.slice(1)}`] ?? ''}`}
+        className={`${styles.status} ${styles[getPreviewStatusClassKey(presentation.preview)] ?? ''}`}
         data-testid='hydra-preview-status'
       >
         <span className={styles.statusPrimary}>{presentation.primaryLabel}</span>

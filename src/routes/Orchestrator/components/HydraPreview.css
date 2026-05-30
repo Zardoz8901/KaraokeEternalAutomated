@@ -37,6 +37,10 @@
   font-weight: 600;
 }
 
+.statusLocal {
+  --orch-preview-color: var(--orch-muted);
+}
+
 .statusWaitingForPlayerMedia {
   --orch-preview-border: color-mix(in srgb, var(--orch-yellow) 58%, transparent);
   --orch-preview-bg: color-mix(in srgb, var(--orch-yellow) 14%, transparent);
