@@ -9,6 +9,7 @@
 
 | Date | Change | Scope | Key Files | Ref |
 |------|--------|-------|-----------|-----|
+| 2026-05-30 | Orchestrator presentation truth hardening: Local Preview now has an explicit neutral status class, and Player MP4 preview copy waits for decoded shadow video frames before Hydra mounts | Standard | `HydraPreview.tsx`, `HydraPreview.css`, `orchestratorPresentationModel.ts`, tests | `docs/analysis/orchestrator_presentation_truth_hardening_2026_05_30.md` |
 | 2026-05-29 | Orchestrator status truth vocabulary: shared Local Preview, Broadcast ready, and Applied on Player label constants; idle broadcast copy/tone now avoids Preview/live wording | Standard | `orchestratorPresentationModel.ts`, `orchestratorStatus.ts`, `PresetTree.tsx`, tests | `docs/analysis/orchestrator_status_truth_vocabulary_2026_05_29.md` |
 | 2026-05-28 | Orchestrator Presentation Truth Model + Stage Preview UI: Local Preview labels now reflect source/audio truth, shadow MP4 creation is limited to initVideo patches, and HydraPreview CSS is Solarized-audited | Standard | `HydraPreview.tsx`, `orchestratorPresentationModel.ts`, tests | `docs/analysis/orchestrator_presentation_truth_model_2026_05_28.md` |
 | 2026-05-21 | Orchestrator preview/output mental model documented: Local Preview stays approximate, Applied on Player is runtime confirmation, Player Output is audience truth, and Player Live is reserved for future mirroring | Docs | `docs/architecture/orchestrator-preview-output-model.md`, Orchestrator UX docs | `docs/analysis/orchestrator_preview_output_model_2026_05_21.md` |

@@ -1,3 +1,5 @@
+import fs from 'node:fs'
+import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   APPLIED_ON_PLAYER_LABEL,
@@ -5,7 +7,9 @@ import {
   FORBIDDEN_PREVIEW_TERMS,
   getOrchestratorPresentationModel,
   LOCAL_PREVIEW_LABEL,
+  type OrchestratorPreviewTruth,
 } from './orchestratorPresentationModel'
+import * as presentationModel from './orchestratorPresentationModel'
 
 const baseInput = {
   isHydraActive: true,
@@ -16,6 +20,14 @@ const baseInput = {
   hasFftData: false,
   hasSimulatedAudioSource: true,
 }
+
+const expectedPreviewStatusClassKey = {
+  off: 'statusOff',
+  local: 'statusLocal',
+  waitingForPlayerMedia: 'statusWaitingForPlayerMedia',
+  usingPlayerMp4: 'statusUsingPlayerMp4',
+  externalVideoSource: 'statusExternalVideoSource',
+} satisfies Record<OrchestratorPreviewTruth, string>
 
 describe('getOrchestratorPresentationModel', () => {
   it('exports shared label constants for cross-surface vocabulary', () => {
@@ -35,6 +47,25 @@ describe('getOrchestratorPresentationModel', () => {
       for (const term of FORBIDDEN_PREVIEW_TERMS) {
         expect(label).not.toContain(term)
       }
+    }
+  })
+
+  it('exports a class key for every preview truth', () => {
+    const exported = presentationModel as typeof presentationModel & {
+      PREVIEW_STATUS_CLASS_KEY?: Record<OrchestratorPreviewTruth, string>
+    }
+
+    expect(exported.PREVIEW_STATUS_CLASS_KEY).toEqual(expectedPreviewStatusClassKey)
+  })
+
+  it('defines a CSS selector for every preview truth class key', () => {
+    const css = fs.readFileSync(
+      path.join(process.cwd(), 'src/routes/Orchestrator/components/HydraPreview.css'),
+      'utf8',
+    )
+
+    for (const classKey of Object.values(expectedPreviewStatusClassKey)) {
+      expect(css).toMatch(new RegExp(`\\.${classKey}\\b`))
     }
   })
 

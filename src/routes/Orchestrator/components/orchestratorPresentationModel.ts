@@ -32,6 +32,18 @@ export const APPLIED_ON_PLAYER_LABEL = 'Applied on Player'
 export const BROADCAST_READY_LABEL = 'Broadcast ready'
 export const FORBIDDEN_PREVIEW_TERMS = ['Live', 'Player Output', 'Now Playing', 'On Display'] as const
 
+export const PREVIEW_STATUS_CLASS_KEY: Record<OrchestratorPreviewTruth, string> = {
+  off: 'statusOff',
+  local: 'statusLocal',
+  waitingForPlayerMedia: 'statusWaitingForPlayerMedia',
+  usingPlayerMp4: 'statusUsingPlayerMp4',
+  externalVideoSource: 'statusExternalVideoSource',
+} as const
+
+export function getPreviewStatusClassKey (preview: OrchestratorPreviewTruth): string {
+  return PREVIEW_STATUS_CLASS_KEY[preview]
+}
+
 export function getOrchestratorPresentationModel ({
   isHydraActive,
   hasInitVideo,

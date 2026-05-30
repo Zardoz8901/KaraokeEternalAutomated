@@ -61,9 +61,37 @@ function previewStatusText (container: HTMLElement): string {
   return container.querySelector('[data-testid="hydra-preview-status"]')?.textContent ?? ''
 }
 
+function getShadowVideo (): HTMLVideoElement {
+  const video = document.getElementById('__hydraVideoMount')?.querySelector('video')
+  expect(video).toBeInstanceOf(HTMLVideoElement)
+  return video as HTMLVideoElement
+}
+
+function markVideoRenderable (video: HTMLVideoElement): void {
+  Object.defineProperty(video, 'readyState', {
+    configurable: true,
+    value: 2,
+  })
+  Object.defineProperty(video, 'videoWidth', {
+    configurable: true,
+    value: 640,
+  })
+  Object.defineProperty(video, 'videoHeight', {
+    configurable: true,
+    value: 360,
+  })
+}
+
+function dispatchVideoDecode (video: HTMLVideoElement): void {
+  markVideoRenderable(video)
+  video.dispatchEvent(new Event('loadeddata'))
+}
+
 describe('HydraPreview', () => {
   beforeEach(() => {
     vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
+    vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {})
+    vi.spyOn(HTMLMediaElement.prototype, 'load').mockImplementation(() => {})
     document.getElementById('__hydraVideoMount')?.remove()
     lastHydraProps = null
     hydraRenderProps = []
@@ -79,7 +107,7 @@ describe('HydraPreview', () => {
     }
   })
 
-  it('shows waiting before player media provider is created, then mounts with Player MP4 status', async () => {
+  it('waits while shadow player media is undecoded, then mounts with Player MP4 status after decode', async () => {
     installFakeAudioContext()
     vi.spyOn(Date, 'now').mockReturnValue(1770000002500)
     mockStatus = {
@@ -117,9 +145,20 @@ describe('HydraPreview', () => {
       expect(container.querySelector('[data-testid="hydra"]')).toBeNull()
     })
 
+    const shadowVideo = getShadowVideo()
+    expect(lastHydraProps).toBeNull()
+    expect(container.querySelector('[data-testid="hydra"]')).toBeNull()
+    expect(previewStatusText(container)).toContain('Waiting for Player media')
+    expect(previewStatusText(container)).not.toContain('Preview using Player MP4')
+
+    await act(async () => {
+      dispatchVideoDecode(shadowVideo)
+    })
+
     expect(previewStatusText(container)).toContain('Local Preview')
     expect(previewStatusText(container)).toContain('Preview using Player MP4')
     expect(container.querySelector('[data-testid="hydra"]')).not.toBeNull()
+    expect(lastHydraProps?.playerMediaVideoElement).toBe(shadowVideo)
 
     await act(async () => {
       root.unmount()
@@ -387,8 +426,14 @@ describe('HydraPreview', () => {
       )
     })
 
-    expect(lastHydraProps?.playerMediaVideoElement).toBeInstanceOf(HTMLVideoElement)
-    const shadowVideo = lastHydraProps?.playerMediaVideoElement as HTMLVideoElement
+    const shadowVideo = getShadowVideo()
+    expect(lastHydraProps).toBeNull()
+
+    await act(async () => {
+      dispatchVideoDecode(shadowVideo)
+    })
+
+    expect(lastHydraProps?.playerMediaVideoElement).toBe(shadowVideo)
     expect(shadowVideo.getAttribute('src')).toBe('/api/media/91?type=video')
     expect(shadowVideo.parentElement?.id).toBe('__hydraVideoMount')
     expect(shadowVideo.currentTime).toBe(14.5)
