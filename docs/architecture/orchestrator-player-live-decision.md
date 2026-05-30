@@ -1,6 +1,6 @@
 # ADR: Orchestrator Player Live boundary — local preview vs snapshot vs mirror
 
-- **Status:** Proposed (decision pending review — see [Decision](#decision))
+- **Status:** Accepted (2026-05-30) — **Option B** (periodic Player-output snapshot) is the target; **A** remains the zero-cost fallback; **C** (live mirror) is deferred behind explicit triggers.
 - **Date:** 2026-05-30
 - **Supersedes:** the unregistered "player-live-mirroring-architecture-spec" follow-on note in the Phase 9/10 slice records, which pre-assumed mirroring. This ADR reframes that as a neutral decision.
 - **Related:** [Orchestrator Preview/Output Model](orchestrator-preview-output-model.md)
@@ -73,12 +73,11 @@ Engineering cost · security/authz surface · latency & bandwidth · failure/deg
 
 ## Decision
 
-> **Pending review.** Choose one:
-> - **A** — local-approximate forever; formally close the Player Live track and remove the reserved "Player Live" label from the durable docs.
-> - **B** — adopt snapshot/poster as the target; C deferred; this ADR becomes the basis for a future Standard runtime slice.
-> - **C** — adopt live mirror as the target; schedule a future **Security-Sensitive** runtime slice (full red-team + High-Risk protocol).
->
-> Open sub-decisions if B or C: **who may receive Player output** (host/owner only · operators · anyone with Orchestrator access)? This sets the authz weight and, for C, the guest-camera re-broadcast analysis.
+**Accepted 2026-05-30: Option B (periodic Player-output snapshot) is the target.** A remains the honest zero-cost fallback (and ships today); C (live mirror) is deferred behind explicit triggers (e.g. "operators report snapshots are insufficient for live VJ-style timing") and would require a Security-Sensitive runtime slice with a full red-team of the guest-camera re-broadcast surface.
+
+This is a **target, not an implementation**. No runtime or truth-model change happens in this slice. A future B runtime slice will implement the snapshot publish/receive path (bound to the pinned Player identity) and extend `OrchestratorPlayerOutputTruth` with a snapshot state (e.g. `'playerOutputSnapshot'` plus a staleness field), distinct from any "live" claim.
+
+**Deferred sub-decision (resolve when the B runtime slice is planned):** who may receive Player-output snapshots — recommended default is room owner/admin plus operators with Orchestrator access, gated server-side, consistent with the existing room-authority model.
 
 ## Consequences
 
