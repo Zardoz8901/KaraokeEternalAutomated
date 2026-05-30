@@ -815,13 +815,13 @@
     - cleanup
 
 - id: orchestrator-presentation-truth-hardening
-  status: in_progress
+  status: merged_to_main
   owner: codex
   branch: phase-10-orchestrator-presentation-truth-hardening
   base: main
   worktree:
-    path: /home/steph/projects/KaraokeEternalAutomated-phase-10-orchestrator-presentation-truth-hardening
-    state: present
+    path: null
+    state: not_required
   merge_order: 150
   goal: Close the two LOW residue findings in the Local Preview clarity track before opening Player Live - the untested preview-truth to CSS-class mapping (the default 'local' truth maps to a .statusLocal selector that does not exist in HydraPreview.css, so the most common preview state renders silently unstyled) and usingPlayerMp4 firing on shadow-<video> existence rather than decoded frames - by extracting a pure, vitest-resolvable truth-to-class mapping helper, adding a neutral/muted .statusLocal selector, and gating usingPlayerMp4 on the same readyState>=2 && videoWidth>0 && videoHeight>0 condition HydraVisualizer already uses, without editing HydraVisualizer, server, socket, shared, or Player rendering.
   write_scope:
@@ -887,8 +887,9 @@
     - jsdom has no real video decoder; HydraPreview.test.tsx must stub readyState/videoWidth/videoHeight via Object.defineProperty on the shadow <video> to simulate the decoded transition (deliberate harness simulation).
     - Overlaps blocked redux-modernization Orchestrator paths (its write_scope src/routes/Orchestrator/components/ contains this slice's scope); serialize ahead of redux-modernization and do not run both branches in parallel.
     - Intended (unregistered) follow-on after this slice - player-live-mirroring-architecture-spec (docs-first), then player-live-mirroring-runtime (Security-Sensitive); control-plane cleanup + redux decommission is parallel non-blocking debt (slices:check exits 0 today).
+    - Merged to main on 2026-05-30 as 91fe0736.
   next:
-    - implementation
+    - cleanup
 
 - id: rollback-2026-02-12-cleanup
   status: merged_to_main
