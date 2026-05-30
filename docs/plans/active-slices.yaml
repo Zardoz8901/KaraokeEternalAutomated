@@ -3,14 +3,14 @@
 # #16 keyboard resize separator. See docs/analysis/orchestrator_hig_ux_backlog_2026_05_30.md.
 
 - id: orchestrator-a11y-state-exposure
-  status: planned
+  status: in_progress
   owner: codex
   branch: phase-14-orchestrator-a11y-state-exposure
   base: main
   merge_order: 205
   worktree:
-    path: null
-    state: not_required
+    path: /home/steph/projects/KaraokeEternalAutomated
+    state: present
   goal: 'Expose already-locked Orchestrator status labels to assistive tech (HiG #4,5,6,7,8,9): aria-live on the remote-update banner, status strip, CodeEditor send region, and HydraPreview overlay; radiogroup semantics + accessible names + selected state on the StagePanel buffer selector; PresetTree row-badge states composed into the row accessible name - attribute/markup only, no relabeling and no status-ownership change.'
   write_scope:
     - docs/plans/active-slices.yaml
