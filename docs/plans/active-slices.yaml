@@ -40,3 +40,63 @@
   next:
     - implementation
 
+- id: orchestrator-stage-strip-preview-reconciliation
+  status: planned
+  owner: codex
+  branch: phase-11-orchestrator-stage-strip-reconciliation
+  base: main
+  worktree:
+    path: null
+    state: not_required
+  merge_order: 190
+  goal: 'Gate 3b: reconcile the Stage status strip and preview overlay to the Gate 3a-i status-ownership table and lock it with a cross-surface ownership test (no duplication; Remote-update pill stays status-only, banner owns the action; preview overlay leaves room for the reserved Player Output snapshot slot) - without implementing the snapshot or adding playerOutput states.'
+  write_scope:
+    - docs/plans/active-slices.yaml
+    - docs/analysis/orchestrator_stage_strip_reconciliation_2026_05_30.md
+    - docs/analysis/current_state_2026_03_05.md
+    - src/routes/Orchestrator/components/orchestratorStatus.ts
+    - src/routes/Orchestrator/components/orchestratorStatus.test.ts
+    - src/routes/Orchestrator/components/orchestratorStatusOwnership.test.ts
+    - src/routes/Orchestrator/components/OrchestratorStatusStrip.tsx
+    - src/routes/Orchestrator/components/OrchestratorStatusStrip.test.tsx
+    - src/routes/Orchestrator/components/orchestratorPresentationModel.ts
+    - src/routes/Orchestrator/components/orchestratorPresentationModel.test.ts
+    - src/routes/Orchestrator/components/HydraPreview.tsx
+    - src/routes/Orchestrator/components/HydraPreview.test.tsx
+    - src/routes/Orchestrator/views/OrchestratorView.tsx
+    - src/routes/Orchestrator/views/OrchestratorView.test.tsx
+  protected_paths:
+    - server/
+    - shared/actionTypes.ts
+    - shared/types.ts
+    - src/routes/Player/
+    - src/routes/Orchestrator/components/PresetTree.tsx
+    - src/routes/Orchestrator/components/PresetBrowser.tsx
+    - src/routes/Orchestrator/components/hydraPreviewUtils.ts
+    - package.json
+    - package-lock.json
+    - flake.nix
+    - e2e/
+    - .github/workflows/
+  verification:
+    - npm test -- src/routes/Orchestrator/components/orchestratorStatusOwnership.test.ts src/routes/Orchestrator/components/orchestratorStatus.test.ts src/routes/Orchestrator/components/orchestratorPresentationModel.test.ts
+    - npm test -- src/routes/Orchestrator/components/OrchestratorStatusStrip.test.tsx src/routes/Orchestrator/components/HydraPreview.test.tsx
+    - npm test -- src/routes/Orchestrator/views/OrchestratorView.test.tsx
+    - npm test -- src/routes/Orchestrator/components/orchestratorColorAudit.test.ts
+    - npm run slices:check
+    - npm run typecheck
+    - npm run lint
+  acceptance:
+    - 'A cross-surface ownership test asserts every status label is owned by exactly one surface (no duplication), sourced from the real label producers.'
+    - 'The Stage broadcast pill renders status only; the Remote-update Apply/Dismiss action lives only in the OrchestratorView banner.'
+    - 'The preview overlay structurally leaves room for a future Player Output (snapshot) slot; no snapshot surface, label, or new playerOutput state is added.'
+    - 'FORBIDDEN_PREVIEW_TERMS and orchestratorColorAudit stay green; PresetTree/PresetBrowser and all contracts are unchanged.'
+  non_goals:
+    - Do not implement the Player Output snapshot or add playerOutput truth states (future Option B runtime slice).
+    - 'Do not change PresetTree/PresetBrowser (that is Gate 3c) or apply spacing/focus tokens (that is Gate 3d).'
+    - Do not change server/socket/shared contracts, Player rendering, camera-relay or authority vocabulary, package, Nix, workflow, or e2e.
+  notes:
+    - 'Implements the Gate 3a-i contract (docs/architecture/orchestrator-operator-journey.md). Audit-first: the code already largely honors the table, so this slice is expected to be test-heavy (lock the contract) plus minimal reconciliation.'
+    - 'Player Live decision = Option B (snapshot target); the reserved slot is documented-only here.'
+  next:
+    - implementation
