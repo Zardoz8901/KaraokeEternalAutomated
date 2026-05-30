@@ -103,13 +103,13 @@
     - cleanup
 
 - id: orchestrator-preset-row-notice-alignment
-  status: planned
+  status: in_progress
   owner: codex
   branch: phase-12-orchestrator-preset-row-notice-alignment
   base: main
   worktree:
-    path: null
-    state: not_required
+    path: /home/steph/projects/KaraokeEternalAutomated-phase-12-orchestrator-preset-row-notice-alignment
+    state: present
   merge_order: 195
   goal: 'Gate 3c: align PresetTree row badges and the PresetBrowser notice to the Gate 3a-i status-ownership table - promote badge literals (Selected, Loaded in preview, Start, Cam, Gallery) to shared label constants, extract the remote-banner base string to a constant, single-source the notice copy, and convert the Gate 3b ownership test hardcoded sets to derived ones so PresetTree/PresetBrowser/banner drift is caught - without any logic/behavior change.'
   write_scope:
