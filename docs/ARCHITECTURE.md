@@ -92,4 +92,5 @@ Standard users authenticate through Authentik OIDC. Guest room assignment is han
 - [Orchestrator Synthesis UI Style Guide](architecture/orchestrator-synthesis-ui-style-guide.md) — UX rules for Hydra, preset, menu, and future synthesis-control work
 - [Orchestrator Preset Operator UX](architecture/orchestrator-preset-operator-ux.md) — Decision spec for Preset operator and Browse-only visual workflows
 - [Orchestrator Preview/Output Model](architecture/orchestrator-preview-output-model.md) — Product-language contract for Local Preview, Applied on Player, Player Output, and future Player Live mirroring
-- [ADR: Orchestrator Player Live boundary](architecture/orchestrator-player-live-decision.md) — Decision (pending) on whether Orchestrator stays local-approximate vs adds a Player-output snapshot or live mirror
+- [ADR: Orchestrator Player Live boundary](architecture/orchestrator-player-live-decision.md) — Accepted: Option B (periodic Player-output snapshot) is the target; local-only is the fallback, live mirror deferred
+- [Orchestrator Operator & Host Journey + Status-Ownership](architecture/orchestrator-operator-journey.md) — Journey map (browse→…→recover) and the cross-surface status-label ownership contract (Gate 3a-i)

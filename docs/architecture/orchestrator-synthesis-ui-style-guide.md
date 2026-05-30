@@ -32,7 +32,7 @@ Design work must show the current mode clearly. Do not rely on server rejection 
 
 Preset operator and Browse-only runtime UI work must follow the [Orchestrator Preset Operator UX](orchestrator-preset-operator-ux.md) decision spec.
 
-Preview, Player-applied state, and future Player Live work must follow the [Orchestrator Preview/Output Model](orchestrator-preview-output-model.md). That model is the durable source of truth for Local Preview, Preview using Player MP4, Applied on Player, Player Output, and Player Live labels.
+Preview, Player-applied state, and future Player Live work must follow the [Orchestrator Preview/Output Model](orchestrator-preview-output-model.md). That model is the durable source of truth for Local Preview, Preview using Player MP4, Applied on Player, Player Output, and Player Live labels. Which **surface owns** each status label (and the operator/host journey) is defined by the [Operator & Host Journey + Status-Ownership contract](orchestrator-operator-journey.md).
 
 ## Preview/Output Mental Model
 
