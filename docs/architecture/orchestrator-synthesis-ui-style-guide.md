@@ -4,6 +4,8 @@ This guide governs Orchestrator-first UI work for Karaoke Hydra. It is a product
 
 The goal is not to make the Orchestrator look like a plugin rack. The goal is to make live visual control safe, legible, fast, and learnable while preserving expert depth.
 
+The product interpretation and visual-system direction behind these rules — what the Orchestrator *is* (a calm, dense operator workstation) and how it should look and behave — lives in the [Orchestrator HiG Product Interpretation & Visual System](orchestrator-visual-system.md).
+
 ## Source Principles
 
 This guide adapts these references:
