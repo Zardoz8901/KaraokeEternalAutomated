@@ -41,13 +41,13 @@
     - implementation
 
 - id: orchestrator-stage-strip-preview-reconciliation
-  status: planned
+  status: in_progress
   owner: codex
   branch: phase-11-orchestrator-stage-strip-reconciliation
   base: main
   worktree:
-    path: null
-    state: not_required
+    path: /home/steph/projects/KaraokeEternalAutomated-phase-11-orchestrator-stage-strip-reconciliation
+    state: present
   merge_order: 190
   goal: 'Gate 3b: reconcile the Stage status strip and preview overlay to the Gate 3a-i status-ownership table and lock it with a cross-surface ownership test (no duplication; Remote-update pill stays status-only, banner owns the action; preview overlay leaves room for the reserved Player Output snapshot slot) - without implementing the snapshot or adding playerOutput states.'
   write_scope:
