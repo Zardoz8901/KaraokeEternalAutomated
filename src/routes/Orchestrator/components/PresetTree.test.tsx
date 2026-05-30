@@ -534,4 +534,42 @@ describe('PresetTree', () => {
       root.unmount()
     })
   })
+
+  it('exposes row badge states in the preset row accessible name', async () => {
+    const container = document.createElement('div')
+    const root = createRoot(container)
+    const nodes = makeNodes()
+    nodes[0].children[0] = {
+      ...nodes[0].children[0],
+      usesCamera: true,
+    }
+
+    await act(async () => {
+      root.render(
+        <PresetTree
+          nodes={nodes}
+          expanded={new Set(['folder:1'])}
+          selectedPresetKey='preset:1'
+          loadedPreviewPresetKey='preset:1'
+          appliedPresetKey='preset:1'
+          startingPresetId={1}
+          onToggleFolder={() => {}}
+          onLoad={() => {}}
+          onSend={() => {}}
+          isDndEnabled={false}
+          onDragEnd={() => {}}
+        />,
+      )
+    })
+
+    const focusables = Array.from(container.querySelectorAll<HTMLElement>('[data-tree-focusable="true"]'))
+    const row = focusables.find(element => element.getAttribute('aria-label')?.startsWith('Preset test'))
+    expect(row?.getAttribute('aria-label')).toBe(
+      `Preset test, ${LOADED_IN_PREVIEW_BADGE_LABEL}, ${APPLIED_ON_PLAYER_LABEL}, ${START_BADGE_LABEL}, ${CAM_BADGE_LABEL}`,
+    )
+
+    await act(async () => {
+      root.unmount()
+    })
+  })
 })

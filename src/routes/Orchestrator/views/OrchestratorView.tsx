@@ -108,7 +108,7 @@ function OrchestratorView () {
         />
       )}
       {pendingRemoteCode && (
-        <div className={styles.remoteBanner}>
+        <div className={styles.remoteBanner} role='status' aria-live='polite'>
           <span className={styles.remoteBannerText}>
             {`${REMOTE_UPDATE_BANNER_LABEL}${pendingRemoteCount > 1 ? ` (\u00d7${pendingRemoteCount})` : ''}`}
           </span>

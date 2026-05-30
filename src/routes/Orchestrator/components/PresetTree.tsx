@@ -279,6 +279,16 @@ function PresetTree ({
                         const isStarting = typeof preset.presetId === 'number' && preset.presetId === startingPresetId
                         const presetManageAllowed = rowUx.showManagementActions && !preset.isGallery && (canManagePreset?.(preset) ?? true)
                         const presetDragDisabled = !isDndEnabled || preset.isGallery || !presetManageAllowed
+                        const accessibleBadgeLabels = [
+                          isLoadedPreview ? LOADED_IN_PREVIEW_BADGE_LABEL : null,
+                          isApplied ? APPLIED_ON_PLAYER_LABEL : null,
+                          isStarting ? START_BADGE_LABEL : null,
+                          preset.usesCamera ? CAM_BADGE_LABEL : null,
+                        ].filter((label): label is string => label !== null)
+                        const presetAriaLabel = [
+                          `Preset ${preset.name}`,
+                          ...accessibleBadgeLabels,
+                        ].join(', ')
 
                         return (
                           <Draggable
@@ -300,7 +310,7 @@ function PresetTree ({
                                 role='button'
                                 tabIndex={0}
                                 aria-pressed={isSelected}
-                                aria-label={`Preset ${preset.name}`}
+                                aria-label={presetAriaLabel}
                                 data-tree-focusable='true'
                                 onClick={() => onLoad(preset)}
                                 onKeyDown={e => handlePresetKeyDown(e, preset)}

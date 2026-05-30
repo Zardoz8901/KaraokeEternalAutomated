@@ -15,9 +15,27 @@ const toneClass: Record<OrchestratorStatusItem['tone'], string> = {
   danger: styles.toneDanger,
 }
 
-function StatusPill ({ item, priority }: { item: OrchestratorStatusItem, priority: 'authority' | 'signal' }) {
+function getStatusPillAriaLabel (item: OrchestratorStatusItem, labelPrefix: 'Authority' | 'Broadcast' | 'Camera'): string {
+  const value = labelPrefix === 'Camera'
+    ? item.label.replace(/^Camera\s+/, '').replace(/^\w/, first => first.toUpperCase())
+    : item.label
+  return `${labelPrefix}: ${value}`
+}
+
+function StatusPill ({
+  item,
+  priority,
+  labelPrefix,
+}: {
+  item: OrchestratorStatusItem
+  priority: 'authority' | 'signal'
+  labelPrefix: 'Authority' | 'Broadcast' | 'Camera'
+}) {
   return (
-    <span className={`${styles.pill} ${priority === 'authority' ? styles.authorityPill : styles.signalPill} ${toneClass[item.tone]}`}>
+    <span
+      className={`${styles.pill} ${priority === 'authority' ? styles.authorityPill : styles.signalPill} ${toneClass[item.tone]}`}
+      aria-label={getStatusPillAriaLabel(item, labelPrefix)}
+    >
       {item.label}
     </span>
   )
@@ -25,10 +43,10 @@ function StatusPill ({ item, priority }: { item: OrchestratorStatusItem, priorit
 
 function OrchestratorStatusStrip ({ model }: OrchestratorStatusStripProps) {
   return (
-    <div className={styles.strip} aria-label='Orchestrator status'>
-      <StatusPill item={model.authority} priority='authority' />
-      <StatusPill item={model.broadcast} priority='signal' />
-      <StatusPill item={model.camera} priority='signal' />
+    <div className={styles.strip} aria-label='Orchestrator status' aria-live='polite'>
+      <StatusPill item={model.authority} priority='authority' labelPrefix='Authority' />
+      <StatusPill item={model.broadcast} priority='signal' labelPrefix='Broadcast' />
+      <StatusPill item={model.camera} priority='signal' labelPrefix='Camera' />
     </div>
   )
 }

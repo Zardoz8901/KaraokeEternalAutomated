@@ -181,6 +181,8 @@ describe('OrchestratorView remote-update ownership', () => {
 
     expect(REMOTE_UPDATE_BANNER_LABEL).toBe('Remote update available')
     expect(container.textContent).toContain(`${REMOTE_UPDATE_BANNER_LABEL} (×2)`)
+    const bannerStatus = container.querySelector('[role="status"][aria-live="polite"]')
+    expect(bannerStatus?.textContent).toContain(`${REMOTE_UPDATE_BANNER_LABEL} (×2)`)
     expect(buttons).toContain('Apply')
     expect(buttons).toContain('Dismiss')
     expect(strip?.textContent).toContain('Remote update')
