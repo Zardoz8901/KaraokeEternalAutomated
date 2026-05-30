@@ -28,6 +28,12 @@ const model: OrchestratorStatusModel = {
   camera: { label: 'Camera live', tone: 'live' },
 }
 
+const remoteUpdateModel: OrchestratorStatusModel = {
+  authority: { label: 'Host live coding', tone: 'primary' },
+  broadcast: { label: 'Remote update', tone: 'warning' },
+  camera: { label: 'Camera idle', tone: 'neutral' },
+}
+
 describe('OrchestratorStatusStrip', () => {
   it('renders authority, broadcast, and camera status labels', async () => {
     const container = document.createElement('div')
@@ -44,6 +50,26 @@ describe('OrchestratorStatusStrip', () => {
     const cameraPill = Array.from(container.querySelectorAll('span'))
       .find(el => el.textContent === 'Camera live')
     expect(cameraPill?.className).toContain('toneLive')
+
+    await act(async () => {
+      root.unmount()
+    })
+  })
+
+  it('keeps the broadcast pill action-free when remote updates are pending', async () => {
+    const container = document.createElement('div')
+    const root = createRoot(container)
+
+    await act(async () => {
+      root.render(<OrchestratorStatusStrip model={remoteUpdateModel} />)
+    })
+
+    const strip = container.querySelector('[aria-label="Orchestrator status"]')
+    expect(strip?.textContent).toContain('Remote update')
+    expect(strip?.querySelector('button')).toBeNull()
+    expect(strip?.textContent).not.toContain('Apply')
+    expect(strip?.textContent).not.toContain('Dismiss')
+    expect(strip?.textContent).not.toContain('Remote update available')
 
     await act(async () => {
       root.unmount()

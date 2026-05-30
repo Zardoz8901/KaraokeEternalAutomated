@@ -1,8 +1,11 @@
 // @vitest-environment jsdom
+import fs from 'node:fs'
+import path from 'node:path'
 import React, { act } from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { flushSync } from 'react-dom'
 import { createRoot } from 'react-dom/client'
+import type { OrchestratorPlayerOutputTruth } from './orchestratorPresentationModel'
 
 let lastHydraProps: Record<string, unknown> | null = null
 let hydraRenderProps: Array<Record<string, unknown>> = []
@@ -86,6 +89,11 @@ function dispatchVideoDecode (video: HTMLVideoElement): void {
   markVideoRenderable(video)
   video.dispatchEvent(new Event('loadeddata'))
 }
+
+const currentPlayerOutputTruths = {
+  noPlayer: true,
+  playerPresentNotMirrored: true,
+} satisfies Record<OrchestratorPlayerOutputTruth, true>
 
 describe('HydraPreview', () => {
   beforeEach(() => {
@@ -232,6 +240,44 @@ describe('HydraPreview', () => {
     expect(previewStatusText(container)).toContain('Local Preview')
     expect(previewStatusText(container)).toContain('Player audio reactive')
     expect(previewStatusText(container)).not.toContain('Live')
+
+    await act(async () => {
+      root.unmount()
+    })
+  })
+
+  it('keeps the preview status overlay open for a future Player Output snapshot sibling', async () => {
+    installFakeAudioContext()
+    const container = document.createElement('div')
+    const root = createRoot(container)
+
+    await act(async () => {
+      root.render(
+        <HydraPreview
+          code='osc(10).out()'
+          width={320}
+          height={200}
+          localCameraStream={null}
+          mode='hydra'
+          isEnabled={true}
+          sensitivity={1}
+          allowCamera={true}
+        />,
+      )
+    })
+
+    const status = container.querySelector('[data-testid="hydra-preview-status"]')
+    const css = fs.readFileSync(
+      path.join(process.cwd(), 'src/routes/Orchestrator/components/HydraPreview.css'),
+      'utf8',
+    )
+
+    expect(status?.children.length).toBeGreaterThanOrEqual(1)
+    expect(css).toMatch(/\.status\s*\{[\s\S]*display:\s*inline-flex;[\s\S]*flex-direction:\s*column;/)
+    expect(previewStatusText(container)).toContain('Local Preview')
+    expect(previewStatusText(container)).not.toContain('Player Output')
+    expect(previewStatusText(container)).not.toContain('snapshot')
+    expect(Object.keys(currentPlayerOutputTruths).sort()).toEqual(['noPlayer', 'playerPresentNotMirrored'])
 
     await act(async () => {
       root.unmount()
