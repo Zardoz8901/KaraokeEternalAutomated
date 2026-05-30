@@ -10,7 +10,8 @@
 .stageHeader {
   grid-row: 1;
   display: grid;
-  grid-template-columns: minmax(12rem, max-content) minmax(13rem, 1fr) minmax(16rem, max-content);
+  grid-template-columns: minmax(0, max-content) minmax(0, 1fr) minmax(0, max-content);
+  grid-template-areas: "label status controls";
   align-items: center;
   gap: var(--orch-gap-md);
   padding: var(--orch-space-lg) var(--orch-space-xl);
@@ -20,6 +21,7 @@
 }
 
 .stageHeaderLeft {
+  grid-area: label;
   display: flex;
   align-items: center;
   gap: var(--orch-gap-sm);
@@ -27,11 +29,15 @@
 }
 
 .stageStatusSlot {
+  grid-area: status;
   min-width: 0;
   max-width: clamp(14rem, 34vw, 34rem);
+  overflow: hidden;
+  justify-self: stretch;
 }
 
 .stageHeaderRight {
+  grid-area: controls;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -41,8 +47,8 @@
 
 .stageTitle {
   display: flex;
-  flex-direction: column;
-  gap: var(--orch-space-2xs);
+  align-items: baseline;
+  gap: var(--orch-space-xs);
   font-size: var(--text-sm);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -51,10 +57,17 @@
 }
 
 .stageHint {
+  display: inline-flex;
+  align-items: center;
   font-size: var(--text-xs);
   letter-spacing: 0.08em;
   color: var(--orch-muted);
-  display: none;
+}
+
+.stageHint::before {
+  content: '·';
+  margin-right: var(--orch-space-xs);
+  color: var(--orch-muted);
 }
 
 .cameraPipeline {
@@ -187,20 +200,21 @@
 
 @media (max-width: 979px) {
   .stageHeader {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "label"
+      "status"
+      "controls";
     gap: var(--orch-gap-sm);
     padding: var(--orch-space-md);
   }
 
   .stageHeaderLeft {
-    flex: 1 1 100%;
-    order: 1;
+    min-width: 0;
   }
 
   .stageStatusSlot {
-    flex: 1 1 100%;
-    order: 2;
     max-width: 100%;
   }
 
@@ -208,7 +222,6 @@
     width: 100%;
     flex-wrap: wrap;
     gap: var(--orch-gap-sm);
-    order: 3;
   }
 
   .cameraPipeline {
@@ -229,11 +242,5 @@
     min-height: var(--orch-touch-target);
     padding: var(--orch-space-sm) var(--orch-space-md);
     text-align: center;
-  }
-}
-
-@media (min-width: 980px) {
-  .stageHint {
-    display: block;
   }
 }
