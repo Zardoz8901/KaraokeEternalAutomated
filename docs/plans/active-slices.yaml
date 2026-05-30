@@ -1,11 +1,11 @@
 - id: orchestrator-ux-spacing-focus-tokens
-  status: planned
+  status: in_progress
   owner: codex
   branch: docs/orchestrator-ux-spacing-focus-tokens
   base: main
   worktree:
-    path: null
-    state: not_required
+    path: /home/steph/projects/KaraokeEternalAutomated
+    state: present
   merge_order: 185
   goal: 'Gate 3a-ii UX contract: a spacing scale plus focus-ring token contract and a density/hierarchy audit of the rendered Orchestrator surfaces (Stage header, PresetTree rows, status pills, controls), feeding the Gate 3d token-application slice - without changing runtime code.'
   write_scope:
@@ -37,5 +37,6 @@
     - Do not change the color-audit enforced tokens.
   notes:
     - 'Independent of Gate 3a-i; both can proceed in parallel. Feeds the Gate 3d token-application implementation slice.'
+    - 'Started on docs/orchestrator-ux-spacing-focus-tokens on 2026-05-30.'
   next:
     - implementation
