@@ -7,6 +7,8 @@ export type OrchestratorPreviewTruth
 
 export type OrchestratorAudioTruth = 'none' | 'simulated' | 'playerReactive'
 
+// The Player Output snapshot state is reserved by the Gate 3a-i/Option B ADR.
+// Do not extend this union until the future snapshot runtime slice exists.
 export type OrchestratorPlayerOutputTruth = 'noPlayer' | 'playerPresentNotMirrored'
 
 export interface OrchestratorPresentationInput {
