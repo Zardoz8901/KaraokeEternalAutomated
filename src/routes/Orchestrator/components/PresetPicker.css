@@ -4,7 +4,7 @@
 }
 
 .toggle {
-  padding: 0.35rem 0.75rem;
+  padding: var(--orch-space-sm) var(--orch-space-xl);
   background: color-mix(in srgb, var(--orch-blue) 18%, transparent);
   border: 1px solid color-mix(in srgb, var(--orch-blue) 45%, transparent);
   border-radius: var(--orch-radius-md);
@@ -22,21 +22,21 @@
 .toggle:focus-visible,
 .random:focus-visible,
 .action:focus-visible {
-  outline: 2px solid var(--orch-focus);
-  outline-offset: 1px;
+  outline: var(--orch-focus-ring);
+  outline-offset: var(--orch-focus-ring-offset);
 }
 
 .panel {
   position: absolute;
-  top: calc(100% + 6px);
+  top: calc(100% + var(--orch-space-sm));
   left: 0;
   z-index: 20;
   width: 240px;
   max-height: 320px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 8px;
+  gap: var(--orch-space-sm);
+  padding: var(--orch-space-md);
   background: var(--orch-surface-raised);
   border: 1px solid var(--orch-border);
   border-radius: var(--orch-radius-lg);
@@ -45,12 +45,12 @@
 
 .panelHeader {
   display: flex;
-  gap: 6px;
+  gap: var(--orch-space-sm);
 }
 
 .search {
   flex: 1;
-  padding: 6px 8px;
+  padding: var(--orch-space-sm) var(--orch-space-md);
   border-radius: var(--orch-radius-sm);
   border: 1px solid var(--orch-border);
   background: var(--orch-bg);
@@ -59,12 +59,12 @@
 }
 
 .search:focus {
-  outline: 2px solid var(--orch-focus);
-  outline-offset: 1px;
+  outline: var(--orch-focus-ring);
+  outline-offset: var(--orch-focus-ring-offset);
 }
 
 .random {
-  padding: 6px 8px;
+  padding: var(--orch-space-sm) var(--orch-space-md);
   border-radius: var(--orch-radius-sm);
   border: 1px solid color-mix(in srgb, var(--orch-yellow) 42%, transparent);
   background: color-mix(in srgb, var(--orch-yellow) 16%, transparent);
@@ -77,17 +77,17 @@
 .list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--orch-space-xs);
   overflow-y: auto;
   max-height: 260px;
-  padding-right: 4px;
+  padding-right: var(--orch-space-xs);
 }
 
 .row {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px;
+  gap: var(--orch-space-sm);
+  padding: var(--orch-space-sm);
   border-radius: var(--orch-radius-md);
   background: var(--orch-surface-soft);
 }
@@ -104,11 +104,11 @@
 
 .actions {
   display: flex;
-  gap: 4px;
+  gap: var(--orch-space-xs);
 }
 
 .action {
-  padding: 4px 6px;
+  padding: var(--orch-space-xs) var(--orch-space-sm);
   border-radius: var(--orch-radius-sm);
   border: 1px solid var(--orch-border);
   background: var(--orch-surface);
@@ -126,7 +126,7 @@
 .empty {
   font-size: 11px;
   color: var(--orch-muted);
-  padding: 4px 2px;
+  padding: var(--orch-space-xs) var(--orch-space-2xs);
 }
 
 @media (max-width: 979px) {
@@ -137,28 +137,28 @@
   .panel {
     position: fixed;
     top: auto;
-    left: 8px;
-    right: 8px;
+    left: var(--orch-space-md);
+    right: var(--orch-space-md);
     bottom: calc(58px + env(safe-area-inset-bottom));
     width: auto;
     max-height: 70vh;
   }
 
   .search {
-    padding: 10px 12px;
+    padding: var(--orch-space-lg) var(--orch-space-xl);
     font-size: 16px;
     min-height: var(--orch-touch-target);
   }
 
   .random {
-    padding: 10px 12px;
+    padding: var(--orch-space-lg) var(--orch-space-xl);
     font-size: 13px;
     min-height: var(--orch-touch-target);
   }
 
   .row {
-    padding: 8px;
-    gap: 8px;
+    padding: var(--orch-space-md);
+    gap: var(--orch-space-md);
   }
 
   .label {
@@ -166,7 +166,7 @@
   }
 
   .action {
-    padding: 10px 14px;
+    padding: var(--orch-space-lg) var(--orch-space-xl);
     font-size: 13px;
     min-height: var(--orch-touch-target);
   }

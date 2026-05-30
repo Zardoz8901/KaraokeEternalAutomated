@@ -13,9 +13,9 @@
   display: inline-flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 0.1rem;
+  gap: var(--orch-space-2xs);
   max-width: min(70%, 22rem);
-  padding: 0.25rem 0.45rem;
+  padding: var(--orch-space-xs) var(--orch-space-md);
   border: 1px solid var(--orch-preview-border, var(--orch-border-subtle));
   border-radius: var(--orch-radius-sm);
   color: var(--orch-preview-color, var(--orch-muted));
