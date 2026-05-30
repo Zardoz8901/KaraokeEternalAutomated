@@ -101,3 +101,69 @@
     - 'Merged to main on 2026-05-30 as b6976333.'
   next:
     - cleanup
+
+- id: orchestrator-preset-row-notice-alignment
+  status: planned
+  owner: codex
+  branch: phase-12-orchestrator-preset-row-notice-alignment
+  base: main
+  worktree:
+    path: null
+    state: not_required
+  merge_order: 195
+  goal: 'Gate 3c: align PresetTree row badges and the PresetBrowser notice to the Gate 3a-i status-ownership table - promote badge literals (Selected, Loaded in preview, Start, Cam, Gallery) to shared label constants, extract the remote-banner base string to a constant, single-source the notice copy, and convert the Gate 3b ownership test hardcoded sets to derived ones so PresetTree/PresetBrowser/banner drift is caught - without any logic/behavior change.'
+  write_scope:
+    - docs/plans/active-slices.yaml
+    - docs/analysis/orchestrator_preset_row_notice_alignment_2026_05_30.md
+    - docs/analysis/current_state_2026_03_05.md
+    - src/routes/Orchestrator/components/orchestratorPresentationModel.ts
+    - src/routes/Orchestrator/components/orchestratorPresentationModel.test.ts
+    - src/routes/Orchestrator/components/orchestratorStatusOwnership.test.ts
+    - src/routes/Orchestrator/components/PresetTree.tsx
+    - src/routes/Orchestrator/components/PresetTree.test.tsx
+    - src/routes/Orchestrator/components/PresetBrowser.tsx
+    - src/routes/Orchestrator/components/PresetBrowser.test.tsx
+    - src/routes/Orchestrator/components/presetOperatorUx.ts
+    - src/routes/Orchestrator/components/presetOperatorUx.test.ts
+    - src/routes/Orchestrator/components/presetEmptyState.ts
+    - src/routes/Orchestrator/components/presetEmptyState.test.ts
+    - src/routes/Orchestrator/views/OrchestratorView.tsx
+    - src/routes/Orchestrator/views/OrchestratorView.test.tsx
+  protected_paths:
+    - server/
+    - shared/actionTypes.ts
+    - shared/types.ts
+    - src/routes/Player/
+    - src/routes/Orchestrator/components/orchestratorStatus.ts
+    - src/routes/Orchestrator/components/OrchestratorStatusStrip.tsx
+    - src/routes/Orchestrator/components/HydraPreview.tsx
+    - src/routes/Orchestrator/components/hydraPreviewUtils.ts
+    - package.json
+    - package-lock.json
+    - flake.nix
+    - e2e/
+    - .github/workflows/
+  verification:
+    - npm test -- src/routes/Orchestrator/components/orchestratorStatusOwnership.test.ts src/routes/Orchestrator/components/PresetTree.test.tsx src/routes/Orchestrator/components/PresetBrowser.test.tsx
+    - npm test -- src/routes/Orchestrator/components/presetOperatorUx.test.ts src/routes/Orchestrator/components/presetEmptyState.test.ts src/routes/Orchestrator/views/OrchestratorView.test.tsx
+    - npm test -- src/routes/Orchestrator/components/orchestratorColorAudit.test.ts
+    - npm run slices:check
+    - npm run typecheck
+    - npm run lint
+  acceptance:
+    - 'PresetTree badge text (Selected, Loaded in preview, Start, Cam, Gallery) is sourced from shared label constants; gating logic unchanged.'
+    - 'The remote-update banner base string is a shared constant; the (xN) suffix stays computed; banner behavior unchanged.'
+    - 'The PresetBrowser notice copy is single-sourced from presetOperatorUx.ts / presetEmptyState.ts (no duplicated inline strings).'
+    - 'orchestratorStatusOwnership.test.ts derives the PresetTree badge, remote banner, and PresetBrowser notice sets from real producers/constants (no hardcoded literals or placeholder tokens) and still asserts one-owner-per-label + forbidden-term cleanliness.'
+    - 'A mutation (badge constant colliding with a Stage label) makes the ownership test fail, proving it catches real drift.'
+    - 'No logic/behavior change; FORBIDDEN_PREVIEW_TERMS and color audit stay green; orchestratorStatus.ts/OrchestratorStatusStrip.tsx/HydraPreview.tsx unchanged.'
+  non_goals:
+    - Do not change status/preview runtime behavior; this is literal-to-constant sourcing + test derivation only.
+    - Do not implement the Player Output snapshot or add playerOutput states.
+    - 'Do not apply spacing/focus tokens (Gate 3a-ii / 3d) or change Stage strip / preview (Gate 3b, done).'
+    - Do not change server/socket/shared contracts, Player rendering, package, Nix, workflow, or e2e.
+  notes:
+    - 'Closes review finding #1 on Gate 3b: makes the cross-surface ownership test fully derived so PresetTree/PresetBrowser/banner drift is caught.'
+    - 'Vocabulary home is orchestratorPresentationModel.ts (per Phase 9); badge constants live there beside APPLIED_ON_PLAYER_LABEL.'
+  next:
+    - implementation
