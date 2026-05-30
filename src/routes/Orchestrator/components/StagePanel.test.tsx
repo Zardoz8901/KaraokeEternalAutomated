@@ -134,6 +134,24 @@ describe('StagePanel', () => {
     expect(container.textContent).toContain('o2')
     expect(container.textContent).toContain('o3')
     expect(container.textContent).not.toContain('Player Feed')
+    const bufferGroup = container.querySelector('[role="radiogroup"][aria-label="Preview output buffer"]')
+    expect(bufferGroup).not.toBeNull()
+    const radios = Array.from(bufferGroup?.querySelectorAll('[role="radio"]') ?? [])
+    expect(radios).toHaveLength(5)
+    expect(radios.map(radio => radio.getAttribute('aria-label'))).toEqual([
+      'Output buffer Auto',
+      'Output buffer o0',
+      'Output buffer o1',
+      'Output buffer o2',
+      'Output buffer o3',
+    ])
+    expect(radios.map(radio => radio.getAttribute('aria-checked'))).toEqual([
+      'true',
+      'false',
+      'false',
+      'false',
+      'false',
+    ])
 
     await act(async () => {
       root.unmount()

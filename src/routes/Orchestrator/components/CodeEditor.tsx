@@ -500,21 +500,23 @@ function CodeEditor ({
           >
             {sendStatus === 'sending' ? 'Sending…' : 'Send'}
           </button>
-          {showSendStatus && sendStatus !== 'sending' && (
-            <span
-              className={`${styles.sendStatus} ${sendStatus === 'error' ? styles.sendStatusError : styles.sendStatusOk}`}
-            >
-              {sendStatus === 'synced' ? 'Synced' : 'Send failed'}
-            </span>
-          )}
-          {sendLintError && (
-            <>
-              <span className={styles.sendLintError}>
-                {`Fix ${sendLintError.count} error${sendLintError.count > 1 ? 's' : ''} (line ${sendLintError.firstLine})`}
+          <span role='status' aria-live='polite'>
+            {showSendStatus && sendStatus !== 'sending' && (
+              <span
+                className={`${styles.sendStatus} ${sendStatus === 'error' ? styles.sendStatusError : styles.sendStatusOk}`}
+              >
+                {sendStatus === 'synced' ? 'Synced' : 'Send failed'}
               </span>
-              <span className={styles.sendLintDebug}>{sendLintError.debugHint}</span>
-            </>
-          )}
+            )}
+            {sendLintError && (
+              <>
+                <span className={styles.sendLintError}>
+                  {`Fix ${sendLintError.count} error${sendLintError.count > 1 ? 's' : ''} (line ${sendLintError.firstLine})`}
+                </span>
+                <span className={styles.sendLintDebug}>{sendLintError.debugHint}</span>
+              </>
+            )}
+          </span>
           {sendStatus === 'error' && onResend && (
             <button
               type='button'

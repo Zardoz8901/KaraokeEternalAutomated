@@ -105,11 +105,14 @@ function StagePanel ({
               )}
             </div>
           )}
-          <div className={styles.bufferControls}>
+          <div className={styles.bufferControls} role='radiogroup' aria-label='Preview output buffer'>
             {BUFFER_OPTIONS.map(option => (
               <button
                 key={option.key}
                 type='button'
+                role='radio'
+                aria-checked={buffer === option.key}
+                aria-label={`Output buffer ${option.label}`}
                 className={`${styles.bufferButton} ${buffer === option.key ? styles.bufferButtonActive : ''}`}
                 onClick={() => onBufferChange(option.key)}
               >

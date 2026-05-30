@@ -273,6 +273,8 @@ describe('HydraPreview', () => {
     )
 
     expect(status?.children.length).toBeGreaterThanOrEqual(1)
+    expect(status?.getAttribute('role')).toBe('status')
+    expect(status?.getAttribute('aria-live')).toBe('polite')
     expect(css).toMatch(/\.status\s*\{[\s\S]*display:\s*inline-flex;[\s\S]*flex-direction:\s*column;/)
     expect(previewStatusText(container)).toContain('Local Preview')
     expect(previewStatusText(container)).not.toContain('Player Output')

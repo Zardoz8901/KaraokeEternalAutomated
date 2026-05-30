@@ -325,6 +325,8 @@ const HydraPreview = ({
       <div
         className={`${styles.status} ${styles[getPreviewStatusClassKey(presentation.preview)] ?? ''}`}
         data-testid='hydra-preview-status'
+        role='status'
+        aria-live='polite'
       >
         <span className={styles.statusPrimary}>{presentation.primaryLabel}</span>
         {presentation.secondaryLabels.length > 0 && (

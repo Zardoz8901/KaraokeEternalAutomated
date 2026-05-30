@@ -258,4 +258,37 @@ describe('CodeEditor', () => {
       root.unmount()
     })
   })
+
+  it('announces send lifecycle and lint feedback from one polite status region', async () => {
+    const container = document.createElement('div')
+    const root = createRoot(container)
+    const onSend = vi.fn()
+
+    await act(async () => {
+      root.render(
+        <CodeEditor
+          code='osc("unterminated)'
+          onCodeChange={() => {}}
+          onSend={onSend}
+          sendStatus='error'
+          onResend={() => {}}
+          onRandomize={() => {}}
+        />,
+      )
+    })
+
+    const sendButton = findButtonByText(container, 'Send')
+    await act(async () => {
+      sendButton?.click()
+    })
+
+    const status = container.querySelector('[role="status"][aria-live="polite"]')
+    expect(status).not.toBeNull()
+    expect(status?.textContent).toContain('Send failed')
+    expect(status?.textContent).toContain('Fix 1 error')
+
+    await act(async () => {
+      root.unmount()
+    })
+  })
 })
