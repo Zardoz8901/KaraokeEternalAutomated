@@ -814,6 +814,82 @@
   next:
     - cleanup
 
+- id: orchestrator-presentation-truth-hardening
+  status: planned
+  owner: codex
+  branch: phase-10-orchestrator-presentation-truth-hardening
+  base: main
+  worktree:
+    path: null
+    state: not_required
+  merge_order: 150
+  goal: Close the two LOW residue findings in the Local Preview clarity track before opening Player Live - the untested preview-truth to CSS-class mapping (the default 'local' truth maps to a .statusLocal selector that does not exist in HydraPreview.css, so the most common preview state renders silently unstyled) and usingPlayerMp4 firing on shadow-<video> existence rather than decoded frames - by extracting a pure, vitest-resolvable truth-to-class mapping helper, adding a neutral/muted .statusLocal selector, and gating usingPlayerMp4 on the same readyState>=2 && videoWidth>0 && videoHeight>0 condition HydraVisualizer already uses, without editing HydraVisualizer, server, socket, shared, or Player rendering.
+  write_scope:
+    - docs/plans/active-slices.yaml
+    - docs/analysis/orchestrator_presentation_truth_hardening_2026_05_30.md
+    - docs/analysis/current_state_2026_03_05.md
+    - src/routes/Orchestrator/components/orchestratorPresentationModel.ts
+    - src/routes/Orchestrator/components/orchestratorPresentationModel.test.ts
+    - src/routes/Orchestrator/components/HydraPreview.tsx
+    - src/routes/Orchestrator/components/HydraPreview.test.tsx
+    - src/routes/Orchestrator/components/HydraPreview.css
+    - src/routes/Orchestrator/components/orchestratorColorAudit.test.ts
+  protected_paths:
+    - server/
+    - shared/actionTypes.ts
+    - shared/types.ts
+    - src/routes/Player/
+    - src/routes/Orchestrator/components/orchestratorStatus.ts
+    - src/routes/Orchestrator/components/orchestratorStatus.test.ts
+    - src/routes/Orchestrator/components/PresetTree.tsx
+    - src/routes/Orchestrator/components/PresetTree.test.tsx
+    - src/routes/Orchestrator/components/OrchestratorStatusStrip.tsx
+    - src/routes/Orchestrator/components/OrchestratorStatusStrip.test.tsx
+    - src/routes/Orchestrator/components/StagePanel.tsx
+    - src/routes/Orchestrator/components/hydraPreviewUtils.ts
+    - src/routes/Orchestrator/views/
+    - package.json
+    - package-lock.json
+    - flake.nix
+    - e2e/
+    - .github/workflows/
+  verification:
+    - npm test -- src/routes/Orchestrator/components/orchestratorPresentationModel.test.ts src/routes/Orchestrator/components/HydraPreview.test.tsx
+    - npm test -- src/routes/Orchestrator/components/orchestratorColorAudit.test.ts
+    - npm test -- src/routes/Orchestrator/components/orchestratorStatus.test.ts src/routes/Orchestrator/components/PresetTree.test.tsx src/routes/Orchestrator/components/OrchestratorStatusStrip.test.tsx
+    - npm run slices:check
+    - npm run typecheck
+    - npm run lint
+  acceptance:
+    - The presentation model exports a pure, vitest-resolvable mapping from every OrchestratorPreviewTruth value (off, local, waitingForPlayerMedia, usingPlayerMp4, externalVideoSource) to a status CSS class key, and a truth-table test cross-checks each mapped .status<X> selector against HydraPreview.css read as raw text via fs.readFileSync (separate from the color-literal audit).
+    - HydraPreview.css contains a neutral/muted .statusLocal selector for the default preview state using only Solarized var(--orch-*) tokens, so the most common preview state is no longer silently unstyled and orchestratorColorAudit.test.ts stays green.
+    - HydraPreview.tsx derives the status class from the shared helper instead of an inline template literal.
+    - usingPlayerMp4 (Preview using Player MP4) is shown only when the shadow Player media <video> has decoded frames (readyState >= 2 && videoWidth > 0 && videoHeight > 0), mirroring HydraVisualizer.isRemoteVideoRenderable; before decode the overlay shows Waiting for Player media. HydraVisualizer itself is not modified.
+    - The readyState gate's interaction with the Hydra mount is analyzed and tested - hasPlayerMediaVideoElement also feeds shouldMountHydra via preview !== 'waitingForPlayerMedia', so a test must prove the shadow <video> decodes while Hydra is unmounted (no mount deadlock), and the ADR documents the mount-gate interaction.
+    - getOrchestratorPresentationModel output is byte-equivalent for existing inputs (the readyState gate is applied in HydraPreview input derivation; no new model input is added - the model already accepts a hasPlayerMediaVideoElement boolean).
+    - Phase 9 surfaces are unchanged - orchestratorStatus.ts (Broadcast ready / Camera live / Host live coding), PresetTree Applied-on-Player badge, OrchestratorStatusStrip component, server/socket/shared contracts, and Player rendering all remain unchanged; orchestratorStatus/PresetTree/OrchestratorStatusStrip tests stay green.
+    - No preview status label uses Live, Player Output, Now Playing, or On Display; the FORBIDDEN_PREVIEW_TERMS guard and color audit stay green.
+  non_goals:
+    - Do not implement Player Live streaming, snapshots, mirroring, WebRTC transport, or canvas capture; that is the intended (unregistered) docs-first follow-on.
+    - Do not edit HydraVisualizer.tsx; only mirror its readyState>=2 && videoWidth>0 && videoHeight>0 renderability condition inside HydraPreview input derivation.
+    - Do not change orchestratorStatus.ts, PresetTree.tsx, or OrchestratorStatusStrip.tsx; this slice does not touch broadcast/preset/strip vocabulary.
+    - Do not promote the deferred PresetTree sibling badge literals (Selected, Loaded in preview, Start, Cam); that remains out of scope.
+    - Do not correct the stale CLAUDE.md/AGENTS.md vitest-alias guidance here; that is a separate trivial docs slice.
+    - Do not add new playerOutput truth states; playerOutput stays noPlayer | playerPresentNotMirrored until the Player Live spec defines extensions.
+    - Do not resume or merge redux-modernization.
+    - Do not change server/socket protocol, shared action/type contracts, Player rendering, route guards, preset CRUD, package, Nix, workflow, or e2e files.
+  notes:
+    - "User decisions locked 2026-05-30: hardening-first sequencing (this slice before the Player Live spec); the default 'local' preview status pill is neutral/muted."
+    - Standard client UX/runtime TDD slice; no high-risk Player visualizer, camera, room-access, or proxy files are in write scope. HydraVisualizer is READ-ONLY reference for the renderability condition only (real file src/routes/Player/components/Player/PlayerVisualizer/HydraVisualizer.tsx, covered by the src/routes/Player/ protected path).
+    - "Findings verified on main HEAD 3e7d6758: getPreviewTruth defaults to 'local' (orchestratorPresentationModel.ts:78) producing class statusLocal at HydraPreview.tsx:294, but HydraPreview.css has no .statusLocal selector (rg statusLocal src/ empty). usingPlayerMp4 keys on Boolean(playerMediaVideoElement) (HydraPreview.tsx:235) set the instant the <video> is created (setVideo line 88), before any decode; HydraVisualizer's real gate is readyState>=2 && videoWidth>0 && videoHeight>0 (lines 41-43)."
+    - "Adversarial HIGH-SEVERITY caveat locked: hasPlayerMediaVideoElement feeds shouldMountHydra (preview !== 'waitingForPlayerMedia') which gates the Hydra mount, so re-gating on decode delays the mount, not only the label - add a decode-while-unmounted test and re-rate this risk to medium/medium."
+    - "CSS-module trap: under config/vitest.config.ts there is no CSS-modules transform, so importing styles yields undefined keys; the mapping test MUST read HydraPreview.css raw text via fs.readFileSync (orchestratorColorAudit.test.ts pattern), never the resolved import object. The color audit only scans color literals, not selector existence - keep the selector-presence test separate."
+    - jsdom has no real video decoder; HydraPreview.test.tsx must stub readyState/videoWidth/videoHeight via Object.defineProperty on the shadow <video> to simulate the decoded transition (deliberate harness simulation).
+    - Overlaps blocked redux-modernization Orchestrator paths (its write_scope src/routes/Orchestrator/components/ contains this slice's scope); serialize ahead of redux-modernization and do not run both branches in parallel.
+    - Intended (unregistered) follow-on after this slice - player-live-mirroring-architecture-spec (docs-first), then player-live-mirroring-runtime (Security-Sensitive); control-plane cleanup + redux decommission is parallel non-blocking debt (slices:check exits 0 today).
+  next:
+    - implementation
+
 - id: rollback-2026-02-12-cleanup
   status: merged_to_main
   owner: unassigned
