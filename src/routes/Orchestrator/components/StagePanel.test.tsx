@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+import fs from 'node:fs'
+import path from 'node:path'
 import React, { act } from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createRoot } from 'react-dom/client'
@@ -15,6 +17,26 @@ vi.mock('./HydraPreview', () => ({
     return <div data-testid='preview' />
   },
 }))
+
+function readStagePanelCss (): string {
+  return fs.readFileSync(
+    path.join(process.cwd(), 'src/routes/Orchestrator/components/StagePanel.css'),
+    'utf8',
+  )
+}
+
+function readStatusStripCss (): string {
+  return fs.readFileSync(
+    path.join(process.cwd(), 'src/routes/Orchestrator/components/OrchestratorStatusStrip.css'),
+    'utf8',
+  )
+}
+
+function cssBlock (css: string, selector: string): string {
+  const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const match = new RegExp(`${escapedSelector}\\s*\\{(?<body>[\\s\\S]*?)\\n\\}`).exec(css)
+  return match?.groups?.body ?? ''
+}
 
 describe('StagePanel', () => {
   beforeEach(() => {
@@ -156,6 +178,57 @@ describe('StagePanel', () => {
     await act(async () => {
       root.unmount()
     })
+  })
+
+  it('renders the Preview qualifier in the Stage title', async () => {
+    const container = document.createElement('div')
+    const root = createRoot(container)
+
+    await act(async () => {
+      root.render(
+        <StagePanel
+          code='osc(10,0,1).out(o0)'
+          width={360}
+          height={270}
+          buffer='auto'
+          onBufferChange={vi.fn()}
+          visualizerMode='hydra'
+          visualizerEnabled={true}
+          visualizerSensitivity={1}
+          visualizerAllowCamera={false}
+          cameraRelayStatus='idle'
+        />,
+      )
+    })
+
+    expect(container.textContent).toContain('Stage')
+    expect(container.textContent).toContain('Preview')
+
+    await act(async () => {
+      root.unmount()
+    })
+  })
+
+  it('locks the Stage header CSS order, truncation, mobile qualifier, and touch contract', () => {
+    const stageCss = readStagePanelCss()
+    const statusCss = readStatusStripCss()
+    const stageHeader = cssBlock(stageCss, '.stageHeader')
+    const stageHeaderLeft = cssBlock(stageCss, '.stageHeaderLeft')
+    const stageStatusSlot = cssBlock(stageCss, '.stageStatusSlot')
+    const stageHeaderRight = cssBlock(stageCss, '.stageHeaderRight')
+    const stageHint = cssBlock(stageCss, '.stageHint')
+    const mobileBlock = stageCss.split('@media (max-width: 979px) {')[1]?.split('@media (min-width: 980px)')[0] ?? ''
+    const pill = cssBlock(statusCss, '.pill')
+
+    expect(stageHeader).toMatch(/grid-template-areas:\s*"label status controls";/)
+    expect(stageHeaderLeft).toMatch(/grid-area:\s*label;/)
+    expect(stageStatusSlot).toMatch(/grid-area:\s*status;/)
+    expect(stageStatusSlot).toMatch(/overflow:\s*hidden;/)
+    expect(stageHeaderRight).toMatch(/grid-area:\s*controls;/)
+    expect(stageHint).not.toMatch(/display:\s*none;/)
+    expect(mobileBlock).toMatch(/\.stageHeader[\s\S]*grid-template-areas:\s*"label"[\s\S]*"status"[\s\S]*"controls";/)
+    expect(mobileBlock).toMatch(/\.bufferButton[\s\S]*min-height:\s*var\(--orch-touch-target\);/)
+    expect(pill).toMatch(/text-overflow:\s*ellipsis;/)
   })
 
   it('shows Camera Live when relay is active and Hydra has bound camera source', async () => {
