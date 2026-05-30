@@ -3,14 +3,14 @@
 # #16 keyboard resize separator. See docs/analysis/orchestrator_hig_ux_backlog_2026_05_30.md.
 
 - id: orchestrator-stage-header-layout
-  status: planned
+  status: in_progress
   owner: codex
   branch: phase-15-orchestrator-stage-header-layout
   base: main
   merge_order: 210
   worktree:
-    path: null
-    state: not_required
+    path: /home/steph/projects/KaraokeEternalAutomated
+    state: present
   goal: 'Gate 3e (+3f): harden the Stage header layout contract (group order left=label+qualifier, center=status strip width-limited/truncating, right=camera/buffer; banner stays above the shell) and keep the Preview qualifier visible on the mobile Stage header (HiG #10), plus a mobile density/44px touch pass - without relabeling or changing status ownership.'
   write_scope:
     - docs/plans/active-slices.yaml
