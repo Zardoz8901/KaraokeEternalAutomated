@@ -95,3 +95,4 @@ Standard users authenticate through Authentik OIDC. Guest room assignment is han
 - [ADR: Orchestrator Player Live boundary](architecture/orchestrator-player-live-decision.md) — Accepted: Option B (periodic Player-output snapshot) is the target; local-only is the fallback, live mirror deferred
 - [Orchestrator Operator & Host Journey + Status-Ownership](architecture/orchestrator-operator-journey.md) — Journey map (browse→…→recover) and the cross-surface status-label ownership contract (Gate 3a-i)
 - [Orchestrator HiG Product Interpretation & Visual System](architecture/orchestrator-visual-system.md) — The style direction: Orchestrator as a calm, dense operator workstation; the 9 product-interpretation principles behind the style-guide rules
+- [Orchestrator Style Directions](architecture/orchestrator-style-directions.md) — Concrete per-principle style directions (DONE/PARTIAL/OPEN, guideline-cited) + the open questions that gate adoption

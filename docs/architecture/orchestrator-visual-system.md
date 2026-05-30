@@ -130,6 +130,7 @@ expand each bullet into a brief using the same Explore/Criteria/Done-bar structu
 ## Relationship to existing docs
 
 - **This doc** = direction/interpretation (the "why").
+- **[Style Directions](orchestrator-style-directions.md)** = the concrete per-principle directions (tagged DONE/PARTIAL/OPEN), open questions, and guideline citations that realize these principles — the "what to actually do".
 - **Synthesis UI Style Guide** = the rules that implement the direction.
 - **Preview/Output Model · Operator Journey + Status-Ownership · Preset Operator UX · Player Live ADR** =
   locked product contracts this direction must honor.
