@@ -1,1 +1,175 @@
-[]
+# Gate 3 + HiG-bug closeout: 3 slices by change-type (decided 2026-05-30).
+# Deferred (NOT in this closeout): HiG #14 folder-action discoverability, #15 PresetPicker menu rebuild,
+# #16 keyboard resize separator. See docs/analysis/orchestrator_hig_ux_backlog_2026_05_30.md.
+
+- id: orchestrator-token-application
+  status: planned
+  owner: codex
+  branch: phase-13-orchestrator-token-application
+  base: main
+  merge_order: 200
+  worktree:
+    path: null
+    state: not_required
+  goal: 'Gate 3d: apply the Gate 3a-ii spacing + focus-ring token contract in Orchestrator CSS and close the HiG correctness/token bugs - #1 ApiReference undefined tokens, #2 PresetTree focus-ring suppression, #3 reduce-motion shimmer loop, #11 reduced-motion fallbacks, #12 ApiReference action-button focus-visible, #13 44px hit-slop on the smallest desktop controls - and extend the color audit to flag undefined --orch-* references, all within Solarized tokens and without relabeling or changing status ownership.'
+  write_scope:
+    - docs/plans/active-slices.yaml
+    - docs/analysis/orchestrator_token_application_2026_05_30.md
+    - docs/analysis/current_state_2026_03_05.md
+    - src/routes/Orchestrator/views/OrchestratorView.css
+    - src/routes/Orchestrator/components/PresetTree.css
+    - src/routes/Orchestrator/components/PresetBrowser.css
+    - src/routes/Orchestrator/components/ApiReference.css
+    - src/routes/Orchestrator/components/CodeEditor.css
+    - src/routes/Orchestrator/components/StagePanel.css
+    - src/routes/Orchestrator/components/HydraPreview.css
+    - src/routes/Orchestrator/components/OrchestratorStatusStrip.css
+    - src/routes/Orchestrator/components/PresetPicker.css
+    - src/routes/Orchestrator/components/orchestratorColorAudit.test.ts
+  protected_paths:
+    - server/
+    - shared/actionTypes.ts
+    - shared/types.ts
+    - src/routes/Player/
+    - src/routes/Orchestrator/components/orchestratorStatus.ts
+    - src/routes/Orchestrator/components/orchestratorPresentationModel.ts
+    - package.json
+    - package-lock.json
+    - flake.nix
+    - e2e/
+    - .github/workflows/
+  verification:
+    - npm test -- src/routes/Orchestrator/components/orchestratorColorAudit.test.ts
+    - npm run slices:check
+    - npm run typecheck
+    - npm run lint
+  acceptance:
+    - 'The --orch-space-* scale and --orch-focus-ring tokens from the style guide are defined in the OrchestratorView.css token block; ad-hoc spacing/radii values across Orchestrator CSS migrate to the scale per the contract migration mapping.'
+    - 'Every interactive Orchestrator control has a visible :focus-visible ring (the PresetTree outline:none rules are replaced with the focus-ring treatment); hover/selected styling is not the sole focus cue.'
+    - 'ApiReference.css references resolve to defined tokens (--orch-text-muted -> --orch-muted, --orch-text-soft -> --orch-muted-soft) and its action buttons gain a :focus-visible ring.'
+    - 'prefers-reduced-motion blocks cover OrchestratorView and CodeEditor animations, and the PresetBrowser skeleton shimmer is disabled under reduce-motion.'
+    - 'The smallest desktop/tablet controls (buffer buttons, resend) reach a 44px hit area via hit-slop padding without forcing a visual redesign.'
+    - 'orchestratorColorAudit.test.ts is extended to flag var(--orch-*) references that resolve to no defined token; it stays green after the fixes.'
+    - 'No relabeling, no status-ownership change, no orchestratorStatus.ts/orchestratorPresentationModel.ts logic change, no server/shared/Player change.'
+  non_goals:
+    - Do not relabel any status or change the status-ownership table.
+    - 'Do not change component behavior/logic; CSS plus minimal class additions only (e.g. adding an orchFocusable class), no state/handler changes.'
+    - Do not implement the Player Output snapshot or add playerOutput states.
+    - 'Do not do the a11y aria-live/role exposure (separate slice orchestrator-a11y-state-exposure) or the Stage-header layout (orchestrator-stage-header-layout).'
+    - Do not introduce raw colors; stay on Solarized tokens.
+  notes:
+    - 'Implements the Gate 3a-ii contract (style guide Spacing/Focus/Density section) and HiG backlog bugs #1,2,3,11,12,13 (exact file:line in docs/analysis/orchestrator_hig_ux_backlog_2026_05_30.md).'
+    - 'CSS-module class names are strings under config/vitest.config.ts (no transform); assert CSS via raw fs.readFileSync (orchestratorColorAudit.test.ts pattern), not the imported styles object.'
+    - 'Local Nix Chromium e2e is blocked; verify by CSS source + audit + typecheck/lint, not screenshots.'
+  next:
+    - implementation
+
+- id: orchestrator-a11y-state-exposure
+  status: planned
+  owner: codex
+  branch: phase-14-orchestrator-a11y-state-exposure
+  base: main
+  merge_order: 205
+  worktree:
+    path: null
+    state: not_required
+  goal: 'Expose already-locked Orchestrator status labels to assistive tech (HiG #4,5,6,7,8,9): aria-live on the remote-update banner, status strip, CodeEditor send region, and HydraPreview overlay; radiogroup semantics + accessible names + selected state on the StagePanel buffer selector; PresetTree row-badge states composed into the row accessible name - attribute/markup only, no relabeling and no status-ownership change.'
+  write_scope:
+    - docs/plans/active-slices.yaml
+    - docs/analysis/orchestrator_a11y_state_exposure_2026_05_30.md
+    - docs/analysis/current_state_2026_03_05.md
+    - src/routes/Orchestrator/views/OrchestratorView.tsx
+    - src/routes/Orchestrator/views/OrchestratorView.test.tsx
+    - src/routes/Orchestrator/components/OrchestratorStatusStrip.tsx
+    - src/routes/Orchestrator/components/OrchestratorStatusStrip.test.tsx
+    - src/routes/Orchestrator/components/CodeEditor.tsx
+    - src/routes/Orchestrator/components/CodeEditor.test.tsx
+    - src/routes/Orchestrator/components/HydraPreview.tsx
+    - src/routes/Orchestrator/components/HydraPreview.test.tsx
+    - src/routes/Orchestrator/components/StagePanel.tsx
+    - src/routes/Orchestrator/components/StagePanel.test.tsx
+    - src/routes/Orchestrator/components/PresetTree.tsx
+    - src/routes/Orchestrator/components/PresetTree.test.tsx
+  protected_paths:
+    - server/
+    - shared/actionTypes.ts
+    - shared/types.ts
+    - src/routes/Player/
+    - src/routes/Orchestrator/components/orchestratorStatus.ts
+    - src/routes/Orchestrator/components/orchestratorPresentationModel.ts
+    - package.json
+    - package-lock.json
+    - flake.nix
+    - e2e/
+    - .github/workflows/
+  verification:
+    - npm test -- src/routes/Orchestrator/views/OrchestratorView.test.tsx src/routes/Orchestrator/components/OrchestratorStatusStrip.test.tsx src/routes/Orchestrator/components/CodeEditor.test.tsx src/routes/Orchestrator/components/HydraPreview.test.tsx src/routes/Orchestrator/components/StagePanel.test.tsx src/routes/Orchestrator/components/PresetTree.test.tsx
+    - npm run slices:check
+    - npm run typecheck
+    - npm run lint
+  acceptance:
+    - 'The remote-update banner, OrchestratorStatusStrip, CodeEditor send region, and HydraPreview status overlay each expose state changes via an appropriate role/aria-live so screen readers are notified.'
+    - 'The StagePanel buffer selector is a labelled group (radiogroup or aria-pressed buttons) with per-option accessible names and an exposed active selection.'
+    - 'PresetTree row badge states (Loaded in preview, Applied on Player, Start, Cam) are conveyed in the row accessible name, not color-only.'
+    - 'Tests assert the roles/aria attributes; no label text changes, no status-ownership change, no logic change.'
+  non_goals:
+    - Do not change any label text, the status-ownership table, or status logic.
+    - 'Do not change CSS/tokens (that is orchestrator-token-application) or Stage-header layout (orchestrator-stage-header-layout).'
+    - Do not change server/shared/Player or add playerOutput states.
+  notes:
+    - 'Exposes EXISTING locked labels only (HiG backlog #4,5,6,7,8,9). Was originally slated to fold into Gate 3b/3c, which already merged, so it is a standalone a11y slice.'
+    - 'aria-live containers must not change the one-owner-per-label table; the pill keeps status, the banner keeps the Apply/Dismiss verb.'
+  next:
+    - implementation
+
+- id: orchestrator-stage-header-layout
+  status: planned
+  owner: codex
+  branch: phase-15-orchestrator-stage-header-layout
+  base: main
+  merge_order: 210
+  worktree:
+    path: null
+    state: not_required
+  goal: 'Gate 3e (+3f): harden the Stage header layout contract (group order left=label+qualifier, center=status strip width-limited/truncating, right=camera/buffer; banner stays above the shell) and keep the Preview qualifier visible on the mobile Stage header (HiG #10), plus a mobile density/44px touch pass - without relabeling or changing status ownership.'
+  write_scope:
+    - docs/plans/active-slices.yaml
+    - docs/analysis/orchestrator_stage_header_layout_2026_05_30.md
+    - docs/analysis/current_state_2026_03_05.md
+    - src/routes/Orchestrator/components/StagePanel.tsx
+    - src/routes/Orchestrator/components/StagePanel.test.tsx
+    - src/routes/Orchestrator/components/StagePanel.css
+    - src/routes/Orchestrator/components/OrchestratorStatusStrip.css
+    - src/routes/Orchestrator/views/orchestratorShellModel.ts
+    - src/routes/Orchestrator/views/orchestratorShellModel.test.ts
+  protected_paths:
+    - server/
+    - shared/actionTypes.ts
+    - shared/types.ts
+    - src/routes/Player/
+    - src/routes/Orchestrator/components/orchestratorStatus.ts
+    - src/routes/Orchestrator/components/orchestratorPresentationModel.ts
+    - src/routes/Orchestrator/components/HydraPreview.tsx
+    - package.json
+    - package-lock.json
+    - flake.nix
+    - e2e/
+    - .github/workflows/
+  verification:
+    - npm test -- src/routes/Orchestrator/components/StagePanel.test.tsx src/routes/Orchestrator/views/orchestratorShellModel.test.ts
+    - npm run slices:check
+    - npm run typecheck
+    - npm run lint
+  acceptance:
+    - 'The Stage header keeps left=Stage label+Preview qualifier, center=width-limited truncating status strip, right=camera/buffer controls; the status strip does not absorb or collide with camera/buffer controls.'
+    - 'The Preview qualifier remains visible (compact) on the mobile Stage header using the exact Local Preview vocabulary (no FORBIDDEN_PREVIEW_TERMS).'
+    - 'Mobile Stage/preset controls meet the 44px touch target with adequate inter-target spacing.'
+    - 'No relabeling, no status-ownership change, no HydraPreview rendering change.'
+  non_goals:
+    - 'Do not relabel or substitute Live/Now Playing/Player Output for the Preview qualifier.'
+    - 'Do not do the token application (orchestrator-token-application) or aria-live exposure (orchestrator-a11y-state-exposure) here, beyond what layout requires.'
+    - Do not change server/shared/Player, status logic, or add playerOutput states.
+  notes:
+    - 'Implements HiG backlog #10 and the Stage Header information-hierarchy contract; folds in the optional Gate 3f mobile density pass.'
+  next:
+    - implementation
