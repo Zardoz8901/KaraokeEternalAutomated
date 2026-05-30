@@ -815,13 +815,13 @@
     - cleanup
 
 - id: orchestrator-presentation-truth-hardening
-  status: planned
+  status: in_progress
   owner: codex
   branch: phase-10-orchestrator-presentation-truth-hardening
   base: main
   worktree:
-    path: null
-    state: not_required
+    path: /home/steph/projects/KaraokeEternalAutomated-phase-10-orchestrator-presentation-truth-hardening
+    state: present
   merge_order: 150
   goal: Close the two LOW residue findings in the Local Preview clarity track before opening Player Live - the untested preview-truth to CSS-class mapping (the default 'local' truth maps to a .statusLocal selector that does not exist in HydraPreview.css, so the most common preview state renders silently unstyled) and usingPlayerMp4 firing on shadow-<video> existence rather than decoded frames - by extracting a pure, vitest-resolvable truth-to-class mapping helper, adding a neutral/muted .statusLocal selector, and gating usingPlayerMp4 on the same readyState>=2 && videoWidth>0 && videoHeight>0 condition HydraVisualizer already uses, without editing HydraVisualizer, server, socket, shared, or Player rendering.
   write_scope:
