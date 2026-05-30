@@ -43,7 +43,7 @@ Use this split:
 - **Local Preview:** immediate edit and preset-audition feedback in this browser.
 - **Applied on Player:** runtime confirmation that the Player evaluated and ticked the accepted visualizer run.
 - **Player Output:** the actual audience display rendered by the Player.
-- **Player Live:** future mirror, stream, or snapshot of Player Output. Do not use this label until that feature exists.
+- **Player Live:** future mirror, stream, or snapshot of Player Output (whether it is built — and as snapshot or live mirror — is decided in the [Player Live ADR](orchestrator-player-live-decision.md)). Do not use this label until that feature exists.
 
 Source binding should be visible when it changes the user's expectation: Preview using Player MP4, Preview waiting for Player media, or Fallback external source. These labels should stay near the preview or the affected preset action, not in detached instructional text.
 

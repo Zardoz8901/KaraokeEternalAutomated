@@ -166,7 +166,7 @@ Do not implement these labels without a future Player-output mirror or equivalen
 - "Player Live"
 - "Player Output" as a preview-panel label
 
-A future Player Live slice may add a mirror, stream, snapshot, or equivalent Player-output proof. That is outside this spec unless explicitly planned.
+A future Player Live slice may add a mirror, stream, snapshot, or equivalent Player-output proof; whether and how is decided in the [Player Live ADR](orchestrator-player-live-decision.md). That is outside this spec unless explicitly planned.
 
 ## Acceptance Criteria
 
