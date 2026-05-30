@@ -114,6 +114,111 @@ Implementation contract:
 - Figma library work should mirror this structure: primitives map to Solarized, semantic variables map to Orchestrator usage, and mode-specific values stay behind variable aliases rather than being painted directly on components.
 - The deterministic check is `src/routes/Orchestrator/components/orchestratorColorAudit.test.ts`. Update its audited file list deliberately when expanding the Orchestrator visual surface.
 
+## Spacing, Focus, And Density Tokens
+
+Gate 3a-ii defines the Orchestrator spacing scale and focus-ring contract. Gate 3d applies these tokens in CSS. Until Gate 3d lands, this section is the durable contract for migration reviews.
+
+### Current Token Inventory
+
+The runtime token source is still `src/routes/Orchestrator/views/OrchestratorView.css` on `.container`. Current non-color tokens are:
+
+| Existing token | Current value | Current role |
+| --- | --- | --- |
+| `--orch-gap-xs` | `0.35rem` | compact gaps, status-strip gaps |
+| `--orch-gap-sm` | `0.5rem` | common group gaps, mobile Stage wrapping |
+| `--orch-gap-md` | `0.75rem` | major group gaps, panel rhythm |
+| `--orch-radius-sm` | `6px` | compact controls, badges, preview/status capsules |
+| `--orch-radius-md` | `8px` | rows, search fields, mid-sized panels |
+| `--orch-radius-lg` | `10px` | larger panels, modals, grouped lists |
+| `--orch-control-height` | `2.25rem` | compact desktop command target |
+| `--orch-touch-target` | `44px` | mobile touch target minimum |
+| `--orch-focus` | `var(--orch-blue)` | visible keyboard focus color |
+
+### Spacing Scale
+
+Gate 3d should add the `--orch-space-*` scale below and keep the current `--orch-gap-*` names as compatibility aliases during migration.
+
+| Token | Value | Compatibility / migration |
+| --- | --- | --- |
+| `--orch-space-2xs` | `0.125rem` | micro separations such as two-line label gaps |
+| `--orch-space-xs` | `0.25rem` | icon/text nudge, status overlay inset, compact badge vertical padding |
+| `--orch-space-sm` | `0.35rem` | maps to current `--orch-gap-xs`; compact row/action gaps |
+| `--orch-space-md` | `0.5rem` | maps to current `--orch-gap-sm`; default internal grouping |
+| `--orch-space-lg` | `0.625rem` | row padding, compact panel padding, notice padding |
+| `--orch-space-xl` | `0.75rem` | maps to current `--orch-gap-md`; panel padding and primary Stage header rhythm |
+| `--orch-space-2xl` | `1rem` | rare outer spacing only, not dense row internals |
+
+Usage rules:
+
+- Stage header groups use `--orch-space-xl` between left/status/right groups, `--orch-space-md` inside groups, and `--orch-space-lg --orch-space-xl` for header padding.
+- Presets panel uses `--orch-space-xl` desktop padding and `--orch-space-lg` mobile padding. Search, notice, and tree sections use `--orch-space-xl` vertical rhythm on desktop and `--orch-space-lg` on mobile.
+- Preset rows use `--orch-space-md` internal gaps, `--orch-space-lg` desktop padding, and `--orch-space-xl` mobile padding. Row action groups use `--orch-space-sm` only when target size remains compliant.
+- Status pills use `--orch-space-xs --orch-space-md` padding and `--orch-space-sm` strip gaps. Pills are status text, not touch targets.
+- Preview overlay and badge micro-layout may use `--orch-space-2xs` or `--orch-space-xs`; do not use those values for clickable target spacing.
+- Radius usage stays simple: `--orch-radius-sm` for compact controls and pills, `--orch-radius-md` for rows and fields, `--orch-radius-lg` for panels/modals. `999px` remains allowed only for true pills; `50%` remains allowed only for circles/dots.
+
+Migration mapping for Gate 3d:
+
+| Current raw value | Normalize to | Notes |
+| --- | --- | --- |
+| `2px`, `0.1rem`, `0.15rem` | `--orch-space-2xs` | label stack and icon-dot micro gaps |
+| `0.18rem`, `0.22rem`, `0.25rem`, `4px` | `--orch-space-xs` | pill/overlay vertical padding and list trim |
+| `0.3rem`, `0.3125rem`, `0.35rem`, `0.375rem`, `5px`, `6px` | `--orch-space-sm` | compact action/list gaps |
+| `0.4rem`, `0.45rem`, `0.5rem`, `8px` | `--orch-space-md` | standard internal gap or field padding |
+| `0.55rem`, `0.6rem`, `0.625rem`, `10px` | `--orch-space-lg` | row and compact panel padding |
+| `0.65rem`, `0.75rem`, `12px` | `--orch-space-xl` | panel rhythm and Stage header spacing |
+| `0.9rem`, `1rem` | `--orch-space-2xl` only when outer spacing is intentional | otherwise reduce to `--orch-space-xl` |
+| `6px`, `8px`, `10px`, `0.42rem`, `0.48rem`, `0.5rem`, `0.55rem`, `0.65rem` as radii | `--orch-radius-sm/md/lg` | choose by component class, not exact historical value |
+
+### Focus-ring Contract
+
+Every interactive Orchestrator control must have a visible `:focus-visible` treatment. Hover color or selected background is not a substitute for keyboard focus.
+
+Gate 3d should add focus-ring tokens:
+
+| Token | Value | Use |
+| --- | --- | --- |
+| `--orch-focus-ring-width` | `2px` | standard outline width |
+| `--orch-focus-ring-offset` | `2px` | default external offset |
+| `--orch-focus-ring-inset-offset` | `-2px` | only where a container clips the outline, such as fixed tabs |
+| `--orch-focus-ring` | `var(--orch-focus-ring-width) solid var(--orch-focus)` | reusable outline value |
+
+Reusable rule:
+
+```css
+:where(.orchFocusable):focus-visible {
+  outline: var(--orch-focus-ring);
+  outline-offset: var(--orch-focus-ring-offset);
+}
+```
+
+Components may implement this through local CSS classes rather than a global utility, but the visual result must be equivalent. Inset offsets are allowed only when an external outline would be clipped or shift layout.
+
+Focus coverage required for Gate 3d:
+
+- Orchestrator shell navigation: Library escape, desktop tabs, mobile tabs, and remote-banner Apply/Dismiss. These already use `2px solid var(--orch-focus)` and should migrate to the focus-ring tokens.
+- Stage header controls: preset picker trigger/search/actions and buffer buttons. Camera pipeline status is not interactive.
+- PresetTree: folder headers, preset rows, folder action buttons, and row Load/Send/manage buttons. Current hover/focus styles on folder headers, preset rows, and action buttons remove the outline; Gate 3d must restore a visible ring.
+- PresetBrowser: toolbar buttons, search input, search clear, modal inputs/selects/textarea, modal confirm/cancel/delete buttons. Search currently relies on border color and should gain the same ring as buttons.
+- Code editor controls: hint, edit, random, send, resend, and camera banner buttons. These already use a visible focus outline and should migrate mechanically to tokens.
+- API reference controls: search input and function items. These have custom focus treatments and should normalize to the same focus-ring tokens unless a local inset shadow is needed for readability.
+
+### Density And Hierarchy Audit
+
+This audit is based on source CSS measurement and manual viewport reasoning. Local Nix Chromium e2e is currently blocked by the downloaded-browser `stub-ld` issue, so this section does not claim screenshot evidence.
+
+| Surface | Finding | Gate 3d remedy |
+| --- | --- | --- |
+| Stage header | Desktop uses a three-column grid with `--orch-gap-md`, `0.625rem 0.75rem` padding, status max-width `clamp(14rem, 34vw, 34rem)`, camera max-width `min(18rem, 32vw)`, and buffer controls in an overflow row. This matches the ownership contract, but raw padding and camera micro gaps are not tokenized. | Use `--orch-space-xl` group gaps, `--orch-space-lg --orch-space-xl` padding, and `--orch-space-2xs/xs` only for camera label stacking. Keep the status slot width-limited before camera/buffer controls crowd. |
+| Stage header mobile | The header wraps into left, status, and control rows; buffer buttons reach `--orch-touch-target`. This is correct, but the camera card takes full width and can dominate the header when text is long. | Keep the three-row wrap order. Tokenize row gaps to `--orch-space-md`; keep camera detail ellipsis; verify long room/preset labels do not push buffer controls below the visible Stage on 390px width. |
+| PresetTree rows | Desktop rows use `3.25rem` min height, `0.625rem` padding, and 36px row actions. Mobile rows reach 4rem and row actions reach 44px, but folder action buttons are only 36px on mobile and 26px desktop. Folder headers/rows currently remove visible focus outlines. | Preserve dense desktop row height; use `--orch-space-lg` desktop row padding and `--orch-space-xl` mobile. Raise mobile folder action buttons to `--orch-touch-target`. Add focus-ring tokens to folder headers, preset rows, and action buttons. |
+| PresetBrowser panel | Panel padding already matches the operator contract (`0.75rem` desktop, `0.625rem` mobile) but uses raw values; toolbar buttons are 40px and search is 40px desktop / 44px mobile. Notices use `8px 10px`. | Map desktop panel padding to `--orch-space-xl` and mobile to `--orch-space-lg`. Keep search at `--orch-control-height` desktop and `--orch-touch-target` mobile. Tokenize notice padding to `--orch-space-md --orch-space-lg`. |
+| Status pills | Pills are compact text-only status, not controls: `0.18rem 0.5rem` padding, `--orch-gap-xs` strip gap, 2rem mobile min-height, ellipsis caps at 11rem/13rem/15rem. The hierarchy is correct: authority pill can be stronger; signal pills stay quieter unless warning/live/danger. | Map pill padding to `--orch-space-xs --orch-space-md` and gap to `--orch-space-sm`. Do not force 44px status pills because they are not interactive. Keep authority first, broadcast second, camera third. |
+| Buffer controls | Desktop buffer buttons are compact at 28px min-height; mobile reaches 44px. This fits repeated desktop operation, but desktop focus must remain highly visible because the targets are small. | Keep compact desktop height unless visual QA shows misses. Use focus-ring tokens with `--orch-focus-ring-offset`. Keep mobile `--orch-touch-target`. |
+| Preset picker | Mobile trigger/search/random/action reach 44px. Desktop panel uses multiple raw `4px`, `6px`, `8px`, `10px`, `14px` values. | Tokenize picker panel gaps and padding using `--orch-space-xs/md/lg`. Keep the mobile bottom sheet target sizes. |
+| API reference | This panel carries the highest spacing entropy: values such as `0.22rem`, `0.28rem`, `0.32rem`, `0.45rem`, `0.55rem`, `0.65rem`, `0.9rem`, and fractional radii. | Gate 3d should normalize API reference spacing last and mechanically map values through the migration table. Keep API reference visually subordinate to Stage/Presets. |
+| Remote-update banner | Banner actions are 32px desktop and 36px mobile, below the 44px mobile target. It is a fixed high-priority affordance and may appear on touch screens. | Raise mobile Apply/Dismiss to `--orch-touch-target`; keep desktop compact if space is constrained. Use focus-ring tokens. |
+
 ## Progressive Synth UI
 
 The default Orchestrator surface should answer three questions without explanation:
