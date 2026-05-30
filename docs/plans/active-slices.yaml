@@ -1,6 +1,89 @@
-# Active development slices (work-control plane).
-# No active slices right now — all registered slices are complete or decommissioned.
-# Completed work is tracked in docs/analysis/current_state_2026_03_05.md.
-# refactor/redux-modernization was decommissioned 2026-05-30
-#   (see docs/analysis/redux_modernization_decommission_2026_05_30.md).
-[]
+- id: orchestrator-ux-journey-and-status-ownership
+  status: planned
+  owner: codex
+  branch: docs/orchestrator-ux-journey-status
+  base: main
+  worktree:
+    path: null
+    state: not_required
+  merge_order: 180
+  goal: 'Gate 3a-i UX contract: an operator and host journey map (browse, load, edit, preview, send, confirm, recover) and a cross-surface status-ownership table assigning every Orchestrator status label to a single owning surface, including a reserved Player Output (snapshot) slot per the accepted Option B decision - without changing runtime code.'
+  write_scope:
+    - docs/plans/active-slices.yaml
+    - docs/ARCHITECTURE.md
+    - docs/architecture/orchestrator-operator-journey.md
+    - docs/architecture/orchestrator-synthesis-ui-style-guide.md
+    - docs/analysis/orchestrator_ux_journey_status_ownership_2026_05_30.md
+    - docs/analysis/current_state_2026_03_05.md
+  protected_paths:
+    - src/
+    - server/
+    - shared/
+    - package.json
+    - package-lock.json
+    - flake.nix
+    - e2e/
+    - .github/workflows/
+  verification:
+    - rg -n "orchestrator-operator-journey" docs/architecture docs/ARCHITECTURE.md
+    - npm run slices:check
+    - npm run typecheck
+  acceptance:
+    - 'The journey map covers browse, load, edit, preview, send, confirm, and recover for Host, Operator, and Browse-only modes, adding the edit and recover legs and the host live-code journey not covered by the preset-operator UX spec.'
+    - 'The cross-surface status-ownership table assigns every current status label to exactly one owning surface (Stage strip pill, preview overlay, PresetTree row badge, PresetBrowser notice, or remote-update banner) with no cross-surface duplication.'
+    - 'The table reserves a Player Output (snapshot) slot per the accepted Option B decision, placed adjacent to Local Preview and marked future / not yet implemented.'
+    - 'The Remote update pill versus Remote update available banner overlap is resolved by assigning each a distinct role (compact status versus actionable affordance).'
+    - 'No runtime code, tests, or tokens change; this is the journey and ownership contract only.'
+  non_goals:
+    - 'Do not change runtime code: no src/, server/, shared/, package, Nix, e2e, or workflow edits.'
+    - 'Do not define the spacing/focus token contract or run the density audit; that is Gate 3a-ii.'
+    - Do not implement the Player Output snapshot; that is a future Option B runtime slice.
+    - Do not change camera-relay or authority vocabulary.
+  notes:
+    - 'Depends on Gate 2 (Player Live decision = Option B): the ownership table must reserve the Player Output (snapshot) slot.'
+    - 'Feeds Gate 3b/3c implementation slices, which reconcile the runtime surfaces to this ownership table.'
+    - 'Inventory captured 2026-05-30 from orchestratorStatus.ts (authority/broadcast/camera), orchestratorPresentationModel.ts (preview), PresetTree.tsx (badges), PresetBrowser.tsx (panel notice), and OrchestratorView.tsx (remote banner).'
+  next:
+    - implementation
+
+- id: orchestrator-ux-spacing-focus-tokens
+  status: planned
+  owner: codex
+  branch: docs/orchestrator-ux-spacing-focus-tokens
+  base: main
+  worktree:
+    path: null
+    state: not_required
+  merge_order: 185
+  goal: 'Gate 3a-ii UX contract: a spacing scale plus focus-ring token contract and a density/hierarchy audit of the rendered Orchestrator surfaces (Stage header, PresetTree rows, status pills, controls), feeding the Gate 3d token-application slice - without changing runtime code.'
+  write_scope:
+    - docs/plans/active-slices.yaml
+    - docs/architecture/orchestrator-synthesis-ui-style-guide.md
+    - docs/analysis/orchestrator_ux_spacing_focus_tokens_2026_05_30.md
+    - docs/analysis/current_state_2026_03_05.md
+  protected_paths:
+    - src/
+    - server/
+    - shared/
+    - package.json
+    - package-lock.json
+    - flake.nix
+    - e2e/
+    - .github/workflows/
+  verification:
+    - rg -n "spacing scale|focus-ring" docs/architecture/orchestrator-synthesis-ui-style-guide.md
+    - npm run slices:check
+    - npm run typecheck
+  acceptance:
+    - 'A spacing scale is defined as token-aligned variables for the Orchestrator surfaces.'
+    - 'A focus-ring token contract is defined for keyboard focus across interactive Orchestrator controls.'
+    - 'A density and hierarchy audit of the Stage header, PresetTree rows, status pills, and buffer/camera controls is recorded with concrete findings.'
+    - 'No runtime code or tokens are applied; this is the contract that Gate 3d implements.'
+  non_goals:
+    - 'Do not change runtime code or apply tokens; that is Gate 3d.'
+    - 'Do not define journey or status-ownership content; that is Gate 3a-i.'
+    - Do not change the color-audit enforced tokens.
+  notes:
+    - 'Independent of Gate 3a-i; both can proceed in parallel. Feeds the Gate 3d token-application implementation slice.'
+  next:
+    - implementation
