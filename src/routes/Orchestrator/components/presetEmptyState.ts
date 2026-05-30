@@ -16,6 +16,8 @@ export interface PresetPanelStateInput {
   canSendSavedPresetsByPolicy: boolean
 }
 
+export const ROOM_EMPTY_PRESET_PANEL_MESSAGE = 'No saved visuals available for this room.'
+
 export function countPresetLeaves (nodes: PresetTreeNode[]): number {
   return nodes.reduce((sum, node) => sum + node.children.length, 0)
 }
@@ -37,7 +39,7 @@ export function getPresetPanelState ({
       return { kind: 'restricted-folder-empty', message: 'Party preset folder has no saved visuals.' }
     }
 
-    return { kind: 'room-empty', message: 'No saved visuals available for this room.' }
+    return { kind: 'room-empty', message: ROOM_EMPTY_PRESET_PANEL_MESSAGE }
   }
 
   if (!canSendSavedPresetsByPolicy) {

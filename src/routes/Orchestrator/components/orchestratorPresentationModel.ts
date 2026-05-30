@@ -32,6 +32,12 @@ export interface OrchestratorPresentationModel {
 export const LOCAL_PREVIEW_LABEL = 'Local Preview'
 export const APPLIED_ON_PLAYER_LABEL = 'Applied on Player'
 export const BROADCAST_READY_LABEL = 'Broadcast ready'
+export const REMOTE_UPDATE_BANNER_LABEL = 'Remote update available'
+export const SELECTED_BADGE_LABEL = 'Selected'
+export const LOADED_IN_PREVIEW_BADGE_LABEL = 'Loaded in preview'
+export const START_BADGE_LABEL = 'Start'
+export const CAM_BADGE_LABEL = 'Cam'
+export const GALLERY_BADGE_LABEL = 'Gallery'
 export const FORBIDDEN_PREVIEW_TERMS = ['Live', 'Player Output', 'Now Playing', 'On Display'] as const
 
 export const PREVIEW_STATUS_CLASS_KEY: Record<OrchestratorPreviewTruth, string> = {

@@ -20,7 +20,7 @@ import {
 } from './presetOperatorUx'
 import { scopePresetTreeForRoom } from './presetScope'
 import { buildPresetDraft } from './presetDraft'
-import { countPresetLeaves, getPresetPanelState } from './presetEmptyState'
+import { countPresetLeaves, getPresetPanelState, ROOM_EMPTY_PRESET_PANEL_MESSAGE } from './presetEmptyState'
 import type { DropResult } from '@hello-pangea/dnd'
 import { getDefaultSaveFolderId, reorderByDragIndices, parseFolderIdFromDroppableId, toSortOrderUpdates } from './presetManagement'
 import {
@@ -687,7 +687,7 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
       )}
 
       {!loading && !error && filteredTree.length === 0 && (
-        <div className={styles.empty}>{presetPanelState?.message ?? 'No saved visuals available for this room.'}</div>
+        <div className={styles.empty}>{presetPanelState?.message ?? ROOM_EMPTY_PRESET_PANEL_MESSAGE}</div>
       )}
 
       {!loading && !error && filteredTree.length > 0 && (

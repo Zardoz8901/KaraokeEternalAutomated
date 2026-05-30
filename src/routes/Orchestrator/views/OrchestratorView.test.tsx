@@ -3,6 +3,7 @@ import React, { act } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRoot } from 'react-dom/client'
 import { MemoryRouter } from 'react-router'
+import { REMOTE_UPDATE_BANNER_LABEL } from '../components/orchestratorPresentationModel'
 import type { UseOrchestratorWorkspaceResult } from './useOrchestratorWorkspace'
 
 const mocks = vi.hoisted(() => {
@@ -178,11 +179,12 @@ describe('OrchestratorView remote-update ownership', () => {
     const buttons = Array.from(container.querySelectorAll('button'))
       .map(button => button.textContent?.trim())
 
-    expect(container.textContent).toContain('Remote update available (×2)')
+    expect(REMOTE_UPDATE_BANNER_LABEL).toBe('Remote update available')
+    expect(container.textContent).toContain(`${REMOTE_UPDATE_BANNER_LABEL} (×2)`)
     expect(buttons).toContain('Apply')
     expect(buttons).toContain('Dismiss')
     expect(strip?.textContent).toContain('Remote update')
-    expect(strip?.textContent).not.toContain('Remote update available')
+    expect(strip?.textContent).not.toContain(REMOTE_UPDATE_BANNER_LABEL)
     expect(strip?.textContent).not.toContain('Apply')
     expect(strip?.textContent).not.toContain('Dismiss')
     expect(strip?.querySelector('button')).toBeNull()

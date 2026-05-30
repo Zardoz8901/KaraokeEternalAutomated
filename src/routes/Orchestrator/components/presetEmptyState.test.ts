@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { getPresetPanelState } from './presetEmptyState'
+import {
+  getPresetPanelState,
+  ROOM_EMPTY_PRESET_PANEL_MESSAGE,
+} from './presetEmptyState'
 
 describe('getPresetPanelState', () => {
   it('returns no state when the current preset list is visible and send policy allows actions', () => {
@@ -66,6 +69,7 @@ describe('getPresetPanelState', () => {
     })
 
     expect(state?.kind).toBe('room-empty')
-    expect(state?.message).toBe('No saved visuals available for this room.')
+    expect(ROOM_EMPTY_PRESET_PANEL_MESSAGE).toBe('No saved visuals available for this room.')
+    expect(state?.message).toBe(ROOM_EMPTY_PRESET_PANEL_MESSAGE)
   })
 })

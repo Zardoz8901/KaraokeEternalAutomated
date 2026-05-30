@@ -2,7 +2,14 @@ import React, { useCallback } from 'react'
 import clsx from 'clsx'
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd'
 import Icon from 'components/Icon/Icon'
-import { APPLIED_ON_PLAYER_LABEL } from './orchestratorPresentationModel'
+import {
+  APPLIED_ON_PLAYER_LABEL,
+  CAM_BADGE_LABEL,
+  GALLERY_BADGE_LABEL,
+  LOADED_IN_PREVIEW_BADGE_LABEL,
+  SELECTED_BADGE_LABEL,
+  START_BADGE_LABEL,
+} from './orchestratorPresentationModel'
 import { getPresetKey, type PresetKey, type PresetRowUx } from './presetOperatorUx'
 import type { PresetLeaf, PresetTreeNode } from './presetTree'
 import styles from './PresetTree.css'
@@ -188,7 +195,7 @@ function PresetTree ({
                   ▸
                 </span>
                 <span className={styles.folderName}>{node.name}</span>
-                {node.isGallery && <span className={styles.badge}>Gallery</span>}
+                {node.isGallery && <span className={styles.badge}>{GALLERY_BADGE_LABEL}</span>}
 
                 {!node.isGallery && (
                   <div className={styles.folderActions}>
@@ -306,11 +313,11 @@ function PresetTree ({
                                 <div className={styles.presetMain}>
                                   <span className={styles.presetName}>{preset.name}</span>
                                   <div className={styles.presetMeta}>
-                                    {isSelected && <span className={clsx(styles.badge, styles.badgeSelected)}>Selected</span>}
-                                    {isLoadedPreview && <span className={clsx(styles.badge, styles.badgeLoaded)}>Loaded in preview</span>}
+                                    {isSelected && <span className={clsx(styles.badge, styles.badgeSelected)}>{SELECTED_BADGE_LABEL}</span>}
+                                    {isLoadedPreview && <span className={clsx(styles.badge, styles.badgeLoaded)}>{LOADED_IN_PREVIEW_BADGE_LABEL}</span>}
                                     {isApplied && <span className={clsx(styles.badge, styles.badgeApplied)}>{APPLIED_ON_PLAYER_LABEL}</span>}
-                                    {isStarting && <span className={clsx(styles.badge, styles.badgeStart)}>Start</span>}
-                                    {preset.usesCamera && <span className={clsx(styles.badge, styles.badgeCam)}>Cam</span>}
+                                    {isStarting && <span className={clsx(styles.badge, styles.badgeStart)}>{START_BADGE_LABEL}</span>}
+                                    {preset.usesCamera && <span className={clsx(styles.badge, styles.badgeCam)}>{CAM_BADGE_LABEL}</span>}
                                   </div>
                                   {rowUx.rowNotice && <div className={styles.rowNotice}>{rowUx.rowNotice}</div>}
                                 </div>

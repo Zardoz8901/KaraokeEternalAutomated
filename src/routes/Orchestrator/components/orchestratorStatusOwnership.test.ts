@@ -2,9 +2,17 @@ import { describe, expect, it } from 'vitest'
 import { getOrchestratorStatusModel } from './orchestratorStatus'
 import {
   APPLIED_ON_PLAYER_LABEL,
+  CAM_BADGE_LABEL,
   FORBIDDEN_PREVIEW_TERMS,
+  GALLERY_BADGE_LABEL,
   getOrchestratorPresentationModel,
+  LOADED_IN_PREVIEW_BADGE_LABEL,
+  REMOTE_UPDATE_BANNER_LABEL,
+  SELECTED_BADGE_LABEL,
+  START_BADGE_LABEL,
 } from './orchestratorPresentationModel'
+import { getPresetPanelState } from './presetEmptyState'
+import { getPresetPanelNotice } from './presetOperatorUx'
 
 const hostCapabilities = {
   canUseOrchestrator: true,
@@ -135,20 +143,63 @@ const surfaceLabels = {
   stageCamera: getStageCameraLabels,
   previewOverlay: getPreviewLabels,
   presetRowBadges: () => unique([
-    'Selected',
-    'Loaded in preview',
-    'Start',
-    'Cam',
-    'Gallery',
+    SELECTED_BADGE_LABEL,
+    LOADED_IN_PREVIEW_BADGE_LABEL,
+    START_BADGE_LABEL,
+    CAM_BADGE_LABEL,
+    GALLERY_BADGE_LABEL,
     APPLIED_ON_PLAYER_LABEL,
   ]),
-  remoteBanner: () => unique(['Remote update available']),
-  presetBrowserNotice: () => unique([
-    'preset-policy',
-    'party-folder',
-    'empty-state',
-  ]),
+  remoteBanner: () => unique([REMOTE_UPDATE_BANNER_LABEL]),
+  presetBrowserNotice: getPresetBrowserNoticeLabels,
 } as const
+
+function getPresetBrowserNoticeLabels (): string[] {
+  return unique([
+    getPresetPanelNotice({
+      isManager: false,
+      canSendSavedPresetsByPolicy: false,
+      isRestrictedToPartyPresetFolder: false,
+    })?.message,
+    getPresetPanelNotice({
+      isManager: false,
+      canSendSavedPresetsByPolicy: true,
+      isRestrictedToPartyPresetFolder: true,
+    })?.message,
+    getPresetPanelState({
+      query: '',
+      visibleTreeCount: 1,
+      scopedPresetCount: 2,
+      isRestrictedToPartyPresetFolder: false,
+      partyPresetFolderId: null,
+      canSendSavedPresetsByPolicy: false,
+    })?.message,
+    getPresetPanelState({
+      query: 'laser',
+      visibleTreeCount: 0,
+      scopedPresetCount: 2,
+      isRestrictedToPartyPresetFolder: false,
+      partyPresetFolderId: null,
+      canSendSavedPresetsByPolicy: true,
+    })?.message,
+    getPresetPanelState({
+      query: '',
+      visibleTreeCount: 0,
+      scopedPresetCount: 0,
+      isRestrictedToPartyPresetFolder: true,
+      partyPresetFolderId: 7,
+      canSendSavedPresetsByPolicy: true,
+    })?.message,
+    getPresetPanelState({
+      query: '',
+      visibleTreeCount: 0,
+      scopedPresetCount: 0,
+      isRestrictedToPartyPresetFolder: false,
+      partyPresetFolderId: null,
+      canSendSavedPresetsByPolicy: true,
+    })?.message,
+  ].filter((label): label is string => typeof label === 'string'))
+}
 
 describe('Orchestrator status ownership', () => {
   it('keeps status labels owned by one surface only', () => {
