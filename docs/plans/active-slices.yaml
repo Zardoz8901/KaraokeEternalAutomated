@@ -3,14 +3,14 @@
 # #16 keyboard resize separator. See docs/analysis/orchestrator_hig_ux_backlog_2026_05_30.md.
 
 - id: orchestrator-token-application
-  status: planned
+  status: in_progress
   owner: codex
   branch: phase-13-orchestrator-token-application
   base: main
   merge_order: 200
   worktree:
-    path: null
-    state: not_required
+    path: /home/steph/projects/KaraokeEternalAutomated
+    state: present
   goal: 'Gate 3d: apply the Gate 3a-ii spacing + focus-ring token contract in Orchestrator CSS and close the HiG correctness/token bugs - #1 ApiReference undefined tokens, #2 PresetTree focus-ring suppression, #3 reduce-motion shimmer loop, #11 reduced-motion fallbacks, #12 ApiReference action-button focus-visible, #13 44px hit-slop on the smallest desktop controls - and extend the color audit to flag undefined --orch-* references, all within Solarized tokens and without relabeling or changing status ownership.'
   write_scope:
     - docs/plans/active-slices.yaml
@@ -61,6 +61,7 @@
     - 'Implements the Gate 3a-ii contract (style guide Spacing/Focus/Density section) and HiG backlog bugs #1,2,3,11,12,13 (exact file:line in docs/analysis/orchestrator_hig_ux_backlog_2026_05_30.md).'
     - 'CSS-module class names are strings under config/vitest.config.ts (no transform); assert CSS via raw fs.readFileSync (orchestratorColorAudit.test.ts pattern), not the imported styles object.'
     - 'Local Nix Chromium e2e is blocked; verify by CSS source + audit + typecheck/lint, not screenshots.'
+    - 'Started on phase-13-orchestrator-token-application on 2026-05-30.'
   next:
     - implementation
 
