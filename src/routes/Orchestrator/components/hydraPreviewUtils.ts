@@ -10,6 +10,10 @@ export interface CameraPipelineState {
   missing: Array<'publish/subscribe' | 'hydra source bind'>
 }
 
+export function formatCameraPipelineLabel (state: Pick<CameraPipelineState, 'label'>): string {
+  return `Source ${state.label}`
+}
+
 export function isPreviewLive (
   fftData: FftPayload | null,
   isPlayerPresent: boolean,

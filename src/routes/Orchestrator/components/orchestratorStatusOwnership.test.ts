@@ -13,6 +13,7 @@ import {
 } from './orchestratorPresentationModel'
 import { getPresetPanelState } from './presetEmptyState'
 import { getPresetPanelNotice } from './presetOperatorUx'
+import { formatCameraPipelineLabel, getCameraPipelineState } from './hydraPreviewUtils'
 
 const hostCapabilities = {
   canUseOrchestrator: true,
@@ -124,6 +125,26 @@ function getStageCameraLabels (): string[] {
   }).camera.label))
 }
 
+function getStageCameraBindingLabels (): string[] {
+  return unique([
+    formatCameraPipelineLabel(getCameraPipelineState({
+      cameraStatus: 'idle',
+      usesCameraSource: false,
+      boundSourceCount: 0,
+    })),
+    formatCameraPipelineLabel(getCameraPipelineState({
+      cameraStatus: 'active',
+      usesCameraSource: true,
+      boundSourceCount: 1,
+    })),
+    formatCameraPipelineLabel(getCameraPipelineState({
+      cameraStatus: 'connecting',
+      usesCameraSource: true,
+      boundSourceCount: 0,
+    })),
+  ])
+}
+
 function getPreviewLabels (): string[] {
   const models = [
     getOrchestratorPresentationModel({ ...basePresentationInput, isHydraActive: false, hasSimulatedAudioSource: false }),
@@ -141,6 +162,7 @@ const surfaceLabels = {
   stageAuthority: getStageAuthorityLabels,
   stageBroadcast: getStageBroadcastLabels,
   stageCamera: getStageCameraLabels,
+  stageCameraBinding: getStageCameraBindingLabels,
   previewOverlay: getPreviewLabels,
   presetRowBadges: () => unique([
     SELECTED_BADGE_LABEL,
@@ -234,5 +256,14 @@ describe('Orchestrator status ownership', () => {
   it('documents the allowed live wording carve-out for authority and camera truths', () => {
     expect(surfaceLabels.stageAuthority()).toContain('Host live coding')
     expect(surfaceLabels.stageCamera()).toContain('Camera live')
+  })
+
+  it('keeps camera connection and source-binding labels lexically separated', () => {
+    const connectionLabels = surfaceLabels.stageCamera().map(label => label.toLowerCase())
+    const bindingLabels = surfaceLabels.stageCameraBinding().map(label => label.toLowerCase())
+
+    expect(surfaceLabels.stageCameraBinding()).toContain('Source Live')
+    expect(surfaceLabels.stageCameraBinding()).not.toContain('Camera Live')
+    expect(bindingLabels.filter(label => connectionLabels.includes(label))).toEqual([])
   })
 })

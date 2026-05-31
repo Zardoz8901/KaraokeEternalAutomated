@@ -569,6 +569,74 @@ describe('PresetTree', () => {
     })
   })
 
+  it.each([
+    ['sending', '⟳', 'last send: sending'],
+    ['synced', '✓', 'last send: synced'],
+    ['error', '✕', 'last send: failed'],
+  ] as const)('shows glyph-only row send feedback for %s without duplicating strip text', async (presetSendStatus, glyph, label) => {
+    const container = document.createElement('div')
+    const root = createRoot(container)
+
+    await act(async () => {
+      root.render(
+        <PresetTree
+          nodes={makeNodes()}
+          expanded={new Set(['folder:1'])}
+          selectedPresetKey={null}
+          loadedPreviewPresetKey={null}
+          sendingPresetKey='preset:1'
+          presetSendStatus={presetSendStatus}
+          onToggleFolder={() => {}}
+          onLoad={() => {}}
+          onSend={() => {}}
+          isDndEnabled={false}
+          onDragEnd={() => {}}
+        />,
+      )
+    })
+
+    const row = Array.from(container.querySelectorAll<HTMLElement>('[data-tree-focusable="true"]'))
+      .find(element => element.getAttribute('aria-label')?.startsWith('Preset test'))
+    const ack = row?.querySelector(`[aria-label="${label}"]`)
+
+    expect(ack?.textContent).toBe(glyph)
+    expect(row?.textContent).not.toContain('Synced')
+    expect(row?.textContent).not.toContain('Failed')
+
+    await act(async () => {
+      root.unmount()
+    })
+  })
+
+  it('does not show row send feedback on non-matching preset rows', async () => {
+    const container = document.createElement('div')
+    const root = createRoot(container)
+
+    await act(async () => {
+      root.render(
+        <PresetTree
+          nodes={makeNodes()}
+          expanded={new Set(['folder:1'])}
+          selectedPresetKey={null}
+          loadedPreviewPresetKey={null}
+          sendingPresetKey='preset:999'
+          presetSendStatus='sending'
+          onToggleFolder={() => {}}
+          onLoad={() => {}}
+          onSend={() => {}}
+          isDndEnabled={false}
+          onDragEnd={() => {}}
+        />,
+      )
+    })
+
+    expect(container.querySelector('[aria-label="last send: sending"]')).toBeNull()
+
+    await act(async () => {
+      root.unmount()
+    })
+  })
+
   it('renders every row badge from the shared status vocabulary constants in strongest-truth order', async () => {
     const container = document.createElement('div')
     const root = createRoot(container)

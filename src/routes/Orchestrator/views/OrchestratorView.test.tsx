@@ -94,6 +94,8 @@ const mocks = vi.hoisted(() => {
       handleApplyRemote: noop,
       handleDismissRemote: noop,
       showUnsentMobileDot: false,
+      showPresetSendMobileDot: false,
+      presetSendStatus: 'idle',
     },
   }
 })
@@ -168,6 +170,14 @@ async function renderOrchestratorView () {
 
 describe('OrchestratorView remote-update ownership', () => {
   beforeEach(() => {
+    mocks.workspace.workspaceModel.isMobile = false
+    mocks.workspace.workspaceModel.activeMobilePanel = 'stage'
+    mocks.workspace.activeMobilePanel = 'stage'
+    mocks.workspace.isMobile = false
+    mocks.workspace.isKeyboardOpen = false
+    mocks.workspace.showUnsentMobileDot = false
+    mocks.workspace.showPresetSendMobileDot = false
+    mocks.workspace.presetSendStatus = 'idle'
     mocks.workspace.pendingRemoteCode = 'remote-code'
     mocks.workspace.pendingRemoteCount = 2
   })
@@ -190,6 +200,46 @@ describe('OrchestratorView remote-update ownership', () => {
     expect(strip?.textContent).not.toContain('Apply')
     expect(strip?.textContent).not.toContain('Dismiss')
     expect(strip?.querySelector('button')).toBeNull()
+
+    await act(async () => {
+      root.unmount()
+    })
+  })
+
+  it('shows a mobile Presets-tab dot for pending preset-row sends', async () => {
+    mocks.workspace.workspaceModel.isMobile = true
+    mocks.workspace.isMobile = true
+    mocks.workspace.pendingRemoteCode = null
+    mocks.workspace.showPresetSendMobileDot = true
+    mocks.workspace.presetSendStatus = 'sending'
+
+    const { container, root } = await renderOrchestratorView()
+
+    const presetsTab = container.querySelector('button[aria-label="Presets"]')
+    const dot = presetsTab?.querySelector('.mobileTabDot')
+
+    expect(dot).not.toBeNull()
+    expect(dot?.className).not.toContain('mobileTabDotError')
+
+    await act(async () => {
+      root.unmount()
+    })
+  })
+
+  it('marks the mobile Presets-tab dot as error when preset-row send fails', async () => {
+    mocks.workspace.workspaceModel.isMobile = true
+    mocks.workspace.isMobile = true
+    mocks.workspace.pendingRemoteCode = null
+    mocks.workspace.showPresetSendMobileDot = true
+    mocks.workspace.presetSendStatus = 'error'
+
+    const { container, root } = await renderOrchestratorView()
+
+    const presetsTab = container.querySelector('button[aria-label="Presets"]')
+    const dot = presetsTab?.querySelector('.mobileTabDot')
+
+    expect(dot).not.toBeNull()
+    expect(dot?.className).toContain('mobileTabDotError')
 
     await act(async () => {
       root.unmount()

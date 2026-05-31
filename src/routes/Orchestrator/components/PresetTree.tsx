@@ -14,12 +14,16 @@ import { getPresetKey, type PresetKey, type PresetRowUx } from './presetOperator
 import type { PresetLeaf, PresetTreeNode } from './presetTree'
 import styles from './PresetTree.css'
 
+type PresetSendStatus = 'idle' | 'sending' | 'synced' | 'error'
+
 interface PresetTreeProps {
   nodes: PresetTreeNode[]
   expanded: Set<string>
   selectedPresetKey?: PresetKey | null
   loadedPreviewPresetKey?: PresetKey | null
   appliedPresetKey?: PresetKey | null
+  sendingPresetKey?: PresetKey | null
+  presetSendStatus?: PresetSendStatus
   startingPresetId?: number | null
   playerPresetFolderId?: number | null
   isDndEnabled: boolean
@@ -52,6 +56,8 @@ function PresetTree ({
   selectedPresetKey,
   loadedPreviewPresetKey,
   appliedPresetKey,
+  sendingPresetKey,
+  presetSendStatus = 'idle',
   startingPresetId,
   playerPresetFolderId,
   isDndEnabled,
@@ -276,6 +282,9 @@ function PresetTree ({
                         const isSelected = rowUx.presetKey !== null && rowUx.presetKey === selectedPresetKey
                         const isLoadedPreview = rowUx.presetKey !== null && rowUx.presetKey === loadedPreviewPresetKey
                         const isApplied = rowUx.presetKey !== null && rowUx.presetKey === appliedPresetKey
+                        const rowSendStatus = rowUx.presetKey !== null && rowUx.presetKey === sendingPresetKey
+                          ? presetSendStatus
+                          : 'idle'
                         const isStarting = typeof preset.presetId === 'number' && preset.presetId === startingPresetId
                         const presetManageAllowed = rowUx.showManagementActions && !preset.isGallery && (canManagePreset?.(preset) ?? true)
                         const presetDragDisabled = !isDndEnabled || preset.isGallery || !presetManageAllowed
@@ -325,6 +334,33 @@ function PresetTree ({
                                 <div className={styles.presetMain}>
                                   <span className={styles.presetName}>{preset.name}</span>
                                   <div className={styles.presetMeta}>
+                                    {rowSendStatus === 'sending' && (
+                                      <span
+                                        className={clsx(styles.sendAck, styles.sendAckSending)}
+                                        aria-label='last send: sending'
+                                        title='last send: sending'
+                                      >
+                                        ⟳
+                                      </span>
+                                    )}
+                                    {rowSendStatus === 'synced' && (
+                                      <span
+                                        className={clsx(styles.sendAck, styles.sendAckSynced)}
+                                        aria-label='last send: synced'
+                                        title='last send: synced'
+                                      >
+                                        ✓
+                                      </span>
+                                    )}
+                                    {rowSendStatus === 'error' && (
+                                      <span
+                                        className={clsx(styles.sendAck, styles.sendAckError)}
+                                        aria-label='last send: failed'
+                                        title='last send: failed'
+                                      >
+                                        ✕
+                                      </span>
+                                    )}
                                     {isApplied && <span className={clsx(styles.badge, styles.badgeApplied)}>{APPLIED_ON_PLAYER_LABEL}</span>}
                                     {isLoadedPreview && <span className={clsx(styles.badge, styles.badgeLoaded)}>{LOADED_IN_PREVIEW_BADGE_LABEL}</span>}
                                     {isSelected && <span className={clsx(styles.badge, styles.badgeSelected)}>{SELECTED_BADGE_LABEL}</span>}
