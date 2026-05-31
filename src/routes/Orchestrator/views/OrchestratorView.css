@@ -33,6 +33,8 @@
   --orch-muted-soft: color-mix(in srgb, var(--orch-base0) 70%, transparent);
   --orch-primary: var(--orch-blue);
   --orch-live: var(--orch-cyan);
+  --orch-success: var(--orch-green);
+  --orch-applied: var(--orch-violet);
   --orch-warning: var(--orch-yellow);
   --orch-danger: var(--orch-red);
   --orch-focus: var(--orch-blue);
