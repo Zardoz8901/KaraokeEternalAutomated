@@ -3,12 +3,12 @@
 # #16 keyboard resize separator. See docs/analysis/orchestrator_hig_ux_backlog_2026_05_30.md.
 
 - id: orchestrator-operator-feedback-camera-ownership
-  status: planned
+  status: in_progress
   owner: codex
   branch: phase-17-orchestrator-operator-feedback-camera-ownership
   base: main
   merge_order: 230
-  worktree: { path: null, state: not_required }
+  worktree: { path: /home/steph/projects/KaraokeEternalAutomated, state: present }
   goal: 'Close the D2 red-team mitigations: give a non-host Operator a row-local NON-textual Send ack (spinner/check/cross) on the sent preset row while the Stage strip keeps the Synced/Failed text (OQ-6.1), add a mobile Presets-tab dot for pending/failed row-Send, and resolve the Camera live (strip, relay) vs Camera Live (cameraPipeline, source-binding) double-label by relabeling the pipeline as source/binding AND extending the one-owner ownership audit in the same slice (D6.2) - no relabeling of strip tones, no second aria-live region, Solarized-only.'
   write_scope:
     - docs/plans/active-slices.yaml
