@@ -2,4 +2,55 @@
 # Deferred (NOT in this closeout): HiG #14 folder-action discoverability, #15 PresetPicker menu rebuild,
 # #16 keyboard resize separator. See docs/analysis/orchestrator_hig_ux_backlog_2026_05_30.md.
 
-[]
+- id: orchestrator-color-role-map
+  status: in_progress
+  owner: codex
+  branch: phase-16-orchestrator-color-role-map
+  base: main
+  merge_order: 220
+  worktree:
+    path: /home/steph/projects/KaraokeEternalAutomated
+    state: present
+  goal: 'Resolve the cyan overload (C8-Q1) and complete the Orchestrator semantic color-role layer: add --orch-applied (violet) and --orch-success (green) role tokens, retone the Applied-on-Player badge to violet, the Cam badge to cyan, and keep camera as the sole cyan owner and synced as green - so no two distinguishable states share a hue - all within Solarized tokens, CSS-only, no markup/logic/label change.'
+  write_scope:
+    - docs/plans/active-slices.yaml
+    - docs/analysis/orchestrator_color_role_map_2026_05_31.md
+    - docs/analysis/current_state_2026_03_05.md
+    - src/routes/Orchestrator/views/OrchestratorView.css
+    - src/routes/Orchestrator/components/PresetTree.css
+    - src/routes/Orchestrator/components/OrchestratorStatusStrip.css
+    - src/routes/Orchestrator/components/orchestratorColorAudit.test.ts
+  protected_paths:
+    - server/
+    - shared/actionTypes.ts
+    - shared/types.ts
+    - src/routes/Player/
+    - src/routes/Orchestrator/components/orchestratorStatus.ts
+    - src/routes/Orchestrator/components/orchestratorPresentationModel.ts
+    - src/routes/Orchestrator/components/PresetTree.tsx
+    - src/routes/Orchestrator/components/OrchestratorStatusStrip.tsx
+    - package.json
+    - package-lock.json
+    - flake.nix
+    - e2e/
+    - .github/workflows/
+  verification:
+    - npm test -- src/routes/Orchestrator/components/orchestratorColorAudit.test.ts
+    - npm test -- src/routes/Orchestrator/components/PresetTree.test.tsx src/routes/Orchestrator/components/OrchestratorStatusStrip.test.tsx
+    - npm run slices:check
+    - npm run typecheck
+    - npm run lint
+  acceptance:
+    - 'The semantic role layer in OrchestratorView.css defines --orch-applied (violet) and --orch-success (green) alongside the existing --orch-primary/live/warning/danger/focus.'
+    - 'Applied-on-Player renders violet (--orch-applied); the Cam badge renders cyan (--orch-live, no longer off-palette blue); camera is the sole cyan owner; synced renders green (--orch-success).'
+    - 'No two distinguishable states share a hue; orchestratorColorAudit.test.ts asserts the three signal roles (live/applied/success) resolve to distinct hues and stays green (raw-literal + undefined-ref checks pass).'
+    - 'No tone-name change in orchestratorStatus.ts, no markup/logic change, no label change, no raw colors introduced.'
+  non_goals:
+    - Do not change tone names or any status logic/labels; CSS hue retoning only.
+    - 'Do not do the broad no-raw-hue-past-role-layer audit (D8.5) or the PresetTree reserved-badge-lane / badge-order work (D1) here - separate follow-on slices.'
+    - Do not change server/shared/Player, .tsx markup, package, Nix, workflow, or e2e.
+  notes:
+    - 'Resolves style-directions C8-Q1 (cyan overload). First visual-implementation slice on the confirmed shape; precedes the PresetTree badge-lane slice, which consumes --orch-applied.'
+    - 'CSS-module class names are strings under config/vitest.config.ts; assert CSS via raw fs.readFileSync. Local Nix Chromium e2e blocked - no screenshots.'
+  next:
+    - implementation
