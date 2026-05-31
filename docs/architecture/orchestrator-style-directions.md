@@ -10,6 +10,17 @@
 
 ---
 
+## Decisions & early-HiG red-team resolutions (2026-05-31)
+
+Two shape decisions were made and red-teamed against the early (1987/1992) Macintosh HiG canon (full record: [`docs/analysis/orchestrator_shape_redteam_early_hig_2026_05_31.md`](../analysis/orchestrator_shape_redteam_early_hig_2026_05_31.md)). **Verdict: both keep-with-mitigations — sound under early HiG; the rejected alternatives lose more ground.**
+
+- **Preset object = dense row + state badges** (over card/split-lane). **OQ-3.1 RESOLVED → dense row.** Surviving early-HiG debt = *perceived stability* (badges reflow rows mid-set). Mitigations (keep the shape): **reserved fixed-height badge lane** (no wrap, elide overflow — row geometry constant); cap + reorder badges strongest-truth-first per **D3.2** (incl. the accessible-name order); **decouple Select from Load** (single = Select, explicit Load button = Load) — **OQ-3.2 RESOLVED**; paint **Gallery on the row** (close the WYSIWYG identity gap).
+- **Status placement = header strip** (over on-frame chips/hybrid; chips breach the locked bright-Hydra readability rule). Surviving early-HiG debt = *feedback-and-dialog* for the non-host Operator (row-Send has no local ack; worse cross-tab on mobile). Mitigations (keep the strip): **row-local NON-textual send ack** on the sent row (strip keeps the `Synced`/`Failed` text — one-owner preserved) — **OQ-6.1 RESOLVED (option a)**; **mobile Presets-tab dot** for pending/failed row-Send; fix the **`Camera live`/`Camera Live` double-label** (relabel cameraPipeline as source/binding + extend the ownership audit **in the same slice**, **D6.2**); document the CodeEditor inline send-pill as intentional per-surface co-location (D6.5).
+
+New sub-directions to fold into the principle sections: **D3.x — the preset row's state region is a reserved fixed-height lane (no reflow), badge-count-capped**; **D6.x — Operator preset-row Send gets a row-local non-textual ack while the strip retains the status text.**
+
+---
+
 ## Cross-principle reconciliations (read first)
 
 Two topics surface in more than one principle. To keep this doc internally consistent, they are resolved **once** here and referenced elsewhere:
