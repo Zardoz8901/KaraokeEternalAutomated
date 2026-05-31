@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+import fs from 'node:fs'
+import path from 'node:path'
 import React, { act } from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { createRoot } from 'react-dom/client'
@@ -16,6 +18,28 @@ import type { OrchestratorCapabilities } from './orchestratorCapabilities'
 import type { PresetTreeNode } from './presetTree'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+
+function readPresetTreeCss (): string {
+  return fs.readFileSync(
+    path.join(process.cwd(), 'src/routes/Orchestrator/components/PresetTree.css'),
+    'utf8',
+  )
+}
+
+function cssBlock (css: string, selector: string): string {
+  const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const match = new RegExp(`(?:^|\\n)${escapedSelector}\\s*\\{(?<body>[\\s\\S]*?)\\n\\}`).exec(css)
+  return match?.groups?.body ?? ''
+}
+
+function expectLabelsInOrder (text: string, labels: string[]): void {
+  let previousIndex = -1
+  for (const label of labels) {
+    const index = text.indexOf(label)
+    expect(index).toBeGreaterThan(previousIndex)
+    previousIndex = index
+  }
+}
 
 describe('PresetTree', () => {
   const operatorCapabilities: OrchestratorCapabilities = {
@@ -116,10 +140,11 @@ describe('PresetTree', () => {
     })
   })
 
-  it('loads a preset when Enter is pressed on a preset row', async () => {
+  it('selects a preset when Enter is pressed on a preset row without loading preview', async () => {
     const container = document.createElement('div')
     const root = createRoot(container)
 
+    const onSelect = vi.fn()
     const onLoad = vi.fn()
 
     const nodes = makeNodes()
@@ -131,6 +156,7 @@ describe('PresetTree', () => {
           expanded={new Set(['folder:1'])}
           selectedPresetKey={null}
           onToggleFolder={() => {}}
+          onSelect={onSelect}
           onLoad={onLoad}
           onSend={() => {}}
           isDndEnabled={false}
@@ -145,6 +171,53 @@ describe('PresetTree', () => {
 
     await act(async () => {
       row?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    })
+
+    expect(onSelect).toHaveBeenCalledTimes(1)
+    expect(onLoad).not.toHaveBeenCalled()
+
+    await act(async () => {
+      root.unmount()
+    })
+  })
+
+  it('selects by row click and loads only from the explicit Load button', async () => {
+    const container = document.createElement('div')
+    const root = createRoot(container)
+    const onSelect = vi.fn()
+    const onLoad = vi.fn()
+    const nodes = makeNodes()
+
+    await act(async () => {
+      root.render(
+        <PresetTree
+          nodes={nodes}
+          expanded={new Set(['folder:1'])}
+          selectedPresetKey={null}
+          onToggleFolder={() => {}}
+          onSelect={onSelect}
+          onLoad={onLoad}
+          onSend={() => {}}
+          isDndEnabled={false}
+          onDragEnd={() => {}}
+        />,
+      )
+    })
+
+    const focusables = Array.from(container.querySelectorAll<HTMLElement>('[data-tree-focusable="true"]'))
+    const row = focusables[1] ?? null
+    expect(row).not.toBeNull()
+
+    await act(async () => {
+      row?.click()
+    })
+
+    expect(onSelect).toHaveBeenCalledTimes(1)
+    expect(onLoad).not.toHaveBeenCalled()
+
+    const loadButton = container.querySelector('button[aria-label="Load preset"]') as HTMLButtonElement | null
+    await act(async () => {
+      loadButton?.click()
     })
 
     expect(onLoad).toHaveBeenCalledTimes(1)
@@ -496,7 +569,7 @@ describe('PresetTree', () => {
     })
   })
 
-  it('renders every row badge from the shared status vocabulary constants', async () => {
+  it('renders every row badge from the shared status vocabulary constants in strongest-truth order', async () => {
     const container = document.createElement('div')
     const root = createRoot(container)
     const nodes = makeNodes()
@@ -523,12 +596,27 @@ describe('PresetTree', () => {
       )
     })
 
-    expect(container.textContent).toContain(GALLERY_BADGE_LABEL)
     expect(container.textContent).toContain(SELECTED_BADGE_LABEL)
     expect(container.textContent).toContain(LOADED_IN_PREVIEW_BADGE_LABEL)
     expect(container.textContent).toContain(APPLIED_ON_PLAYER_LABEL)
     expect(container.textContent).toContain(START_BADGE_LABEL)
     expect(container.textContent).toContain(CAM_BADGE_LABEL)
+    expect(container.textContent).toContain(GALLERY_BADGE_LABEL)
+
+    const savedRow = Array.from(container.querySelectorAll<HTMLElement>('[data-tree-focusable="true"]'))
+      .find(element => element.getAttribute('aria-label')?.startsWith('Preset test'))
+    expect(savedRow).not.toBeNull()
+    expectLabelsInOrder(savedRow?.textContent ?? '', [
+      APPLIED_ON_PLAYER_LABEL,
+      LOADED_IN_PREVIEW_BADGE_LABEL,
+      SELECTED_BADGE_LABEL,
+      START_BADGE_LABEL,
+      CAM_BADGE_LABEL,
+    ])
+
+    const galleryRow = Array.from(container.querySelectorAll<HTMLElement>('[data-tree-focusable="true"]'))
+      .find(element => element.getAttribute('aria-label')?.startsWith('Preset demo'))
+    expect(galleryRow?.textContent).toContain(GALLERY_BADGE_LABEL)
 
     await act(async () => {
       root.unmount()
@@ -565,11 +653,54 @@ describe('PresetTree', () => {
     const focusables = Array.from(container.querySelectorAll<HTMLElement>('[data-tree-focusable="true"]'))
     const row = focusables.find(element => element.getAttribute('aria-label')?.startsWith('Preset test'))
     expect(row?.getAttribute('aria-label')).toBe(
-      `Preset test, ${LOADED_IN_PREVIEW_BADGE_LABEL}, ${APPLIED_ON_PLAYER_LABEL}, ${START_BADGE_LABEL}, ${CAM_BADGE_LABEL}`,
+      `Preset test, ${APPLIED_ON_PLAYER_LABEL}, ${LOADED_IN_PREVIEW_BADGE_LABEL}, ${SELECTED_BADGE_LABEL}, ${START_BADGE_LABEL}, ${CAM_BADGE_LABEL}`,
     )
 
     await act(async () => {
       root.unmount()
     })
+  })
+
+  it('exposes Gallery identity on gallery preset rows', async () => {
+    const container = document.createElement('div')
+    const root = createRoot(container)
+
+    await act(async () => {
+      root.render(
+        <PresetTree
+          nodes={makeGalleryNodes()}
+          expanded={new Set(['gallery'])}
+          selectedPresetKey={null}
+          loadedPreviewPresetKey={null}
+          onToggleFolder={() => {}}
+          onLoad={() => {}}
+          onSend={() => {}}
+          getPresetRowUx={preset => getPresetRowUx(preset, operatorCapabilities)}
+          isDndEnabled={false}
+          onDragEnd={() => {}}
+        />,
+      )
+    })
+
+    const row = Array.from(container.querySelectorAll<HTMLElement>('[data-tree-focusable="true"]'))
+      .find(element => element.getAttribute('aria-label')?.startsWith('Preset demo'))
+    expect(row?.getAttribute('aria-label')).toBe(`Preset demo, ${GALLERY_BADGE_LABEL}`)
+    expect(row?.textContent).toContain(GALLERY_BADGE_LABEL)
+
+    await act(async () => {
+      root.unmount()
+    })
+  })
+
+  it('reserves a fixed-height no-wrap badge lane to avoid row reflow', () => {
+    const css = readPresetTreeCss()
+    const presetMeta = cssBlock(css, '.presetMeta')
+    const badge = cssBlock(css, '.badge')
+
+    expect(presetMeta).toContain('flex-wrap: nowrap;')
+    expect(presetMeta).toContain('min-height: var(--orch-preset-badge-lane-height);')
+    expect(presetMeta).toContain('overflow: hidden;')
+    expect(badge).toContain('max-width:')
+    expect(badge).toContain('text-overflow: ellipsis;')
   })
 })

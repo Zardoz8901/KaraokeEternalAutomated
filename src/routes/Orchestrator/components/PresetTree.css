@@ -1,4 +1,6 @@
 .tree {
+  --orch-preset-badge-lane-height: calc(var(--text-xs) * 1.4 + (2 * var(--orch-space-2xs)) + 2px);
+
   display: flex;
   flex-direction: column;
   gap: var(--orch-space-xl);
@@ -53,12 +55,19 @@
 }
 
 .badge {
+  min-width: 0;
+  max-width: 9rem;
   padding: var(--orch-space-2xs) var(--orch-space-md);
   border-radius: 999px;
   font-size: var(--text-xs);
+  line-height: 1.4;
   background: var(--orch-surface-soft);
   color: var(--orch-muted);
   border: 1px solid var(--orch-border);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 0 1 auto;
 }
 
 .badgeSelected,
@@ -256,8 +265,11 @@
 
 .presetMeta {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: var(--orch-space-sm);
+  min-height: var(--orch-preset-badge-lane-height);
+  overflow: hidden;
+  align-items: center;
 }
 
 .rowNotice {

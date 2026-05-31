@@ -218,6 +218,10 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
     })
   }, [])
 
+  const handleSelect = useCallback((preset: PresetLeaf) => {
+    setSelectedPresetKey(getPresetKey(preset))
+  }, [])
+
   const handleLoad = useCallback((preset: PresetLeaf) => {
     const presetKey = getPresetKey(preset)
     setSelectedPresetKey(presetKey)
@@ -701,6 +705,7 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
           playerPresetFolderId={playerPresetFolderId}
           isDndEnabled={query === '' && !refreshing && canUsePresetManagement}
           onToggleFolder={toggleFolder}
+          onSelect={handleSelect}
           onLoad={handleLoad}
           onSend={handleSend}
           onClone={handleClonePreset}

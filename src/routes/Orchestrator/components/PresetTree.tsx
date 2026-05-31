@@ -24,6 +24,7 @@ interface PresetTreeProps {
   playerPresetFolderId?: number | null
   isDndEnabled: boolean
   onToggleFolder: (id: string) => void
+  onSelect?: (preset: PresetLeaf) => void
   onLoad: (preset: PresetLeaf) => void
   onSend: (preset: PresetLeaf) => void
   onClone?: (preset: PresetLeaf) => void
@@ -55,6 +56,7 @@ function PresetTree ({
   playerPresetFolderId,
   isDndEnabled,
   onToggleFolder,
+  onSelect,
   onLoad,
   onSend,
   onClone,
@@ -121,7 +123,7 @@ function PresetTree ({
   const handlePresetKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>, preset: PresetLeaf) => {
     if (event.key === 'Enter') {
       event.preventDefault()
-      onLoad(preset)
+      onSelect?.(preset)
       return
     }
 
@@ -147,7 +149,7 @@ function PresetTree ({
       event.preventDefault()
       focusByOffset(event.currentTarget, -1)
     }
-  }, [canSendPreset, focusByOffset, getPresetRowUx, onLoad, onSend])
+  }, [canSendPreset, focusByOffset, getPresetRowUx, onSelect, onSend])
 
   const droppableId = useCallback((node: PresetTreeNode) => {
     if (node.isGallery) return 'presets:gallery'
@@ -195,8 +197,6 @@ function PresetTree ({
                   ▸
                 </span>
                 <span className={styles.folderName}>{node.name}</span>
-                {node.isGallery && <span className={styles.badge}>{GALLERY_BADGE_LABEL}</span>}
-
                 {!node.isGallery && (
                   <div className={styles.folderActions}>
                     {onSetPlayerPresetFolder && !node.isGallery && (canSetPlayerPresetFolder?.(node) ?? true) && (
@@ -280,10 +280,12 @@ function PresetTree ({
                         const presetManageAllowed = rowUx.showManagementActions && !preset.isGallery && (canManagePreset?.(preset) ?? true)
                         const presetDragDisabled = !isDndEnabled || preset.isGallery || !presetManageAllowed
                         const accessibleBadgeLabels = [
-                          isLoadedPreview ? LOADED_IN_PREVIEW_BADGE_LABEL : null,
                           isApplied ? APPLIED_ON_PLAYER_LABEL : null,
+                          isLoadedPreview ? LOADED_IN_PREVIEW_BADGE_LABEL : null,
+                          isSelected ? SELECTED_BADGE_LABEL : null,
                           isStarting ? START_BADGE_LABEL : null,
                           preset.usesCamera ? CAM_BADGE_LABEL : null,
+                          preset.isGallery ? GALLERY_BADGE_LABEL : null,
                         ].filter((label): label is string => label !== null)
                         const presetAriaLabel = [
                           `Preset ${preset.name}`,
@@ -312,7 +314,7 @@ function PresetTree ({
                                 aria-pressed={isSelected}
                                 aria-label={presetAriaLabel}
                                 data-tree-focusable='true'
-                                onClick={() => onLoad(preset)}
+                                onClick={() => onSelect?.(preset)}
                                 onKeyDown={e => handlePresetKeyDown(e, preset)}
                               >
                                 {!presetDragDisabled && (
@@ -323,11 +325,12 @@ function PresetTree ({
                                 <div className={styles.presetMain}>
                                   <span className={styles.presetName}>{preset.name}</span>
                                   <div className={styles.presetMeta}>
-                                    {isSelected && <span className={clsx(styles.badge, styles.badgeSelected)}>{SELECTED_BADGE_LABEL}</span>}
-                                    {isLoadedPreview && <span className={clsx(styles.badge, styles.badgeLoaded)}>{LOADED_IN_PREVIEW_BADGE_LABEL}</span>}
                                     {isApplied && <span className={clsx(styles.badge, styles.badgeApplied)}>{APPLIED_ON_PLAYER_LABEL}</span>}
+                                    {isLoadedPreview && <span className={clsx(styles.badge, styles.badgeLoaded)}>{LOADED_IN_PREVIEW_BADGE_LABEL}</span>}
+                                    {isSelected && <span className={clsx(styles.badge, styles.badgeSelected)}>{SELECTED_BADGE_LABEL}</span>}
                                     {isStarting && <span className={clsx(styles.badge, styles.badgeStart)}>{START_BADGE_LABEL}</span>}
                                     {preset.usesCamera && <span className={clsx(styles.badge, styles.badgeCam)}>{CAM_BADGE_LABEL}</span>}
+                                    {preset.isGallery && <span className={styles.badge}>{GALLERY_BADGE_LABEL}</span>}
                                   </div>
                                   {rowUx.rowNotice && <div className={styles.rowNotice}>{rowUx.rowNotice}</div>}
                                 </div>
