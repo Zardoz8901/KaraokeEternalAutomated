@@ -231,7 +231,7 @@ describe('StagePanel', () => {
     expect(pill).toMatch(/text-overflow:\s*ellipsis;/)
   })
 
-  it('shows Camera Live when relay is active and Hydra has bound camera source', async () => {
+  it('shows Source Live when relay is active and Hydra has bound camera source', async () => {
     mockBoundSources = ['s0']
     const container = document.createElement('div')
     const root = createRoot(container)
@@ -253,7 +253,8 @@ describe('StagePanel', () => {
       )
     })
 
-    expect(container.textContent).toContain('Camera Live')
+    expect(container.textContent).toContain('Source Live')
+    expect(container.textContent).not.toContain('Camera Live')
     expect(container.textContent).not.toContain('Missing')
 
     await act(async () => {
@@ -261,7 +262,7 @@ describe('StagePanel', () => {
     })
   })
 
-  it('shows Camera Partial and missing checks when relay is still connecting', async () => {
+  it('shows Source Partial and missing checks when relay is still connecting', async () => {
     mockBoundSources = []
     const container = document.createElement('div')
     const root = createRoot(container)
@@ -283,7 +284,8 @@ describe('StagePanel', () => {
       )
     })
 
-    expect(container.textContent).toContain('Camera Partial')
+    expect(container.textContent).toContain('Source Partial')
+    expect(container.textContent).not.toContain('Camera Partial')
     expect(container.textContent).toContain('publish/subscribe')
     expect(container.textContent).toContain('hydra source bind')
 

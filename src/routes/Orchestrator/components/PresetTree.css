@@ -95,6 +95,45 @@
   border-color: color-mix(in srgb, var(--orch-live) 35%, transparent);
 }
 
+.sendAck {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: var(--orch-preset-badge-lane-height);
+  height: var(--orch-preset-badge-lane-height);
+  border-radius: 999px;
+  border: 1px solid var(--orch-border);
+  background: var(--orch-surface-soft);
+  font-size: var(--text-xs);
+  line-height: 1;
+}
+
+.sendAckSending {
+  color: var(--orch-warning);
+  border-color: color-mix(in srgb, var(--orch-warning) 45%, transparent);
+  background: color-mix(in srgb, var(--orch-warning) 14%, transparent);
+  animation: sendAckSpin 800ms linear infinite;
+}
+
+.sendAckSynced {
+  color: var(--orch-success);
+  border-color: color-mix(in srgb, var(--orch-success) 45%, transparent);
+  background: color-mix(in srgb, var(--orch-success) 14%, transparent);
+}
+
+.sendAckError {
+  color: var(--orch-danger);
+  border-color: color-mix(in srgb, var(--orch-danger) 45%, transparent);
+  background: color-mix(in srgb, var(--orch-danger) 14%, transparent);
+}
+
+@keyframes sendAckSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .folderActions {
   margin-left: auto;
   display: grid;
@@ -388,5 +427,9 @@
 
   .folderActions {
     transform: none;
+  }
+
+  .sendAckSending {
+    animation: none;
   }
 }

@@ -34,6 +34,8 @@ function OrchestratorView () {
     handleApplyRemote,
     handleDismissRemote,
     showUnsentMobileDot,
+    showPresetSendMobileDot,
+    presetSendStatus,
   } = useOrchestratorWorkspace()
   const { shellModel } = workspaceModel
   const refPanelClass = isRefOpen
@@ -178,6 +180,9 @@ function OrchestratorView () {
             >
               <span className={styles.mobileTabIcon}>{'\u2630'}</span>
               <span>Presets</span>
+              {showPresetSendMobileDot && (
+                <span className={`${styles.mobileTabDot} ${presetSendStatus === 'error' ? styles.mobileTabDotError : ''}`} />
+              )}
             </button>
           </div>
         </div>

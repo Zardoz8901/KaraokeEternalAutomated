@@ -40,6 +40,8 @@ import styles from './PresetBrowser.css'
 
 interface PresetBrowserProps {
   currentCode: string
+  sendingPresetKey?: PresetKey | null
+  presetSendStatus?: 'idle' | 'sending' | 'synced' | 'error'
   onLoad: (code: string) => void
   onSend: (preset: PresetLeaf) => void
 }
@@ -53,7 +55,7 @@ function toErrorMessage (err: unknown, fallback: string): string {
   return fallback
 }
 
-function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
+function PresetBrowser ({ currentCode, sendingPresetKey, presetSendStatus = 'idle', onLoad, onSend }: PresetBrowserProps) {
   const dispatch = useAppDispatch()
   const user = useAppSelector(state => state.user)
   const currentRoomPrefs = useAppSelector((state) => {
@@ -701,6 +703,8 @@ function PresetBrowser ({ currentCode, onLoad, onSend }: PresetBrowserProps) {
           selectedPresetKey={selectedPresetKey}
           loadedPreviewPresetKey={loadedPreviewPresetKey}
           appliedPresetKey={appliedPresetKey}
+          sendingPresetKey={sendingPresetKey}
+          presetSendStatus={presetSendStatus}
           startingPresetId={startingPresetId}
           playerPresetFolderId={playerPresetFolderId}
           isDndEnabled={query === '' && !refreshing && canUsePresetManagement}

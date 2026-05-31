@@ -5,7 +5,7 @@ import HydraPreview from './HydraPreview'
 import styles from './StagePanel.css'
 import { BUFFER_OPTIONS, buildPreviewCode, type StageBuffer } from './stagePanelUtils'
 import PresetPicker from './PresetPicker'
-import { getCameraPipelineState, type CameraRelayStatus } from './hydraPreviewUtils'
+import { formatCameraPipelineLabel, getCameraPipelineState, type CameraRelayStatus } from './hydraPreviewUtils'
 import type { PresetLeaf } from './presetTree'
 
 interface StagePanelProps {
@@ -99,7 +99,7 @@ function StagePanel ({
         <div className={styles.stageHeaderRight}>
           {showCameraPipeline && (
             <div className={`${styles.cameraPipeline} ${cameraPipelineClass}`}>
-              <span className={styles.cameraPipelineLabel}>{`Camera ${cameraPipeline.label}`}</span>
+              <span className={styles.cameraPipelineLabel}>{formatCameraPipelineLabel(cameraPipeline)}</span>
               {cameraPipeline.level === 'partial' && cameraPipeline.missing.length > 0 && (
                 <span className={styles.cameraPipelineDetail}>{`Missing: ${cameraPipeline.missing.join(', ')}`}</span>
               )}

@@ -10,7 +10,7 @@ import { useVisualViewport } from 'lib/useVisualViewport'
 import { DEFAULT_SKETCH, getRandomSketch } from '../components/hydraSketchBook'
 import type { PresetLeaf } from '../components/presetTree'
 import { canSendHydraInput, getOrchestratorCapabilities, type OrchestratorCapabilities } from '../components/orchestratorCapabilities'
-import { getPresetKey } from '../components/presetOperatorUx'
+import { getPresetKey, type PresetKey } from '../components/presetOperatorUx'
 import { getOrchestratorStatusModel, type OrchestratorStatusModel } from '../components/orchestratorStatus'
 import { type CameraRelayStatus } from '../components/hydraPreviewUtils'
 import { type StageBuffer } from '../components/stagePanelUtils'
@@ -51,6 +51,8 @@ import {
 
 export interface WorkspacePresetBrowserProps {
   currentCode: string
+  sendingPresetKey?: PresetKey | null
+  presetSendStatus?: OrchestratorSendStatus
   onLoad: (code: string) => void
   onSend: (preset: PresetLeaf) => void
 }
@@ -113,6 +115,8 @@ export interface UseOrchestratorWorkspaceResult {
   handleApplyRemote: () => void
   handleDismissRemote: () => void
   showUnsentMobileDot: boolean
+  showPresetSendMobileDot: boolean
+  presetSendStatus: OrchestratorSendStatus
 }
 
 function getInitialRemoteState (): OrchestratorRemoteState {
@@ -148,6 +152,7 @@ export function useOrchestratorWorkspace (): UseOrchestratorWorkspaceResult {
   const remoteSyncRafRef = useRef<number | null>(null)
   const [remoteState, setRemoteState] = useState<OrchestratorRemoteState>(getInitialRemoteState)
   const [sendState, setSendState] = useState<OrchestratorSendState>(INITIAL_ORCHESTRATOR_SEND_STATE)
+  const [sendingPresetKey, setSendingPresetKey] = useState<PresetKey | null>(null)
   const [previewBuffer, setPreviewBuffer] = useState<StageBuffer>('auto')
   const [activeDesktopPanel, setActiveDesktopPanel] = useState<OrchestratorDesktopPanel>('presets')
   const [activeMobileTab, setActiveMobileTab] = useState<OrchestratorMobileTab>('stage')
@@ -199,6 +204,8 @@ export function useOrchestratorWorkspace (): UseOrchestratorWorkspaceResult {
   }, [])
 
   const handleSendCode = useCallback((input: string | SendHydraPayload) => {
+    setSendingPresetKey(null)
+
     if (!orchestratorCapabilities.canLiveCode) {
       rejectHydraSendRequest()
       return
@@ -250,7 +257,10 @@ export function useOrchestratorWorkspace (): UseOrchestratorWorkspaceResult {
   }, [cancelPendingRemoteSync, ui.innerWidth])
 
   const handleSendPreset = useCallback((input: PresetLeaf | string) => {
+    const presetKey = typeof input === 'string' ? null : getPresetKey(input)
+
     if (!canSendHydraInput(input, orchestratorCapabilities)) {
+      setSendingPresetKey(presetKey)
       rejectHydraSendRequest()
       return
     }
@@ -259,7 +269,6 @@ export function useOrchestratorWorkspace (): UseOrchestratorWorkspaceResult {
     if (typeof input === 'string') {
       payload = { code: input }
     } else {
-      const presetKey = getPresetKey(input)
       const hydraGalleryId = input.isGallery && presetKey?.startsWith('gallery:')
         ? presetKey.slice('gallery:'.length)
         : undefined
@@ -273,6 +282,7 @@ export function useOrchestratorWorkspace (): UseOrchestratorWorkspaceResult {
       }
     }
 
+    setSendingPresetKey(presetKey)
     cancelPendingRemoteSync()
     setRemoteState(prev => ({
       ...prev,
@@ -491,6 +501,9 @@ export function useOrchestratorWorkspace (): UseOrchestratorWorkspaceResult {
   const containerStyle = useMemo(() => ({
     ['--ref-panel-width' as string]: `${refPanelWidth}px`,
   }) as CSSProperties, [refPanelWidth])
+  const presetSendStatus: OrchestratorSendStatus = sendingPresetKey === null ? 'idle' : sendState.status
+  const showPresetSendMobileDot = sendingPresetKey !== null
+    && (sendState.status === 'sending' || sendState.status === 'error')
 
   return {
     containerRef,
@@ -500,6 +513,8 @@ export function useOrchestratorWorkspace (): UseOrchestratorWorkspaceResult {
     orchestratorStatusModel,
     presetBrowserProps: {
       currentCode: remoteState.localCode,
+      sendingPresetKey,
+      presetSendStatus,
       onLoad: handleLoadPreset,
       onSend: handleSendPreset,
     },
@@ -552,5 +567,7 @@ export function useOrchestratorWorkspace (): UseOrchestratorWorkspaceResult {
       remoteState.userHasEdited,
       sendState.status,
     ),
+    showPresetSendMobileDot,
+    presetSendStatus,
   }
 }
