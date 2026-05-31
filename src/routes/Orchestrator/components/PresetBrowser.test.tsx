@@ -95,6 +95,7 @@ vi.mock('./PresetTree', async () => {
       selectedPresetKey?: string | null
       loadedPreviewPresetKey?: string | null
       appliedPresetKey?: string | null
+      onSelect?: (preset: PresetLeaf) => void
       onLoad: (preset: PresetLeaf) => void
       onSend: (preset: PresetLeaf) => void
       onRenamePreset?: (preset: PresetLeaf) => void
@@ -176,7 +177,15 @@ vi.mock('./PresetTree', async () => {
             }))
           }
 
-          return ReactModule.createElement('div', { 'key': preset.id, 'data-testid': `row-${preset.id}` }, children)
+          return ReactModule.createElement(
+            'div',
+            {
+              'key': preset.id,
+              'data-testid': `row-${preset.id}`,
+              'onClick': () => props.onSelect?.(preset),
+            },
+            children,
+          )
         }),
       )
     },
@@ -291,6 +300,25 @@ describe('PresetBrowser runtime UX', () => {
     expect(onSend).toHaveBeenCalledTimes(1)
     expect(container.querySelector('[data-testid^="state-gallery:"]')?.getAttribute('data-loaded')).toBe('true')
     expect(container.querySelector('[data-testid="state-preset:10"]')?.getAttribute('data-loaded')).not.toBe('true')
+
+    await act(async () => {
+      root.unmount()
+    })
+  })
+
+  it('selects a preset row without loading it into the local preview', async () => {
+    const { container, root, onLoad } = await renderBrowser()
+    const savedRow = container.querySelector('[data-testid="row-preset:10"]') as HTMLDivElement | null
+    expect(savedRow).not.toBeNull()
+
+    await act(async () => {
+      savedRow?.click()
+    })
+
+    expect(onLoad).not.toHaveBeenCalled()
+    const savedState = container.querySelector('[data-testid="state-preset:10"]')
+    expect(savedState?.getAttribute('data-selected')).toBe('true')
+    expect(savedState?.getAttribute('data-loaded')).toBe('false')
 
     await act(async () => {
       root.unmount()
