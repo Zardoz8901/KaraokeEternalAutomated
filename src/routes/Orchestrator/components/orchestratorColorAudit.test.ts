@@ -31,6 +31,48 @@ function readComponentCss (file: string): string {
   return readAuditedFile(`src/routes/Orchestrator/components/${file}`)
 }
 
+function readOrchestratorViewCss (): string {
+  return readAuditedFile('src/routes/Orchestrator/views/OrchestratorView.css')
+}
+
+function cssBlock (source: string, selector: string): string {
+  const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const match = new RegExp(`(?:^|\\n)${escapedSelector}\\s*\\{(?<body>[\\s\\S]*?)\\n\\}`).exec(source)
+  return match?.groups?.body ?? ''
+}
+
+function collectOrchestratorViewPropertyValues (): Map<string, string> {
+  const values = new Map<string, string>()
+  const source = readOrchestratorViewCss()
+
+  for (const match of source.matchAll(/(--orch-[\w-]+)\s*:\s*([^;]+);/g)) {
+    values.set(match[1], match[2].trim())
+  }
+
+  return values
+}
+
+function resolveTokenValue (token: string, values = collectOrchestratorViewPropertyValues()): string | null {
+  const seen = new Set<string>()
+  let current = token
+
+  while (!seen.has(current)) {
+    seen.add(current)
+    const value = values.get(current)
+    if (!value) {
+      return null
+    }
+
+    const reference = /^var\(\s*(--orch-[\w-]+)\s*\)$/.exec(value)?.[1]
+    if (!reference) {
+      return value
+    }
+    current = reference
+  }
+
+  return null
+}
+
 function collectDefinedOrchProperties (): Set<string> {
   const defined = new Set<string>()
 
@@ -80,7 +122,7 @@ describe('Orchestrator color audit', () => {
   })
 
   it('defines the Gate 3d spacing and focus-ring tokens', () => {
-    const source = readAuditedFile('src/routes/Orchestrator/views/OrchestratorView.css')
+    const source = readOrchestratorViewCss()
 
     expect(source).toContain('--orch-space-2xs: 0.125rem;')
     expect(source).toContain('--orch-space-xs: 0.25rem;')
@@ -93,6 +135,32 @@ describe('Orchestrator color audit', () => {
     expect(source).toContain('--orch-focus-ring-offset: 2px;')
     expect(source).toContain('--orch-focus-ring-inset-offset: -2px;')
     expect(source).toContain('--orch-focus-ring: var(--orch-focus-ring-width) solid var(--orch-focus);')
+  })
+
+  it('keeps signal role tokens distinct across camera, applied-player, and synced states', () => {
+    const values = collectOrchestratorViewPropertyValues()
+
+    expect(values.get('--orch-live')).toBe('var(--orch-cyan)')
+    expect(values.get('--orch-applied')).toBe('var(--orch-violet)')
+    expect(values.get('--orch-success')).toBe('var(--orch-green)')
+    expect(resolveTokenValue('--orch-live', values)).toBe('#2aa198')
+    expect(resolveTokenValue('--orch-applied', values)).toBe('#6c71c4')
+    expect(resolveTokenValue('--orch-success', values)).toBe('#859900')
+    expect(new Set([
+      resolveTokenValue('--orch-live', values),
+      resolveTokenValue('--orch-applied', values),
+      resolveTokenValue('--orch-success', values),
+    ])).toHaveLength(3)
+  })
+
+  it('routes Applied, Cam, and Synced colors through semantic role tokens', () => {
+    const presetTree = readComponentCss('PresetTree.css')
+    const statusStrip = readComponentCss('OrchestratorStatusStrip.css')
+
+    expect(cssBlock(presetTree, '.badgeApplied')).toContain('var(--orch-applied)')
+    expect(cssBlock(presetTree, '.badgeCam')).toContain('var(--orch-live)')
+    expect(cssBlock(statusStrip, '.toneLive')).toContain('var(--orch-live)')
+    expect(cssBlock(statusStrip, '.toneSuccess')).toContain('var(--orch-success)')
   })
 
   it('keeps PresetTree keyboard focus visible instead of suppressing outlines', () => {

@@ -56,9 +56,9 @@
   padding: var(--orch-space-2xs) var(--orch-space-md);
   border-radius: 999px;
   font-size: var(--text-xs);
-  background: color-mix(in srgb, var(--orch-cyan) 14%, transparent);
-  color: var(--orch-cyan);
-  border: 1px solid color-mix(in srgb, var(--orch-cyan) 40%, transparent);
+  background: var(--orch-surface-soft);
+  color: var(--orch-muted);
+  border: 1px solid var(--orch-border);
 }
 
 .badgeSelected,
@@ -75,15 +75,15 @@
 }
 
 .badgeApplied {
-  background: color-mix(in srgb, var(--orch-cyan) 16%, transparent);
-  border-color: color-mix(in srgb, var(--orch-cyan) 42%, transparent);
-  color: var(--orch-cyan);
+  background: color-mix(in srgb, var(--orch-applied) 16%, transparent);
+  border-color: color-mix(in srgb, var(--orch-applied) 42%, transparent);
+  color: var(--orch-applied);
 }
 
 .badgeCam {
-  background: color-mix(in srgb, var(--orch-blue) 14%, transparent);
-  color: var(--orch-blue);
-  border-color: color-mix(in srgb, var(--orch-blue) 35%, transparent);
+  background: color-mix(in srgb, var(--orch-live) 14%, transparent);
+  color: var(--orch-live);
+  border-color: color-mix(in srgb, var(--orch-live) 35%, transparent);
 }
 
 .folderActions {
