@@ -39,35 +39,20 @@
 
 ---
 
-## 1. Visual personality
+## 1. Design intent
 
-### North-star, sharpened
+### Design principles
 
-**The chrome recedes; the work glows.** The Orchestrator is a calm, dense, Solarized-dark surface, tuned so
-the only things that draw the eye are the operator's live visuals and the few state signals that matter
-*right now*. It is a tool, not a stage — the show happens on the Player. The chrome stays a separate matte
-Solarized plane that never competes with bright or arbitrary Hydra output; emphasis comes from luminance,
-weight, and placement — never from ornament, texture, or anything dressed up to look like a physical object.
-The dark is functional (legible in a dim performance room), not a costume.
+1. **Defer to content.** Chrome is visually subordinate to the live visuals and active state signals: a calm, dense, dark Solarized plane that stays legible over arbitrary/bright Hydra output without competing with it. Emphasis comes from luminance, weight, and placement — never from ornament, texture, or skeuomorphic styling that imitates a physical object. The dark theme is functional (legible in a dim performance room), not decorative. *(Apple HiG — Deference; D7.4.)*
+2. **Emphasis is earned, not ambient.** The only emphasized elements are the operator's live visuals and the few state signals relevant *right now*. Emphasis comes from weight, contrast, placement, and feedback timing — not glow, idle animation, texture, or resting luminance. *(Principle 7; §4.3.)*
+3. **Feedback is immediate and honest.** Every side-effecting action is acknowledged within Tier-0 (≤100 ms) in two channels (visible + assistive tech); the surface changes on events and is static at rest; failures are announced and state their remedy. *(§4.5; Apple HiG — immediate feedback.)*
+4. **No skeuomorphism.** No bevels, gloss, brushed metal, knobs/faders/VU meters, textures, or controls drawn to imitate hardware. *(D7.4.)*
+5. **Density serves repetition.** Comfortable-dense layout for a returning operator under time pressure; touch targets meet the ≥44 px-effective floor via hit-slop, not bulk. *(§4.1, §4.8; OQ-7.1/7.2.)*
+6. **Labels match behavior.** A label never claims more than the behavior delivers; local-preview state is distinguished from room/applied state; modes are always visible. *(`FORBIDDEN_PREVIEW_TERMS`; one-owner table.)*
 
-> **Why not "an instrument panel" (re-anchored 2026-06-01, per review).** An earlier draft anchored this on
-> "a lit instrument panel in a dark booth." For a doc whose thesis is *principles, not pixels*, naming the
-> aesthetic after a physical apparatus is a liability: it invites exactly the knobs, faders, bevels, and
-> brushed-metal chrome we reject (D7.4, §1 "Mac-like"). The north-star is therefore stated as **qualities**
-> (calm / dark / dense / legible / honest; emphasis by luminance, not ornament), never as an object to imitate.
+It is a tool, not a stage — the audience-facing output is the Player. Control placement is stable across visits (familiar on return); chrome is lit just enough to read in a dim room; state labels distinguish local-to-operator from what the room actually sees; the surface introduces no hidden modes, makes no claim that the audience sees output it does not, and escalates visual prominence only when an operation actually fails. It rewards repetition (muscle memory over menu traversal). We adopt the *interaction ergonomics* of established performance tools — predictable placement, immediate response, frequent controls reachable without traversal — but not their *appearance*: no knobs, faders, bevels, gloss, or brushed metal. This matches flat session DAWs (Ableton, Bitwig): adopt the interaction model, not the hardware faceplate.
 
-### What it should FEEL like
-
-> The Orchestrator should feel instantly familiar on return: every control already where your hand expects
-> it, lit just enough to read in the dark, honest about what is local-to-you versus what the room actually
-> sees, and quiet enough to watch for an hour without fatigue. It rewards repetition — muscle memory, not
-> menus. It never surprises you, never hides a mode, never claims the audience sees something they don't,
-> and never raises its voice unless something actually failed.
->
-> We borrow the *ergonomics* of a well-worn performance tool — predictable placement, immediate response,
-> the next control already under the hand — but never its *appearance*: no knobs, faders, bevels, gloss, or
-> brushed metal. It is the same bet flat session DAWs like Ableton and Bitwig make: take the muscle-memory,
-> not the faceplate. Familiar to operate; flat and matte to look at.
+> **Provenance (re-anchored 2026-06-01, per review).** An earlier draft anchored this on "a lit instrument panel in a dark booth"; that metaphor was rejected because naming the aesthetic after a physical apparatus invites the knobs, faders, bevels, and brushed-metal chrome this doc rejects (D7.4, §1 "Mac-like"), so the intent is stated as qualities rather than an object to imitate.
 
 ### Mac-like without copying old Mac UI literally
 
@@ -107,8 +92,9 @@ deliberately anti-skeuomorphic. Ableton reduces every control "to its most essen
 decoration": it is full of dials and faders, but "a slider is just a line, a dial is just a curved slider" —
 drawn flat and abstract, never as hardware (it was flat ~10–15 years before flat design). Bitwig drops
 graphical ornament "unless absolutely necessary." Both are calm, dark, dense, single-window tools where color
-is rationed as *coding*, not decoration — a direct convergence with **"the chrome recedes; the work glows."**
-We borrow the **interaction model and restraint**, never the device chrome and never the palette.
+is rationed as *coding*, not decoration — a direct convergence with the §1 **defer-to-content** principle
+(chrome recessive; emphasis reserved for live visuals and active state signals). We borrow the **interaction
+model and restraint**, never the device chrome and never the palette.
 
 | Borrow (adopt) | Adapt to our constraints | Reject (NOT a model) |
 | --- | --- | --- |
@@ -169,9 +155,9 @@ between content panes**. The spatial frame is **state-invariant across visits**;
   they are co-located peers sharing the rail, never two competing regions.
 - **Vertical axis (rows, the right column):** **Stage on TOP, Code on BOTTOM.**
 
-Reading the grid in one sentence: *reference is always left, the live output is always top-right and
-dominant, the code I drive it with is directly beneath it, and the real Player snapshot (when built) lives
-beside the local one inside the Stage.*
+Grid summary: the reference rail is on the left; Local Preview (live output) is top-right and dominant; the
+Code editor is directly beneath it; the real Player snapshot (when built) sits beside Local Preview inside
+the Stage.
 
 > **Anchor honesty.** The columns (`OrchestratorView.css:77`) and the role-variant row-span swaps
 > (`.containerOperatorStageExpanded .stageDock { grid-row: 1/3 }`, `OrchestratorView.css:192`) are
@@ -264,7 +250,7 @@ Selected-accent rails (`PresetTree.css:243`, CI-locked at `orchestratorColorAudi
 
 Tags: **RESOLVED** = decided here; **HONORED** = already-resolved upstream, restated and not re-opened;
 **RATIFIED** = a taste/irreversible call surfaced in §6 and confirmed by the user on 2026-06-01 (at the
-recommended option; the visual-personality north-star was re-anchored off the physical-object metaphor per
+recommended option; the §1 visual-personality direction was re-anchored on the physical-object reference per
 review — see §1).
 
 | OQ / D | Call (decisive) | One-line rationale | Conf. | Rev. | Tag |
@@ -694,7 +680,7 @@ and the test that guards it.
 ## 6. Calls awaiting your ratification
 
 **Status: ratified 2026-06-01.** The user reviewed and said proceed, accepting every recommended option
-below, with ONE change: the visual-personality north-star (#7) was re-anchored away from the "instrument
+below, with ONE change: the visual-personality intent (#7) was re-anchored away from the "instrument
 panel" metaphor (it read as skeuomorphic for a principles-not-pixels doc — see §1). Each call below is
 recorded with its ratified outcome and stays reversible; revisit any anytime.
 
@@ -733,9 +719,9 @@ recorded with its ratified outcome and stays reversible; revisit any anytime.
 7. **facet — Visual personality.** *Ratified with one change.* The **intent** is confirmed (calm, dark,
    dense, legible, honest; the show is on the Player; emphasis by luminance not ornament). The **metaphor**
    was rejected on review — "a lit instrument panel in a dark booth" reads as skeuomorphic, contradicting the
-   principles-not-pixels thesis and inviting knobs/bevels. §1 now states the north-star as qualities ("the
-   chrome recedes; the work glows") and the feel paragraph borrows a tool's *ergonomics*, never its
-   *appearance*.
+   principles-not-pixels thesis and inviting knobs/bevels. §1 now states the personality as qualities (calm,
+   dark, dense, legible, honest; emphasis carried by luminance, not ornament) and the design-intent prose
+   borrows a tool's *ergonomics*, never its *appearance*.
 
 8. **facet — Workstation entry feel (no hero / disclosure split).** *Recommend:* ratify "opens INTO work,
    never a welcome"; always-visible = the hot path + every core/destructive command; disclosed = low-frequency
