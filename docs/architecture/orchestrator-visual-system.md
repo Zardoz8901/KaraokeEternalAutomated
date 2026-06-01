@@ -11,7 +11,7 @@
 > questions to resolve, the app-specific rule it should yield, its tensions, and how we'll know it's
 > achieved. It implements nothing and changes no locked contract.
 
-## North-star, in one line
+## Purpose
 
 **The Orchestrator is a calm, dense operator workstation for repeated live visual control — every
 element is a tool with visible state, near its subject, on a Solarized semantic system, with HiG
@@ -48,7 +48,7 @@ Each: **Interpretation · Explore · App-rule(s) · Tensions · Done-bar · Touc
 - **Touches:** `HydraPreview`, `StagePanel`, the reserved slot (operator-journey §4), the elevation system (spec below).
 
 ### 3. Presets are manipulable objects with state, not just list rows
-- **Interpretation:** a preset is an object that *has state* (selected / loaded-in-preview / applied-on-player / starting / camera-using / gallery-vs-saved) and *affordances* (load, send, manage). The row should read as a thing you act on, with its state as part of its identity — not a text line.
+- **Interpretation:** a preset is an object that *has state* (selected / loaded-in-preview / applied-on-player / starting / camera-using / gallery-vs-saved) and *affordances* (load, send, manage). The row reads as an actionable object, with its state as part of its identity — not a text line.
 - **Explore:** how much state on the row vs on demand? direct-manipulation affordances (selection binds visibly; drag)? card vs row at different densities? how state reads as the object's *condition*, not decoration.
 - **App-rule:** each preset surfaces its state + available actions as part of the object; selecting binds visibly (direct manipulation, immediate feedback); state uses redundant encoding (color + text/shape, never color-only); the status-ownership table is the object's state vocabulary.
 - **Tensions:** density vs richness — stay calm/dense, don't bloat rows; authority gating decides which actions exist.
