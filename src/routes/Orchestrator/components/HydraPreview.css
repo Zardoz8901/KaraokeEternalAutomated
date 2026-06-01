@@ -23,7 +23,7 @@
   font-size: var(--text-xs);
   line-height: 1.2;
   pointer-events: none;
-  z-index: 10;
+  z-index: var(--orch-z-dock);
   text-align: right;
 }
 
@@ -42,21 +42,21 @@
 }
 
 .statusWaitingForPlayerMedia {
-  --orch-preview-border: color-mix(in srgb, var(--orch-yellow) 58%, transparent);
-  --orch-preview-bg: color-mix(in srgb, var(--orch-yellow) 14%, transparent);
-  --orch-preview-color: var(--orch-yellow);
+  --orch-preview-border: color-mix(in srgb, var(--orch-selected) var(--orch-tone-border), transparent);
+  --orch-preview-bg: color-mix(in srgb, var(--orch-selected) var(--orch-tone-fill), transparent);
+  --orch-preview-color: var(--orch-selected);
 }
 
 .statusUsingPlayerMp4 {
-  --orch-preview-border: color-mix(in srgb, var(--orch-cyan) 55%, transparent);
-  --orch-preview-bg: color-mix(in srgb, var(--orch-cyan) 14%, transparent);
-  --orch-preview-color: var(--orch-cyan);
+  --orch-preview-border: color-mix(in srgb, var(--orch-synced) var(--orch-tone-border), transparent);
+  --orch-preview-bg: color-mix(in srgb, var(--orch-synced) var(--orch-tone-fill), transparent);
+  --orch-preview-color: var(--orch-synced);
 }
 
 .statusExternalVideoSource {
-  --orch-preview-border: color-mix(in srgb, var(--orch-violet) 55%, transparent);
-  --orch-preview-bg: color-mix(in srgb, var(--orch-violet) 14%, transparent);
-  --orch-preview-color: var(--orch-violet);
+  --orch-preview-border: color-mix(in srgb, var(--orch-applied) var(--orch-tone-border), transparent);
+  --orch-preview-bg: color-mix(in srgb, var(--orch-applied) var(--orch-tone-fill), transparent);
+  --orch-preview-color: var(--orch-text);
 }
 
 .statusOff {

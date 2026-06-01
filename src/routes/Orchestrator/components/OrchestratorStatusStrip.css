@@ -41,7 +41,8 @@
 
 .signalPill.toneWarning,
 .signalPill.toneDanger,
-.signalPill.toneLive {
+.signalPill.toneLive,
+.signalPill.toneSuccess {
   color: var(--orch-status-color);
   background: var(--orch-status-bg);
   border-color: var(--orch-status-border);
@@ -54,33 +55,33 @@
 }
 
 .tonePrimary {
-  --orch-status-border: color-mix(in srgb, var(--orch-primary) 55%, transparent);
-  --orch-status-bg: color-mix(in srgb, var(--orch-primary) 14%, transparent);
+  --orch-status-border: color-mix(in srgb, var(--orch-primary) var(--orch-tone-border), transparent);
+  --orch-status-bg: color-mix(in srgb, var(--orch-primary) var(--orch-tone-fill), transparent);
   --orch-status-color: var(--orch-primary);
 }
 
 .toneLive {
-  --orch-status-border: color-mix(in srgb, var(--orch-live) 55%, transparent);
-  --orch-status-bg: color-mix(in srgb, var(--orch-live) 14%, transparent);
+  --orch-status-border: color-mix(in srgb, var(--orch-live) var(--orch-tone-border), transparent);
+  --orch-status-bg: color-mix(in srgb, var(--orch-live) var(--orch-tone-fill), transparent);
   --orch-status-color: var(--orch-live);
 }
 
 .toneSuccess {
-  --orch-status-border: color-mix(in srgb, var(--orch-success) 55%, transparent);
-  --orch-status-bg: color-mix(in srgb, var(--orch-success) 14%, transparent);
+  --orch-status-border: color-mix(in srgb, var(--orch-success) var(--orch-tone-border), transparent);
+  --orch-status-bg: color-mix(in srgb, var(--orch-success) var(--orch-tone-fill), transparent);
   --orch-status-color: var(--orch-success);
 }
 
 .toneWarning {
-  --orch-status-border: color-mix(in srgb, var(--orch-warning) 58%, transparent);
-  --orch-status-bg: color-mix(in srgb, var(--orch-warning) 14%, transparent);
-  --orch-status-color: var(--orch-warning);
+  --orch-status-border: color-mix(in srgb, var(--orch-selected) var(--orch-tone-border), transparent);
+  --orch-status-bg: color-mix(in srgb, var(--orch-selected) var(--orch-tone-fill), transparent);
+  --orch-status-color: var(--orch-selected);
 }
 
 .toneDanger {
-  --orch-status-border: color-mix(in srgb, var(--orch-danger) 58%, transparent);
-  --orch-status-bg: color-mix(in srgb, var(--orch-danger) 14%, transparent);
-  --orch-status-color: var(--orch-danger);
+  --orch-status-border: color-mix(in srgb, var(--orch-danger) var(--orch-tone-border), transparent);
+  --orch-status-bg: color-mix(in srgb, var(--orch-danger) var(--orch-tone-emphasis-fill), transparent);
+  --orch-status-color: var(--orch-text);
 }
 
 @media (max-width: 979px) {
