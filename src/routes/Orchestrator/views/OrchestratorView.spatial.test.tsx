@@ -8,6 +8,10 @@ import StagePanel from '../components/StagePanel'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
+vi.mock('use-resize-observer', () => ({
+  default: () => ({}),
+}))
+
 vi.mock('../components/HydraPreview', () => ({
   default: () => <div data-testid='hydra-preview' />,
 }))

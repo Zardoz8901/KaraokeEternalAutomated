@@ -375,6 +375,72 @@ describe('HydraPreview', () => {
     })
   })
 
+  it('keeps the local camera preview video element stable across width and height changes', async () => {
+    class FakeGainNode {
+      gain = { value: 1 }
+      connect () {}
+    }
+    class FakeOscillatorNode {
+      type = 'sine'
+      frequency = { value: 0 }
+      connect () {}
+      start () {}
+      stop () {}
+    }
+    class FakeAudioContext {
+      destination = {}
+      createGain () { return new FakeGainNode() }
+      createOscillator () { return new FakeOscillatorNode() }
+      close () {}
+    }
+
+    ;(window as unknown as { AudioContext: typeof FakeAudioContext }).AudioContext = FakeAudioContext
+
+    lastHydraProps = null
+    const container = document.createElement('div')
+    const root = createRoot(container)
+    const fakeStream = { id: 'local-stream' } as unknown as MediaStream
+
+    await act(async () => {
+      root.render(
+        <HydraPreview
+          code='osc(10).out()'
+          width={320}
+          height={200}
+          localCameraStream={fakeStream}
+          mode='hydra'
+          isEnabled={true}
+          sensitivity={1}
+          allowCamera={true}
+        />,
+      )
+    })
+
+    const firstPreviewVideoElement = lastHydraProps?.remoteVideoElement
+    expect(firstPreviewVideoElement).toBeInstanceOf(HTMLVideoElement)
+
+    await act(async () => {
+      root.render(
+        <HydraPreview
+          code='osc(10).out()'
+          width={900}
+          height={540}
+          localCameraStream={fakeStream}
+          mode='hydra'
+          isEnabled={true}
+          sensitivity={1}
+          allowCamera={true}
+        />,
+      )
+    })
+
+    expect(lastHydraProps?.remoteVideoElement).toBe(firstPreviewVideoElement)
+
+    await act(async () => {
+      root.unmount()
+    })
+  })
+
   it('does not pass a camera element when local stream is unavailable', async () => {
     class FakeGainNode {
       gain = { value: 1 }
