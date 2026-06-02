@@ -101,21 +101,21 @@
 }
 
 .cameraPipelineLive {
-  border-color: color-mix(in srgb, var(--orch-cyan) 58%, transparent);
-  background: color-mix(in srgb, var(--orch-cyan) 12%, transparent);
+  border-color: color-mix(in srgb, var(--orch-synced) var(--orch-tone-border), transparent);
+  background: color-mix(in srgb, var(--orch-synced) var(--orch-tone-fill), transparent);
 }
 
 .cameraPipelineLive .cameraPipelineLabel {
-  color: var(--orch-cyan);
+  color: var(--orch-synced);
 }
 
 .cameraPipelinePartial {
-  border-color: color-mix(in srgb, var(--orch-yellow) 58%, transparent);
-  background: color-mix(in srgb, var(--orch-yellow) 12%, transparent);
+  border-color: color-mix(in srgb, var(--orch-selected) var(--orch-tone-border), transparent);
+  background: color-mix(in srgb, var(--orch-selected) var(--orch-tone-fill), transparent);
 }
 
 .cameraPipelinePartial .cameraPipelineLabel {
-  color: var(--orch-yellow);
+  color: var(--orch-selected);
 }
 
 .cameraPipelineOff {
@@ -174,9 +174,9 @@
 }
 
 .bufferButtonActive {
-  background: color-mix(in srgb, var(--orch-cyan) 16%, transparent);
-  border-color: color-mix(in srgb, var(--orch-cyan) 80%, transparent);
-  color: var(--orch-cyan);
+  background: color-mix(in srgb, var(--orch-synced) var(--orch-tone-fill), transparent);
+  border-color: color-mix(in srgb, var(--orch-synced) var(--orch-tone-border), transparent);
+  color: var(--orch-synced);
 }
 
 .stageBody {

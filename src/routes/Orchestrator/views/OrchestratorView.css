@@ -38,6 +38,11 @@
   --orch-warning: var(--orch-yellow);
   --orch-danger: var(--orch-red);
   --orch-focus: var(--orch-blue);
+  --orch-loaded: var(--orch-primary); /* blue - Loaded in Local Preview */
+  --orch-selected: var(--orch-warning); /* yellow - Selected / Start */
+  --orch-synced: var(--orch-live); /* cyan - shared live/synced signal */
+  --orch-reference: var(--orch-muted); /* base0 - reference rail + Gallery chrome */
+  /* --orch-camera intentionally omitted: camera shares --orch-synced / --orch-live. */
   --orch-shadow: 0 1rem 2.4rem color-mix(in srgb, var(--orch-black) 36%, transparent);
   --orch-space-2xs: 0.125rem;
   --orch-space-xs: 0.25rem;
@@ -58,6 +63,21 @@
   --orch-radius-lg: 10px;
   --orch-control-height: 2.25rem;
   --orch-touch-target: 44px;
+  --orch-tone-fill: 14%;
+  --orch-tone-emphasis-fill: 22%;
+  --orch-tone-border: 55%;
+  --orch-motion-fast: 120ms;
+  --orch-motion-base: 180ms;
+  --orch-motion-slow: 250ms;
+  --orch-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --orch-z-dock: 10;
+  --orch-z-resize: 11;
+  --orch-z-picker: 20;
+  --orch-z-scrim: 90;
+  --orch-z-sheet: 95;
+  --orch-z-toolbar: 100;
+  --orch-z-banner: 110;
+  --orch-z-modal: 120;
 
   /* Temporary compatibility aliases for child modules during this slice. */
   --aqua-glass-bg: var(--orch-surface-soft);
@@ -92,7 +112,7 @@
   overflow: hidden;
   border-right: 1px solid var(--orch-border);
   background: var(--orch-surface-soft);
-  z-index: 10;
+  z-index: var(--orch-z-dock);
   min-height: 0;
   position: relative;
   min-width: 240px;
@@ -151,7 +171,10 @@
   font-size: var(--text-sm);
   font-weight: 650;
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s, background-color 0.15s;
+  transition:
+    color var(--orch-motion-fast) var(--orch-ease-standard),
+    border-color var(--orch-motion-fast) var(--orch-ease-standard),
+    background-color var(--orch-motion-fast) var(--orch-ease-standard);
   height: 100%;
   min-height: 40px;
 }
@@ -209,7 +232,7 @@
   width: var(--orch-space-md);
   height: 100%;
   cursor: col-resize;
-  z-index: 11;
+  z-index: var(--orch-z-resize);
 }
 
 .refPanelResize::after {
@@ -236,7 +259,7 @@
   display: flex;
   background: var(--orch-surface-strong);
   border-top: 1px solid var(--orch-border);
-  z-index: 100;
+  z-index: var(--orch-z-toolbar);
 }
 
 .mobileLibraryLink {
@@ -335,7 +358,7 @@
   background: color-mix(in srgb, var(--orch-blue) 18%, var(--orch-base03));
   border-bottom: 1px solid color-mix(in srgb, var(--orch-blue) 45%, transparent);
   font-size: var(--text-sm);
-  z-index: 110;
+  z-index: var(--orch-z-banner);
 }
 
 .remoteBannerText {
@@ -405,11 +428,11 @@
     left: 0;
     right: 0;
     bottom: calc(50px + env(safe-area-inset-bottom));
-    z-index: 95;
+    z-index: var(--orch-z-sheet);
     grid-template-rows: auto 1fr;
     background: var(--orch-surface-strong);
     transform: translateY(0);
-    animation: refPanelSlideUp 0.18s ease-out;
+    animation: refPanelSlideUp var(--orch-motion-fast) ease-out;
   }
 
   .refPanelOverlay {
@@ -417,7 +440,7 @@
     inset: 0;
     bottom: calc(50px + env(safe-area-inset-bottom));
     background: color-mix(in srgb, var(--orch-black) 52%, transparent);
-    z-index: 94;
+    z-index: var(--orch-z-scrim);
   }
 
   .remoteBannerApply,
@@ -463,6 +486,17 @@
   .refPanelOpen {
     animation: none;
     transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .container *,
+  .container *::before,
+  .container *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

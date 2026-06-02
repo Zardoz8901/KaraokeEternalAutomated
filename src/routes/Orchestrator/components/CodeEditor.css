@@ -111,7 +111,11 @@
   letter-spacing: 0.02em;
   cursor: pointer;
   min-height: 36px;
-  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease, transform 0.05s ease;
+  transition:
+    border-color var(--orch-motion-fast) var(--orch-ease-standard),
+    background var(--orch-motion-fast) var(--orch-ease-standard),
+    color var(--orch-motion-fast) var(--orch-ease-standard),
+    transform var(--orch-motion-fast) var(--orch-ease-standard);
 }
 
 .editButton:hover {
@@ -184,15 +188,15 @@
 }
 
 .sendStatusOk {
-  color: var(--orch-green);
-  border-color: color-mix(in srgb, var(--orch-green) 42%, transparent);
-  background: color-mix(in srgb, var(--orch-green) 12%, transparent);
+  color: var(--orch-success);
+  border-color: color-mix(in srgb, var(--orch-success) var(--orch-tone-border), transparent);
+  background: color-mix(in srgb, var(--orch-success) var(--orch-tone-fill), transparent);
 }
 
 .sendStatusError {
-  color: var(--orch-red);
-  border-color: color-mix(in srgb, var(--orch-red) 42%, transparent);
-  background: color-mix(in srgb, var(--orch-red) 12%, transparent);
+  color: var(--orch-text);
+  border-color: color-mix(in srgb, var(--orch-danger) var(--orch-tone-border), transparent);
+  background: color-mix(in srgb, var(--orch-danger) var(--orch-tone-emphasis-fill), transparent);
 }
 
 .sendLintError {
