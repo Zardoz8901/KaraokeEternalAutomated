@@ -1,4 +1,5 @@
-import React, { useCallback, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import useResizeObserver from 'use-resize-observer'
 import type { VisualizerMode } from 'shared/types'
 import { detectCameraUsage } from 'lib/detectCameraUsage'
 import HydraPreview from './HydraPreview'
@@ -7,6 +8,7 @@ import { BUFFER_OPTIONS, buildPreviewCode, type StageBuffer } from './stagePanel
 import PresetPicker from './PresetPicker'
 import { formatCameraPipelineLabel, getCameraPipelineState, type CameraRelayStatus } from './hydraPreviewUtils'
 import type { PresetLeaf } from './presetTree'
+import { fitPreviewToFrame, type PreviewSize } from '../views/orchestratorLayout'
 
 interface StagePanelProps {
   code: string
@@ -26,6 +28,28 @@ interface StagePanelProps {
   cameraRelayStatus: CameraRelayStatus
 }
 
+const FRAME_RESIZE_DEBOUNCE_MS = 120
+
+function getWindowDevicePixelRatio (): number {
+  if (typeof window === 'undefined') return 1
+  return window.devicePixelRatio
+}
+
+function requestMeasureFrame (callback: FrameRequestCallback): number {
+  if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+    return window.requestAnimationFrame(callback)
+  }
+  return setTimeout(() => callback(Date.now()), 0) as unknown as number
+}
+
+function cancelMeasureFrame (id: number): void {
+  if (typeof window !== 'undefined' && typeof window.cancelAnimationFrame === 'function') {
+    window.cancelAnimationFrame(id)
+    return
+  }
+  clearTimeout(id)
+}
+
 function StagePanel ({
   code,
   width,
@@ -43,9 +67,15 @@ function StagePanel ({
   visualizerAllowCamera,
   cameraRelayStatus,
 }: StagePanelProps) {
+  const stageFrameRef = useRef<HTMLDivElement | null>(null)
+  const resizeFrameRef = useRef<number | null>(null)
+  const resizeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const latestFrameSizeRef = useRef<{ width?: number, height?: number } | null>(null)
+  const [measuredPreviewSize, setMeasuredPreviewSize] = useState<PreviewSize | null>(null)
   const previewCode = useMemo(() => buildPreviewCode(code, buffer), [code, buffer])
   const cameraUsage = useMemo(() => detectCameraUsage(previewCode), [previewCode])
   const [boundCameraSources, setBoundCameraSources] = useState<string[]>([])
+  const previewSize = measuredPreviewSize ?? { width, height }
 
   const usesCameraSource = cameraUsage.sources.length > 0
   const boundSourceCount = usesCameraSource ? boundCameraSources.length : 0
@@ -73,6 +103,59 @@ function StagePanel ({
       }
       return sources
     })
+  }, [])
+
+  const commitMeasuredPreviewSize = useCallback((frameWidth: number | undefined, frameHeight: number | undefined) => {
+    const next = fitPreviewToFrame(frameWidth, frameHeight, {
+      dpr: getWindowDevicePixelRatio(),
+    })
+
+    setMeasuredPreviewSize((current) => {
+      const previous = current ?? { width, height }
+      if (previous.width === next.width && previous.height === next.height) {
+        return current
+      }
+      return next
+    })
+  }, [height, width])
+
+  const scheduleMeasuredPreviewSize = useCallback(({ width: frameWidth, height: frameHeight }: { width?: number, height?: number }) => {
+    latestFrameSizeRef.current = { width: frameWidth, height: frameHeight }
+
+    if (resizeFrameRef.current !== null) {
+      cancelMeasureFrame(resizeFrameRef.current)
+    }
+
+    resizeFrameRef.current = requestMeasureFrame(() => {
+      resizeFrameRef.current = null
+
+      if (resizeTimerRef.current !== null) {
+        clearTimeout(resizeTimerRef.current)
+      }
+
+      resizeTimerRef.current = setTimeout(() => {
+        resizeTimerRef.current = null
+        const latest = latestFrameSizeRef.current
+        commitMeasuredPreviewSize(latest?.width, latest?.height)
+      }, FRAME_RESIZE_DEBOUNCE_MS)
+    })
+  }, [commitMeasuredPreviewSize])
+
+  useResizeObserver<HTMLDivElement>({
+    ref: stageFrameRef,
+    box: 'content-box',
+    onResize: scheduleMeasuredPreviewSize,
+  })
+
+  useEffect(() => {
+    return () => {
+      if (resizeFrameRef.current !== null) {
+        cancelMeasureFrame(resizeFrameRef.current)
+      }
+      if (resizeTimerRef.current !== null) {
+        clearTimeout(resizeTimerRef.current)
+      }
+    }
   }, [])
 
   return (
@@ -123,11 +206,11 @@ function StagePanel ({
         </div>
       </div>
       <div className={styles.stageBody}>
-        <div className={styles.stageFrame}>
+        <div className={styles.stageFrame} ref={stageFrameRef}>
           <HydraPreview
             code={previewCode}
-            width={width}
-            height={height}
+            width={previewSize.width}
+            height={previewSize.height}
             localCameraStream={localCameraStream}
             mode={visualizerMode}
             isEnabled={visualizerEnabled}

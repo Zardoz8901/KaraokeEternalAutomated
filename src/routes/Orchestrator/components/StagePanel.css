@@ -194,8 +194,15 @@
   height: 100%;
   min-height: 0;
   display: flex;
-  justify-content: center;
-  align-items: center;
+  align-items: stretch;
+}
+
+.stageFrame > * {
+  flex: 1 1 auto;
+  max-width: 100%;
+  max-height: 100%;
+  min-width: 0;
+  min-height: 0;
 }
 
 @media (max-width: 979px) {

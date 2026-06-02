@@ -7,10 +7,11 @@ import HydraVisualizer from './HydraVisualizer'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const { evalSpy, hushSpy, tickSpy } = vi.hoisted(() => ({
+const { evalSpy, hushSpy, tickSpy, setResolutionSpy } = vi.hoisted(() => ({
   evalSpy: vi.fn(),
   hushSpy: vi.fn(),
   tickSpy: vi.fn(),
+  setResolutionSpy: vi.fn(),
 }))
 
 vi.mock('react-redux', () => ({
@@ -31,7 +32,7 @@ vi.mock('hydra-synth', () => {
 
     tick (...args: unknown[]) { tickSpy(...args) }
 
-    setResolution () {}
+    setResolution (...args: unknown[]) { setResolutionSpy(...args) }
   }
 
   return { default: FakeHydra }
@@ -59,6 +60,7 @@ afterEach(() => {
   evalSpy.mockClear()
   hushSpy.mockClear()
   tickSpy.mockClear()
+  setResolutionSpy.mockClear()
 })
 
 function markVideoRenderable (video: HTMLVideoElement, width = 640, height = 360, readyState = 4) {
@@ -222,6 +224,67 @@ describe('HydraVisualizer camera rebinding', () => {
 
     expect(init).toHaveBeenCalledTimes(1)
     expect(init).toHaveBeenCalledWith({ src: remote })
+
+    await act(async () => {
+      root.unmount()
+    })
+  })
+
+  it('resizes the Hydra canvas without rebinding the active camera source', async () => {
+    const init = vi.fn()
+    ;(window as unknown as Record<string, unknown>).s0 = {
+      init,
+      initCam: vi.fn(),
+    }
+
+    const remote = document.createElement('video')
+    markVideoRenderable(remote)
+    const container = document.createElement('div')
+    const root = createRoot(container)
+
+    await act(async () => {
+      root.render(
+        <HydraVisualizer
+          audioSourceNode={null}
+          isPlaying={true}
+          sensitivity={1}
+          width={320}
+          height={180}
+          code='src(s0).out(o0)'
+          allowCamera={true}
+          remoteVideoElement={remote}
+        />,
+      )
+    })
+
+    const initCountAfterMount = init.mock.calls.length
+    const evalCountAfterMount = evalSpy.mock.calls.length
+    const hushCountAfterMount = hushSpy.mock.calls.length
+    const lastInitCallAfterMount = init.mock.calls[init.mock.calls.length - 1]
+    expect(lastInitCallAfterMount?.[0]).toEqual({ src: remote })
+
+    setResolutionSpy.mockClear()
+
+    await act(async () => {
+      root.render(
+        <HydraVisualizer
+          audioSourceNode={null}
+          isPlaying={true}
+          sensitivity={1}
+          width={960}
+          height={540}
+          code='src(s0).out(o0)'
+          allowCamera={true}
+          remoteVideoElement={remote}
+        />,
+      )
+    })
+
+    expect(setResolutionSpy).toHaveBeenCalledWith(960, 540)
+    expect(init.mock.calls.length).toBe(initCountAfterMount)
+    expect(init.mock.calls[init.mock.calls.length - 1]?.[0]).toEqual({ src: remote })
+    expect(evalSpy.mock.calls.length).toBe(evalCountAfterMount)
+    expect(hushSpy.mock.calls.length).toBe(hushCountAfterMount)
 
     await act(async () => {
       root.unmount()

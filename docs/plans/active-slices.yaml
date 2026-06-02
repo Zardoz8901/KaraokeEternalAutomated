@@ -2,4 +2,57 @@
 # Deferred (NOT in this closeout): HiG #14 folder-action discoverability, #15 PresetPicker menu rebuild,
 # #16 keyboard resize separator. See docs/analysis/orchestrator_hig_ux_backlog_2026_05_30.md.
 
-[]
+- id: orchestrator-preview-fit-window
+  status: in_progress
+  owner: codex
+  branch: phase-14-orch-visualizer-fitwindow
+  base: main
+  worktree: { path: /home/steph/projects/KaraokeEternalAutomated, state: present }
+  merge_order: 240
+  goal: 'High-risk preview/runtime slice: make the Orchestrator Local Preview fill the measured Stage frame via in-place ResizeObserver sizing while preserving camera binding, Hydra mount stability, Local Preview vocabulary, and the pre-Option-B single-cell Stage frame.'
+  write_scope:
+    - docs/plans/active-slices.yaml
+    - docs/analysis/orchestrator_preview_fit_window_2026_06_02.md
+    - docs/analysis/current_state_2026_03_05.md
+    - src/routes/Orchestrator/views/orchestratorLayout.ts
+    - src/routes/Orchestrator/views/orchestratorLayout.test.ts
+    - src/routes/Orchestrator/views/OrchestratorView.spatial.test.tsx
+    - src/routes/Orchestrator/components/StagePanel.tsx
+    - src/routes/Orchestrator/components/StagePanel.css
+    - src/routes/Orchestrator/components/StagePanel.test.tsx
+    - src/routes/Orchestrator/components/HydraPreview.test.tsx
+    - src/routes/Player/components/Player/PlayerVisualizer/HydraVisualizer.camera.test.tsx
+  protected_paths:
+    - server/
+    - shared/actionTypes.ts
+    - shared/types.ts
+    - src/lib/webrtc/
+    - src/routes/Player/components/Player/PlayerVisualizer/HydraVisualizer.tsx
+    - src/routes/Player/components/PlayerController/
+    - src/routes/Orchestrator/views/useOrchestratorWorkspace.ts
+    - src/routes/Orchestrator/components/HydraPreview.tsx
+    - package.json
+    - package-lock.json
+    - flake.nix
+    - e2e/
+    - .github/workflows/
+  verification:
+    - npm test -- src/routes/Orchestrator/views/orchestratorLayout.test.ts src/routes/Orchestrator/components/StagePanel.test.tsx src/routes/Orchestrator/components/HydraPreview.test.tsx src/routes/Player/components/Player/PlayerVisualizer/HydraVisualizer.camera.test.tsx src/routes/Orchestrator/views/OrchestratorView.spatial.test.tsx
+    - npm test
+    - npm run typecheck
+    - npm run slices:check
+  acceptance:
+    - 'Local Preview dimensions derive from the measured Stage frame content box after first ResizeObserver callback, with getPreviewSize preserved as the first-paint fallback.'
+    - 'Resize updates are coalesced and clamped: requestAnimationFrame plus trailing debounce, DPR capped at 2, no zero/NaN/fractional dimensions.'
+    - 'Camera binding survives width/height-only preview resize: no size key, no size-based Hydra mount gate, no previewVideoElement regeneration.'
+    - 'Stage frame remains a single flex cell with one preview child, no snapshot DOM/CSS, and no Player Output or Live wording.'
+    - 'High-risk REDTEAM and manual validation matrix outcomes are recorded in the dated analysis note.'
+  non_goals:
+    - Do not implement a Stage/Code splitter or Option B Player Output snapshot.
+    - Do not change server/socket/shared contracts, camera relay code, Player runtime source, auth, room prefs, preset behavior, package, Nix, workflow, or e2e.
+    - Do not edit HydraVisualizer.tsx source; only its camera regression test is in scope.
+  notes:
+    - 'Scope classification: High-Risk because the slice exercises visualizer runtime sizing and camera-binding regression coverage.'
+    - 'Worktree/cwd guard: use the main worktree branch or git -C from the main worktree; do not cd into a secondary worktree.'
+  next:
+    - implementation
