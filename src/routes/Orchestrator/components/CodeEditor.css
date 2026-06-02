@@ -120,7 +120,8 @@
 
 .editButton:hover {
   background: color-mix(in srgb, var(--orch-base01) 16%, transparent);
-  border-color: color-mix(in srgb, var(--orch-blue) 48%, transparent);
+  /* Neutral edit-toggle chrome; not a semantic signal. */
+  border-color: color-mix(in srgb, var(--orch-border-strong) 48%, transparent);
   color: var(--orch-text-strong);
 }
 
@@ -135,9 +136,9 @@
 
 .randomButton {
   padding: var(--orch-space-sm) var(--orch-space-xl);
-  background: color-mix(in srgb, var(--orch-yellow) 14%, transparent);
-  color: var(--orch-yellow);
-  border: 1px solid color-mix(in srgb, var(--orch-yellow) 36%, transparent);
+  background: color-mix(in srgb, var(--orch-selected) var(--orch-tone-fill), transparent);
+  color: var(--orch-selected);
+  border: 1px solid color-mix(in srgb, var(--orch-selected) var(--orch-tone-border), transparent);
   font-size: var(--text-sm);
   cursor: pointer;
   font-weight: 600;
@@ -146,15 +147,15 @@
 }
 
 .randomButton:hover {
-  background: color-mix(in srgb, var(--orch-yellow) 22%, transparent);
-  border-color: color-mix(in srgb, var(--orch-yellow) 52%, transparent);
+  background: color-mix(in srgb, var(--orch-selected) var(--orch-tone-fill), transparent);
+  border-color: color-mix(in srgb, var(--orch-selected) var(--orch-tone-border), transparent);
 }
 
 .sendButton {
   padding: var(--orch-space-sm) var(--orch-space-2xl);
-  background: color-mix(in srgb, var(--orch-blue) 24%, transparent);
-  color: var(--orch-blue);
-  border: 1px solid color-mix(in srgb, var(--orch-blue) 58%, transparent);
+  background: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-fill), transparent);
+  color: var(--orch-loaded);
+  border: 1px solid color-mix(in srgb, var(--orch-loaded) var(--orch-tone-border), transparent);
   font-size: var(--text-md);
   cursor: pointer;
   font-weight: 650;
@@ -162,7 +163,8 @@
 }
 
 .sendButton:hover {
-  background: color-mix(in srgb, var(--orch-blue) 32%, transparent);
+  background: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-fill), transparent);
+  border-color: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-border), transparent);
 }
 
 .sendButton:disabled {
@@ -201,9 +203,9 @@
 
 .sendLintError {
   font-size: var(--text-xs);
-  color: var(--orch-yellow);
-  background: color-mix(in srgb, var(--orch-yellow) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--orch-yellow) 35%, transparent);
+  color: var(--orch-warning);
+  background: color-mix(in srgb, var(--orch-warning) var(--orch-tone-fill), transparent);
+  border: 1px solid color-mix(in srgb, var(--orch-warning) var(--orch-tone-border), transparent);
   padding: var(--orch-space-2xs) var(--orch-space-md);
   border-radius: 999px;
   white-space: nowrap;
@@ -211,9 +213,9 @@
 
 .sendLintDebug {
   font-size: var(--text-xs);
-  color: var(--orch-blue);
-  background: color-mix(in srgb, var(--orch-blue) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--orch-blue) 35%, transparent);
+  color: var(--orch-loaded);
+  background: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-fill), transparent);
+  border: 1px solid color-mix(in srgb, var(--orch-loaded) var(--orch-tone-border), transparent);
   padding: var(--orch-space-2xs) var(--orch-space-md);
   border-radius: 999px;
   white-space: nowrap;
@@ -225,9 +227,9 @@
 .resendButton {
   position: relative;
   padding: var(--orch-space-xs) var(--orch-space-lg);
-  background: color-mix(in srgb, var(--orch-red) 12%, transparent);
-  color: var(--orch-red);
-  border: 1px solid color-mix(in srgb, var(--orch-red) 35%, transparent);
+  background: color-mix(in srgb, var(--orch-danger) var(--orch-tone-emphasis-fill), transparent);
+  color: var(--orch-text);
+  border: 1px solid color-mix(in srgb, var(--orch-danger) var(--orch-tone-border), transparent);
   font-size: var(--text-xs);
   cursor: pointer;
   min-height: 32px;
@@ -250,23 +252,24 @@
   align-items: center;
   gap: var(--orch-space-lg);
   padding: var(--orch-space-sm) var(--orch-space-xl);
-  background: color-mix(in srgb, var(--orch-cyan) 12%, transparent);
-  border-bottom: 1px solid color-mix(in srgb, var(--orch-cyan) 30%, transparent);
+  background: color-mix(in srgb, var(--orch-synced) var(--orch-tone-fill), transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--orch-synced) var(--orch-tone-border), transparent);
   font-size: var(--text-sm);
   color: var(--orch-text);
 }
 
 .cameraBannerEnable {
   padding: var(--orch-space-xs) var(--orch-space-lg);
-  background: color-mix(in srgb, var(--orch-cyan) 18%, transparent);
-  color: var(--orch-cyan);
-  border: 1px solid color-mix(in srgb, var(--orch-cyan) 42%, transparent);
+  background: color-mix(in srgb, var(--orch-synced) var(--orch-tone-fill), transparent);
+  color: var(--orch-synced);
+  border: 1px solid color-mix(in srgb, var(--orch-synced) var(--orch-tone-border), transparent);
   font-size: var(--text-sm);
   cursor: pointer;
 }
 
 .cameraBannerEnable:hover {
-  background: color-mix(in srgb, var(--orch-cyan) 28%, transparent);
+  background: color-mix(in srgb, var(--orch-synced) var(--orch-tone-fill), transparent);
+  border-color: color-mix(in srgb, var(--orch-synced) var(--orch-tone-border), transparent);
 }
 
 .cameraBannerDismiss {

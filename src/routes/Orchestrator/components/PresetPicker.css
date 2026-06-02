@@ -5,10 +5,10 @@
 
 .toggle {
   padding: var(--orch-space-sm) var(--orch-space-xl);
-  background: color-mix(in srgb, var(--orch-blue) 18%, transparent);
-  border: 1px solid color-mix(in srgb, var(--orch-blue) 45%, transparent);
+  background: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-fill), transparent);
+  border: 1px solid color-mix(in srgb, var(--orch-loaded) var(--orch-tone-border), transparent);
   border-radius: var(--orch-radius-md);
-  color: var(--orch-blue);
+  color: var(--orch-loaded);
   font-size: var(--text-sm);
   font-weight: 650;
   cursor: pointer;
@@ -16,7 +16,8 @@
 }
 
 .toggle:hover {
-  background: color-mix(in srgb, var(--orch-blue) 26%, transparent);
+  background: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-fill), transparent);
+  border-color: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-border), transparent);
 }
 
 .toggle:focus-visible,
@@ -66,9 +67,9 @@
 .random {
   padding: var(--orch-space-sm) var(--orch-space-md);
   border-radius: var(--orch-radius-sm);
-  border: 1px solid color-mix(in srgb, var(--orch-yellow) 42%, transparent);
-  background: color-mix(in srgb, var(--orch-yellow) 16%, transparent);
-  color: var(--orch-yellow);
+  border: 1px solid color-mix(in srgb, var(--orch-selected) var(--orch-tone-border), transparent);
+  background: color-mix(in srgb, var(--orch-selected) var(--orch-tone-fill), transparent);
+  color: var(--orch-selected);
   font-size: 12px;
   cursor: pointer;
   white-space: nowrap;
@@ -118,9 +119,9 @@
 }
 
 .actionPrimary {
-  background: color-mix(in srgb, var(--orch-blue) 18%, transparent);
-  border-color: color-mix(in srgb, var(--orch-blue) 50%, transparent);
-  color: var(--orch-blue);
+  background: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-fill), transparent);
+  border-color: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-border), transparent);
+  color: var(--orch-loaded);
 }
 
 .empty {

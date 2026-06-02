@@ -175,7 +175,7 @@
   justify-content: center;
   background: var(--orch-surface);
   border: 1px solid var(--orch-border);
-  color: var(--orch-text);
+  color: var(--orch-muted);
   border-radius: var(--orch-radius-sm);
   line-height: 1;
   cursor: pointer;
@@ -194,6 +194,7 @@
 .actionButton:focus-visible {
   background: color-mix(in srgb, var(--orch-base01) 16%, transparent);
   border-color: var(--orch-border-strong);
+  color: var(--orch-text);
 }
 
 .folderActionButton:focus-visible,
@@ -357,9 +358,10 @@
 }
 
 .actionPrimary {
-  background: color-mix(in srgb, var(--orch-blue) 18%, transparent);
-  border-color: color-mix(in srgb, var(--orch-blue) 50%, transparent);
-  color: var(--orch-blue);
+  /* Loaded actions route through --orch-loaded instead of direct --orch-blue. */
+  background: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-fill), transparent);
+  border-color: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-border), transparent);
+  color: var(--orch-loaded);
 }
 
 .actionSecondary {
@@ -368,24 +370,26 @@
 
 .actionPrimary:hover,
 .actionPrimary:focus-visible {
-  background: color-mix(in srgb, var(--orch-blue) 28%, transparent);
+  background: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-fill), transparent);
+  border-color: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-border), transparent);
 }
 
 .actionActive {
-  background: color-mix(in srgb, var(--orch-yellow) 22%, transparent);
-  border-color: color-mix(in srgb, var(--orch-yellow) 55%, transparent);
-  color: var(--orch-yellow);
+  background: color-mix(in srgb, var(--orch-selected) var(--orch-tone-fill), transparent);
+  border-color: color-mix(in srgb, var(--orch-selected) var(--orch-tone-border), transparent);
+  color: var(--orch-selected);
 }
 
 .actionDanger {
-  background: color-mix(in srgb, var(--orch-red) 16%, transparent);
-  border-color: color-mix(in srgb, var(--orch-red) 50%, transparent);
-  color: var(--orch-red);
+  background: color-mix(in srgb, var(--orch-danger) var(--orch-tone-emphasis-fill), transparent);
+  border-color: color-mix(in srgb, var(--orch-danger) var(--orch-tone-border), transparent);
+  color: var(--orch-text);
 }
 
 .actionDanger:hover,
 .actionDanger:focus-visible {
-  background: color-mix(in srgb, var(--orch-red) 24%, transparent);
+  background: color-mix(in srgb, var(--orch-danger) var(--orch-tone-emphasis-fill), transparent);
+  border-color: color-mix(in srgb, var(--orch-danger) var(--orch-tone-border), transparent);
 }
 
 @media (max-width: 980px) {
