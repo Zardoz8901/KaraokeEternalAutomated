@@ -175,6 +175,47 @@ function collectBareZIndexLiterals (files: string[]): string[] {
   })
 }
 
+// 16px root (OrchestratorView.css .container font-size: 16px) => px / 16.
+// Floor is inclusive: 0.75rem passes; 12px == 0.75rem passes.
+const RAMP_REM: Record<string, number> = {
+  '--text-xs': 0.75,
+  '--text-sm': 0.875,
+  '--text-md': 1,
+  '--text-lg': 1.125,
+}
+
+function collectSubFloorFontSizes (): string[] {
+  // CSS only; inline JS fontSize in .tsx is a deliberate non-target.
+  // Migrated var(--orch-text-*) declarations are covered by the token definition
+  // test below; this file-wide scan catches literal and raw-rung sub-floor sizes
+  // that cssBlock cannot reliably reach in grouped or media-query rules.
+  const cssFiles = auditedFiles.filter(file => file.endsWith('.css'))
+
+  return cssFiles.flatMap((file) => {
+    const source = readAuditedFile(file)
+    const offenders: string[] = []
+
+    source.split('\n').forEach((line, index) => {
+      if (/^\s*--text-/.test(line)) return
+
+      let rem: number | null = null
+      const literal = /font-size:\s*([\d.]+)(px|rem)\s*;/.exec(line)
+      if (literal) {
+        rem = literal[2] === 'px' ? Number(literal[1]) / 16 : Number(literal[1])
+      } else {
+        const ref = /font-size:\s*var\((--text-[\w-]+)\)/.exec(line)
+        if (ref) rem = RAMP_REM[ref[1]] ?? null
+      }
+
+      if (rem !== null && rem < 0.75) {
+        offenders.push(`${file}:${index + 1}: ${line.trim()}`)
+      }
+    })
+
+    return offenders
+  })
+}
+
 function expectMotionTokenized (source: string, selector: string, property: 'transition' | 'animation'): void {
   const block = cssBlock(source, selector)
   const declaration = new RegExp(`${property}:\\s*[^;]+;`).exec(block)?.[0] ?? ''
@@ -217,6 +258,19 @@ describe('Orchestrator color audit', () => {
 
   it('keeps Orchestrator custom property references resolvable', () => {
     expect(collectUnresolvedOrchVarRefs()).toEqual([])
+  })
+
+  it('keeps every Orchestrator font-size at or above the 0.75rem floor', () => {
+    expect(collectSubFloorFontSizes()).toEqual([])
+  })
+
+  it('defines the Orchestrator text-ramp size tokens exactly', () => {
+    const values = collectOrchestratorViewPropertyValues()
+
+    expect(values.get('--orch-text-meta')).toBe('var(--text-xs)')
+    expect(values.get('--orch-text-body')).toBe('var(--text-sm)')
+    expect(values.get('--orch-text-control')).toBe('var(--text-md)')
+    expect(values.get('--orch-text-title')).toBe('var(--text-lg)')
   })
 
   it('leaves no raw hue in migrated state surfaces outside the neutral-chrome and deferred allowlist (file-wide)', () => {

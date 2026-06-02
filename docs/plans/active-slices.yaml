@@ -2,4 +2,51 @@
 # Deferred (NOT in this closeout): HiG #14 folder-action discoverability, #15 PresetPicker menu rebuild,
 # #16 keyboard resize separator. See docs/analysis/orchestrator_hig_ux_backlog_2026_05_30.md.
 
-[]
+- id: orchestrator-typography-ramp
+  status: planned
+  owner: codex
+  branch: phase-15-orch-typography-ramp
+  base: main
+  worktree: { path: null, state: not_required }
+  merge_order: 250
+  goal: 'Typography-only slice: add four semantic --orch-text-* SIZE tokens (aliases of the existing raw rem rungs) and raise every sub-0.75rem Orchestrator font-size literal to the floor, enforced by a new font-size audit.'
+  write_scope:
+    - docs/plans/active-slices.yaml
+    - docs/analysis/orchestrator_typography_ramp_2026_06_02.md
+    - docs/analysis/current_state_2026_03_05.md
+    - src/routes/Orchestrator/views/OrchestratorView.css
+    - src/routes/Orchestrator/components/StagePanel.css
+    - src/routes/Orchestrator/components/ApiReference.css
+    - src/routes/Orchestrator/components/PresetPicker.css
+    - src/routes/Orchestrator/components/orchestratorColorAudit.test.ts
+  protected_paths:
+    - server/
+    - shared/
+    - src/lib/webrtc/
+    - src/routes/Player/
+    - src/routes/Orchestrator/views/orchestratorLayout.ts
+    - src/routes/Orchestrator/components/HydraPreview.tsx
+    - src/routes/Orchestrator/components/StagePanel.tsx
+    - package.json
+    - package-lock.json
+  verification:
+    - npm test -- src/routes/Orchestrator/components/orchestratorColorAudit.test.ts
+    - npm test
+    - npm run typecheck
+    - npm run lint
+    - npm run slices:check
+  acceptance:
+    - 'The Orchestrator token block defines --orch-text-meta/body/control/title as size-only aliases of --text-xs/sm/md/lg.'
+    - 'Every Orchestrator CSS font-size declaration audited by the floor scan is at least 0.75rem; no sub-floor size tier is added.'
+    - 'Stage title is the sole --orch-text-title consumer; ApiReference uses the required two-rung split for headings/labels versus metadata.'
+    - 'No color, motion, spatial, React logic, server, Player, camera, socket, package, or Nix changes are introduced.'
+    - 'Manual reflow validation status and excluded literals are recorded in the dated analysis note.'
+  non_goals:
+    - Do not touch colors, role tokens, Solarized palette, motion tokens, spacing or spatial tokens.
+    - Do not change getPreviewSize, preview fit-window behavior, Option B Player-output snapshot, server, Player, camera relay, sockets, SQL, auth, or TSX logic.
+    - Do not add line-height or weight companion tokens, lower the title cap, add a sub-0.75rem tier, or inflate type to satisfy touch targets.
+  notes:
+    - 'Scope classification: Standard TDD typography-only slice.'
+    - 'Manual reflow/overflow inspection is required because jsdom cannot prove layout fit.'
+  next:
+    - implementation

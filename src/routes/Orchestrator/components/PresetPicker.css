@@ -114,7 +114,7 @@
   border: 1px solid var(--orch-border);
   background: var(--orch-surface);
   color: var(--orch-text);
-  font-size: 11px;
+  font-size: var(--orch-text-meta);
   cursor: pointer;
 }
 
@@ -125,7 +125,7 @@
 }
 
 .empty {
-  font-size: 11px;
+  font-size: var(--orch-text-meta);
   color: var(--orch-muted);
   padding: var(--orch-space-xs) var(--orch-space-2xs);
 }
