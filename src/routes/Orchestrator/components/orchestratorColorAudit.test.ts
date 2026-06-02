@@ -16,6 +16,16 @@ const auditedFiles = [
   'src/routes/Orchestrator/components/ApiReference.css',
 ]
 
+const HUE = /var\(--orch-(?:cyan|blue|green|yellow|red|violet|magenta)\)/g
+
+const fileWideRawHueSweepFiles = [
+  'PresetTree.css',
+  'CodeEditor.css',
+  'PresetPicker.css',
+  'PresetBrowser.css',
+  'ApiReference.css',
+]
+
 function stripAllowedTokenBlock (source: string): string {
   return source.replace(
     /\/\* ORCH_SOLARIZED_TOKENS_START \*\/[\s\S]*?\/\* ORCH_SOLARIZED_TOKENS_END \*\//g,
@@ -36,9 +46,50 @@ function readOrchestratorViewCss (): string {
 }
 
 function cssBlock (source: string, selector: string): string {
+  // This is intentionally a first-match helper. It cannot see pseudo-class-only
+  // declarations after grouped bases, grouped-leading-member standalones, or
+  // media-query overrides. Use full-file containment for those blind spots.
   const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   const match = new RegExp(`(?:^|\\n)\\s*${escapedSelector}\\s*\\{(?<body>[\\s\\S]*?)\\n\\s*\\}`).exec(source)
   return match?.groups?.body ?? ''
+}
+
+function stripBlock (source: string, selectorSource: string): string {
+  return source.replace(new RegExp(`${selectorSource}\\s*\\{[\\s\\S]*?\\n\\s*\\}`, 'g'), '')
+}
+
+function stripNeutralChromeAllowlist (file: string, source: string): string {
+  if (file === 'PresetTree.css') {
+    return [
+      '\\.folderHeader:hover,\\s*\\n\\s*\\.folderHeader:focus-visible',
+      '\\.folderDragging',
+      '\\.presetDragging',
+      '\\.presetRow:hover,\\s*\\n\\s*\\.presetRow:focus-visible,\\s*\\n\\s*\\.presetRow:focus-within',
+    ].reduce((nextSource, selector) => stripBlock(nextSource, selector), source)
+  }
+
+  if (file === 'PresetBrowser.css') {
+    return [
+      '\\.toolbarButton:hover',
+      '\\.error',
+    ].reduce((nextSource, selector) => stripBlock(nextSource, selector), source)
+  }
+
+  return source
+}
+
+function collectFileWideRawHues (): string[] {
+  return fileWideRawHueSweepFiles.flatMap((file) => {
+    const source = stripNeutralChromeAllowlist(file, readComponentCss(file))
+    const offenders: string[] = []
+
+    for (const match of source.matchAll(HUE)) {
+      const lineNumber = source.slice(0, match.index).split('\n').length
+      offenders.push(`${file}:${lineNumber}: ${match[0]}`)
+    }
+
+    return offenders
+  })
 }
 
 function expectToneRecipe (source: string, selector: string): void {
@@ -168,6 +219,16 @@ describe('Orchestrator color audit', () => {
     expect(collectUnresolvedOrchVarRefs()).toEqual([])
   })
 
+  it('leaves no raw hue in migrated state surfaces outside the neutral-chrome and deferred allowlist (file-wide)', () => {
+    // The allowlist is intentionally narrow:
+    // - neutral interaction chrome in PresetTree folder/drag/row hover affordances;
+    // - neutral PresetBrowser toolbar hover chrome;
+    // - deferred PresetBrowser .error, which needs markup before contrast-safe routing.
+    // This file-wide sweep covers selectors that cssBlock cannot reliably reach,
+    // including grouped-leading-member standalones and pseudo-class declarations.
+    expect(collectFileWideRawHues()).toEqual([])
+  })
+
   it('defines the Gate 3d spacing and focus-ring tokens', () => {
     const source = readOrchestratorViewCss()
 
@@ -292,7 +353,17 @@ describe('Orchestrator color audit', () => {
     for (const selector of ['.badgeStart', '.badgeLoaded', '.badgeApplied', '.badgeCam']) {
       expectToneRecipe(presetTree, selector)
     }
-    for (const selector of ['.sendStatusOk', '.sendStatusError']) {
+    for (const selector of [
+      '.sendStatusOk',
+      '.sendStatusError',
+      '.sendLintError',
+      '.sendLintDebug',
+      '.resendButton',
+      '.cameraBanner',
+      '.cameraBannerEnable',
+      '.sendButton',
+      '.randomButton',
+    ]) {
       expectToneRecipe(codeEditor, selector)
     }
     for (const selector of ['.cameraPipelineLive', '.cameraPipelinePartial', '.bufferButtonActive']) {
@@ -301,6 +372,30 @@ describe('Orchestrator color audit', () => {
     for (const selector of ['.statusWaitingForPlayerMedia', '.statusUsingPlayerMp4', '.statusExternalVideoSource']) {
       expectToneRecipe(hydraPreview, selector)
     }
+    for (const selector of ['.actionPrimary', '.actionActive', '.actionDanger']) {
+      expectToneRecipe(presetTree, selector)
+    }
+    for (const selector of ['.toggle', '.actionPrimary', '.random']) {
+      expectToneRecipe(readComponentCss('PresetPicker.css'), selector)
+    }
+  })
+
+  it('routes grouped-leading-member standalones through direct source containment', () => {
+    const presetBrowser = readComponentCss('PresetBrowser.css')
+    const apiReference = readComponentCss('ApiReference.css')
+    const presetTree = readComponentCss('PresetTree.css')
+
+    // cssBlock() is first-match only and sees grouped neutral blocks for these selectors.
+    expect(presetBrowser).toContain('background: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-fill), transparent);')
+    expect(presetBrowser).toContain('border-color: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-border), transparent);')
+    expect(presetBrowser).toContain('color: var(--orch-loaded);')
+    expect(presetBrowser).toContain('background: color-mix(in srgb, var(--orch-warning) var(--orch-tone-fill), transparent);')
+    expect(presetBrowser).toContain('border-color: color-mix(in srgb, var(--orch-warning) var(--orch-tone-border), transparent);')
+    expect(presetBrowser).toContain('color: var(--orch-text);')
+    expect(apiReference).toContain('background: color-mix(in srgb, var(--orch-reference) 34%, var(--orch-surface-raised));')
+    expect(apiReference).toContain('background: color-mix(in srgb, var(--orch-reference) 46%, var(--orch-surface-raised));')
+    expect(apiReference).toContain('background: color-mix(in srgb, var(--orch-surface-raised) 74%, var(--orch-reference));')
+    expect(cssBlock(presetTree, '.actionButton')).toContain('color: var(--orch-muted)')
   })
 
   it('keeps emphasis fill alarm-only', () => {
@@ -311,6 +406,8 @@ describe('Orchestrator color audit', () => {
     expect(cssBlock(statusStrip, '.toneDanger')).toContain('var(--orch-tone-emphasis-fill)')
     expect(cssBlock(codeEditor, '.sendStatusError')).toContain('var(--orch-tone-emphasis-fill)')
     expect(cssBlock(presetTree, '.sendAckError')).toContain('var(--orch-tone-emphasis-fill)')
+    expect(cssBlock(presetTree, '.actionDanger')).toContain('var(--orch-tone-emphasis-fill)')
+    expect(cssBlock(codeEditor, '.resendButton')).toContain('var(--orch-tone-emphasis-fill)')
     expect(presetTree).toMatch(/@keyframes sendAckConfirm[\s\S]*?from[\s\S]*?var\(--orch-tone-emphasis-fill\)/)
 
     for (const block of [
@@ -321,7 +418,17 @@ describe('Orchestrator color audit', () => {
       cssBlock(presetTree, '.badgeApplied'),
       cssBlock(presetTree, '.badgeLoaded'),
       cssBlock(presetTree, '.badgeCam'),
+      cssBlock(presetTree, '.actionPrimary'),
+      cssBlock(presetTree, '.actionActive'),
       cssBlock(codeEditor, '.sendStatusOk'),
+      cssBlock(codeEditor, '.sendLintError'),
+      cssBlock(codeEditor, '.sendLintDebug'),
+      cssBlock(codeEditor, '.cameraBanner'),
+      cssBlock(codeEditor, '.cameraBannerEnable'),
+      cssBlock(codeEditor, '.sendButton'),
+      cssBlock(codeEditor, '.randomButton'),
+      cssBlock(readComponentCss('PresetPicker.css'), '.toggle'),
+      cssBlock(readComponentCss('PresetPicker.css'), '.random'),
     ]) {
       expect(block).not.toContain('var(--orch-tone-emphasis-fill)')
     }
@@ -338,7 +445,26 @@ describe('Orchestrator color audit', () => {
     expect(cssBlock(statusStrip, '.toneDanger')).toContain('--orch-status-color: var(--orch-text)')
     expect(cssBlock(codeEditor, '.sendStatusError')).toContain('color: var(--orch-text)')
     expect(cssBlock(presetTree, '.sendAckError')).toContain('color: var(--orch-text)')
+    expect(cssBlock(presetTree, '.actionDanger')).toContain('color: var(--orch-text)')
+    expect(cssBlock(codeEditor, '.resendButton')).toContain('color: var(--orch-text)')
     // Full composited color-mix WCAG remains an e2e / OQ-8.1 checklist item.
+  })
+
+  it('routes ApiReference rail accents through the reference role', () => {
+    const source = readComponentCss('ApiReference.css')
+
+    expect(source).toContain('color: var(--orch-reference);')
+    expect(source).toContain('background: color-mix(in srgb, var(--orch-surface-raised) 82%, var(--orch-reference));')
+    expect(source).toContain('background: color-mix(in srgb, var(--orch-surface-raised) 68%, var(--orch-reference));')
+    expect(source).toContain('background: color-mix(in srgb, var(--orch-surface-raised) 78%, var(--orch-reference));')
+    expect(source).toContain('background: color-mix(in srgb, var(--orch-reference) 34%, var(--orch-surface-raised));')
+    expect(source).toContain('background: color-mix(in srgb, var(--orch-reference) 46%, var(--orch-surface-raised));')
+    expect(source).toContain('background: color-mix(in srgb, var(--orch-surface-raised) 74%, var(--orch-reference));')
+    expect(source).not.toMatch(/var\(--orch-(?:blue|cyan|yellow)\)/)
+  })
+
+  it('keeps PresetBrowser error deferred until empty-error-states can add non-text affordance', () => {
+    expect(cssBlock(readComponentCss('PresetBrowser.css'), '.error')).toContain('color: var(--orch-red)')
   })
 
   it('migrates scoped z-index literals to the z-layer scale', () => {

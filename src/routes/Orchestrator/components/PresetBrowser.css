@@ -41,13 +41,14 @@
 }
 
 .toolbarButtonPrimary {
-  background: color-mix(in srgb, var(--orch-blue) 18%, transparent);
-  border-color: color-mix(in srgb, var(--orch-blue) 48%, transparent);
-  color: var(--orch-blue);
+  background: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-fill), transparent);
+  border-color: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-border), transparent);
+  color: var(--orch-loaded);
 }
 
 .toolbarButtonPrimary:hover {
-  background: color-mix(in srgb, var(--orch-blue) 28%, transparent);
+  background: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-fill), transparent);
+  border-color: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-border), transparent);
 }
 
 .toolbarButton:focus-visible,
@@ -112,8 +113,9 @@
   border: 1px solid var(--orch-border-subtle);
   border-radius: var(--orch-radius-md);
   padding: var(--orch-space-md) var(--orch-space-lg);
-  background: color-mix(in srgb, var(--orch-warning) 8%, transparent);
-  color: var(--orch-muted);
+  background: color-mix(in srgb, var(--orch-warning) var(--orch-tone-fill), transparent);
+  border-color: color-mix(in srgb, var(--orch-warning) var(--orch-tone-border), transparent);
+  color: var(--orch-text);
   transition: opacity 180ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 

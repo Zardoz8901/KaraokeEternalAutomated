@@ -80,7 +80,7 @@
 }
 
 .audioName {
-  color: var(--orch-yellow);
+  color: var(--orch-reference);
   font-size: 0.72rem;
   font-weight: 700;
 }
@@ -134,7 +134,7 @@
 
 .functionItem:hover {
   border-color: var(--orch-border-strong);
-  background: color-mix(in srgb, var(--orch-surface-raised) 82%, var(--orch-blue));
+  background: color-mix(in srgb, var(--orch-surface-raised) 82%, var(--orch-reference));
 }
 
 .functionItem:focus-visible {
@@ -145,7 +145,7 @@
 .functionItemActive {
   border-color: var(--orch-focus);
   box-shadow: inset 0 0 0 calc(var(--orch-focus-ring-width) / 2) color-mix(in srgb, var(--orch-focus) 24%, transparent);
-  background: color-mix(in srgb, var(--orch-surface-raised) 68%, var(--orch-blue));
+  background: color-mix(in srgb, var(--orch-surface-raised) 68%, var(--orch-reference));
 }
 
 .functionTopRow {
@@ -253,7 +253,7 @@
   font-size: 0.63rem;
   line-height: 1.4;
   text-decoration: none;
-  background: color-mix(in srgb, var(--orch-surface-raised) 78%, var(--orch-blue));
+  background: color-mix(in srgb, var(--orch-surface-raised) 78%, var(--orch-reference));
 }
 
 .referenceLink:hover {
@@ -273,7 +273,7 @@
   padding: var(--orch-space-2xs) var(--orch-space-md);
   color: var(--orch-text);
   font-size: 0.62rem;
-  background: color-mix(in srgb, var(--orch-surface-raised) 78%, var(--orch-blue));
+  background: color-mix(in srgb, var(--orch-surface-raised) 78%, var(--orch-reference));
 }
 
 .paramList {
@@ -318,7 +318,7 @@
   border-radius: var(--orch-radius-md);
   border: 1px solid var(--orch-border);
   background: color-mix(in srgb, var(--orch-bg) 84%, var(--orch-black));
-  color: var(--orch-cyan);
+  color: var(--orch-reference);
   font-size: 0.67rem;
   line-height: 1.55;
   white-space: pre-wrap;
@@ -335,7 +335,7 @@
   border: 1px solid var(--orch-border-strong);
   border-radius: var(--orch-radius-md);
   padding: var(--orch-space-md) var(--orch-space-lg);
-  background: color-mix(in srgb, var(--orch-blue) 34%, var(--orch-surface-raised));
+  background: color-mix(in srgb, var(--orch-reference) 34%, var(--orch-surface-raised));
   color: var(--orch-text-strong);
   font-size: 0.68rem;
   cursor: pointer;
@@ -343,7 +343,7 @@
 
 .actionButton:hover,
 .actionButtonSecondary:hover {
-  background: color-mix(in srgb, var(--orch-blue) 46%, var(--orch-surface-raised));
+  background: color-mix(in srgb, var(--orch-reference) 46%, var(--orch-surface-raised));
 }
 
 .actionButton:focus-visible,
@@ -353,7 +353,7 @@
 }
 
 .actionButtonSecondary {
-  background: color-mix(in srgb, var(--orch-surface-raised) 74%, var(--orch-blue));
+  background: color-mix(in srgb, var(--orch-surface-raised) 74%, var(--orch-reference));
   border-color: var(--orch-border-strong);
 }
 
