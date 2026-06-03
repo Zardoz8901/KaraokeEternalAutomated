@@ -2,4 +2,50 @@
 # Deferred (NOT in this closeout): HiG #14 folder-action discoverability, #15 PresetPicker menu rebuild,
 # #16 keyboard resize separator. See docs/analysis/orchestrator_hig_ux_backlog_2026_05_30.md.
 
-[]
+- id: orchestrator-camera-binding-relabel
+  status: in_progress
+  owner: codex
+  branch: phase-18-orch-camera-relabel
+  base: main
+  worktree: { path: /home/steph/projects/KaraokeEternalAutomated, state: present }
+  merge_order: 260
+  goal: 'Relabel the Orchestrator Stage camera source-binding status away from forbidden Live wording, expose the binding status to assistive tech, and extend the one-owner forbidden-term guard for the camera-binding surface without touching camera relay runtime.'
+  write_scope:
+    - docs/plans/active-slices.yaml
+    - docs/analysis/orchestrator_camera_binding_relabel_2026_06_03.md
+    - docs/analysis/current_state_2026_03_05.md
+    - src/routes/Orchestrator/components/hydraPreviewUtils.ts
+    - src/routes/Orchestrator/components/hydraPreviewUtils.test.ts
+    - src/routes/Orchestrator/components/StagePanel.tsx
+    - src/routes/Orchestrator/components/StagePanel.test.tsx
+    - src/routes/Orchestrator/components/orchestratorStatusOwnership.test.ts
+  protected_paths:
+    - server/
+    - shared/
+    - src/lib/webrtc/
+    - src/routes/Player/
+    - src/routes/Orchestrator/components/orchestratorStatus.ts
+    - src/routes/Orchestrator/components/orchestratorPresentationModel.ts
+    - package.json
+    - package-lock.json
+    - flake.nix
+    - e2e/
+    - .github/workflows/
+  verification:
+    - npm test -- src/routes/Orchestrator/components/hydraPreviewUtils.test.ts src/routes/Orchestrator/components/StagePanel.test.tsx src/routes/Orchestrator/components/orchestratorStatusOwnership.test.ts src/routes/Orchestrator/components/orchestratorPresentationModel.test.ts src/routes/Orchestrator/components/orchestratorStatus.test.ts
+    - npm test
+    - npm run typecheck
+    - npm run lint
+    - npm run slices:check
+  acceptance:
+    - 'Camera source-binding labels are Source bound, Source binding partial, and Source: no camera, with no FORBIDDEN_PREVIEW_TERMS member.'
+    - 'The Stage camera-binding region exposes role=status, aria-live=polite, and an accessible name that includes Missing detail for partial binding.'
+    - 'orchestratorStatusOwnership.test.ts guards the camera-binding label surface and keeps it lexically separate from the Camera live strip connection label.'
+  non_goals:
+    - Do not change camera relay runtime, WebRTC hooks, server/socket/redux, Player routes, or camera connection strip vocabulary.
+    - Do not change colors, cameraPipelineClass level mapping, level or missing unions, or any other status dimension.
+  notes:
+    - 'Standard TDD slice for D6.2/OQ-6.2 labeled honesty; not a camera-relay-runtime change.'
+    - 'The separate Camera live strip pill remains the relay-connection owner and is intentionally outside the forbidden-term guard carve-out.'
+  next:
+    - implementation

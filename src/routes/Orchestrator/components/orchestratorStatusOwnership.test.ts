@@ -242,6 +242,7 @@ describe('Orchestrator status ownership', () => {
   it('keeps preview, broadcast, and badge labels free of forbidden output/live claims', () => {
     const guardedLabels = [
       ...surfaceLabels.stageBroadcast(),
+      ...surfaceLabels.stageCameraBinding(),
       ...surfaceLabels.previewOverlay(),
       ...surfaceLabels.presetRowBadges(),
     ]
@@ -259,11 +260,20 @@ describe('Orchestrator status ownership', () => {
   })
 
   it('keeps camera connection and source-binding labels lexically separated', () => {
-    const connectionLabels = surfaceLabels.stageCamera().map(label => label.toLowerCase())
-    const bindingLabels = surfaceLabels.stageCameraBinding().map(label => label.toLowerCase())
+    const connectionLabels = surfaceLabels.stageCamera()
+    const bindingLabels = surfaceLabels.stageCameraBinding()
 
-    expect(surfaceLabels.stageCameraBinding()).toContain('Source Live')
-    expect(surfaceLabels.stageCameraBinding()).not.toContain('Camera Live')
+    expect(bindingLabels).toContain('Source bound')
+
+    for (const label of bindingLabels) {
+      expect(label).not.toContain('Camera')
+    }
+
+    for (const label of connectionLabels) {
+      expect(label).not.toContain('Source')
+    }
+
+    // Full-string disjointness catches exact owner collisions; substring intent is asserted above.
     expect(bindingLabels.filter(label => connectionLabels.includes(label))).toEqual([])
   })
 })

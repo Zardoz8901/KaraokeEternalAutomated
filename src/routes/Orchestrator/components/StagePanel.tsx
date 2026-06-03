@@ -95,6 +95,10 @@ function StagePanel ({
     : cameraPipeline.level === 'partial'
       ? styles.cameraPipelinePartial
       : styles.cameraPipelineOff
+  const cameraPipelineLabel = formatCameraPipelineLabel(cameraPipeline)
+  const cameraPipelineAccessibleLabel = cameraPipeline.level === 'partial' && cameraPipeline.missing.length > 0
+    ? `${cameraPipelineLabel}. Missing: ${cameraPipeline.missing.join(', ')}`
+    : cameraPipelineLabel
 
   const handleCameraBoundSourcesChange = useCallback((sources: string[]) => {
     setBoundCameraSources((prev) => {
@@ -181,8 +185,13 @@ function StagePanel ({
         )}
         <div className={styles.stageHeaderRight}>
           {showCameraPipeline && (
-            <div className={`${styles.cameraPipeline} ${cameraPipelineClass}`}>
-              <span className={styles.cameraPipelineLabel}>{formatCameraPipelineLabel(cameraPipeline)}</span>
+            <div
+              className={`${styles.cameraPipeline} ${cameraPipelineClass}`}
+              role='status'
+              aria-live='polite'
+              aria-label={cameraPipelineAccessibleLabel}
+            >
+              <span className={styles.cameraPipelineLabel}>{cameraPipelineLabel}</span>
               {cameraPipeline.level === 'partial' && cameraPipeline.missing.length > 0 && (
                 <span className={styles.cameraPipelineDetail}>{`Missing: ${cameraPipeline.missing.join(', ')}`}</span>
               )}

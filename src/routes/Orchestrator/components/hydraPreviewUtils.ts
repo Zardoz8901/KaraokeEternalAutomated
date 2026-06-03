@@ -6,12 +6,17 @@ export type CameraRelayStatus = 'idle' | 'connecting' | 'active' | 'error'
 
 export interface CameraPipelineState {
   level: 'off' | 'partial' | 'live'
-  label: 'Off' | 'Partial' | 'Live'
   missing: Array<'publish/subscribe' | 'hydra source bind'>
 }
 
-export function formatCameraPipelineLabel (state: Pick<CameraPipelineState, 'label'>): string {
-  return `Source ${state.label}`
+const CAMERA_PIPELINE_LABEL_BY_LEVEL = {
+  live: 'Source bound',
+  partial: 'Source binding partial',
+  off: 'Source: no camera',
+} satisfies Record<CameraPipelineState['level'], string>
+
+export function formatCameraPipelineLabel (state: Pick<CameraPipelineState, 'level'>): string {
+  return CAMERA_PIPELINE_LABEL_BY_LEVEL[state.level]
 }
 
 export function isPreviewLive (
@@ -45,7 +50,6 @@ export function getCameraPipelineState ({
   if (cameraStatus === 'idle' && !usesCameraSource) {
     return {
       level: 'off',
-      label: 'Off',
       missing: [],
     }
   }
@@ -63,14 +67,12 @@ export function getCameraPipelineState ({
   if (missing.length === 0) {
     return {
       level: 'live',
-      label: 'Live',
       missing: [],
     }
   }
 
   return {
     level: 'partial',
-    label: 'Partial',
     missing,
   }
 }
