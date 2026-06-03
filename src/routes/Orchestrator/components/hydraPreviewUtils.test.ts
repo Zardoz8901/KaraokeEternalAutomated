@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest'
-import { FFT_STALE_MS, isPreviewLive, selectPreviewVideoElement, getCameraPipelineState } from './hydraPreviewUtils'
+import { FFT_STALE_MS, isPreviewLive, selectPreviewVideoElement, getCameraPipelineState, formatCameraPipelineLabel } from './hydraPreviewUtils'
 import type { FftPayload } from 'shared/fftPayload'
 
 describe('hydraPreviewUtils', () => {
@@ -42,7 +42,6 @@ describe('hydraPreviewUtils', () => {
       boundSourceCount: 1,
     })).toEqual({
       level: 'live',
-      label: 'Live',
       missing: [],
     })
   })
@@ -54,7 +53,6 @@ describe('hydraPreviewUtils', () => {
       boundSourceCount: 0,
     })).toEqual({
       level: 'partial',
-      label: 'Partial',
       missing: ['publish/subscribe', 'hydra source bind'],
     })
   })
@@ -66,8 +64,13 @@ describe('hydraPreviewUtils', () => {
       boundSourceCount: 0,
     })).toEqual({
       level: 'off',
-      label: 'Off',
       missing: [],
     })
+  })
+
+  it('formats camera pipeline labels as source-binding states without forbidden live wording', () => {
+    expect(formatCameraPipelineLabel({ level: 'live' })).toBe('Source bound')
+    expect(formatCameraPipelineLabel({ level: 'partial' })).toBe('Source binding partial')
+    expect(formatCameraPipelineLabel({ level: 'off' })).toBe('Source: no camera')
   })
 })

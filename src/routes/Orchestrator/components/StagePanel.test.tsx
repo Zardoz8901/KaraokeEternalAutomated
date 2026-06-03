@@ -373,7 +373,7 @@ describe('StagePanel', () => {
     expect(pill).toMatch(/text-overflow:\s*ellipsis;/)
   })
 
-  it('shows Source Live when relay is active and Hydra has bound camera source', async () => {
+  it('shows Source bound when relay is active and Hydra has bound camera source', async () => {
     stagePanelMockState.boundSources = ['s0']
     const container = document.createElement('div')
     const root = createRoot(container)
@@ -395,16 +395,19 @@ describe('StagePanel', () => {
       )
     })
 
-    expect(container.textContent).toContain('Source Live')
+    expect(container.textContent).toContain('Source bound')
     expect(container.textContent).not.toContain('Camera Live')
     expect(container.textContent).not.toContain('Missing')
+    const region = container.querySelector('[role="status"]')
+    expect(region?.getAttribute('aria-live')).toBe('polite')
+    expect(region?.getAttribute('aria-label')).toBe('Source bound')
 
     await act(async () => {
       root.unmount()
     })
   })
 
-  it('shows Source Partial and missing checks when relay is still connecting', async () => {
+  it('shows Source binding partial and missing checks when relay is still connecting', async () => {
     stagePanelMockState.boundSources = []
     const container = document.createElement('div')
     const root = createRoot(container)
@@ -426,10 +429,14 @@ describe('StagePanel', () => {
       )
     })
 
-    expect(container.textContent).toContain('Source Partial')
+    expect(container.textContent).toContain('Source binding partial')
     expect(container.textContent).not.toContain('Camera Partial')
     expect(container.textContent).toContain('publish/subscribe')
     expect(container.textContent).toContain('hydra source bind')
+    const region = container.querySelector('[role="status"]')
+    expect(region?.getAttribute('aria-live')).toBe('polite')
+    expect(region?.getAttribute('aria-label')).toContain('Source binding partial')
+    expect(region?.getAttribute('aria-label')).toContain('Missing:')
 
     await act(async () => {
       root.unmount()
