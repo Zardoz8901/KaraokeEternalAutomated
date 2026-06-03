@@ -7,12 +7,38 @@ import {
   CAM_BADGE_LABEL,
   GALLERY_BADGE_LABEL,
   LOADED_IN_PREVIEW_BADGE_LABEL,
+  PRESET_STATE_GLYPHS,
   SELECTED_BADGE_LABEL,
   START_BADGE_LABEL,
 } from './orchestratorPresentationModel'
 import { getPresetKey, type PresetKey, type PresetRowUx } from './presetOperatorUx'
 import type { PresetLeaf, PresetTreeNode } from './presetTree'
 import styles from './PresetTree.css'
+
+/**
+ * Renders one collapsed preset-state badge as a fixed lane-height glyph circle (§4.11):
+ * a non-color glyph (letter/star/Icon pictogram, aria-hidden) plus the full word as a
+ * visually-hidden in-DOM accessible name, with title parity. The hue rides the tone-recipe
+ * state class; the size-neutral hover/focus micro-lift lives in CSS and cannot reflow rows.
+ */
+function renderBadgeDot (active: boolean, label: string, stateClass?: string): React.ReactNode {
+  if (!active) return null
+  const glyph = PRESET_STATE_GLYPHS[label]
+  return (
+    <span
+      key={label}
+      className={clsx(styles.badgeDot, stateClass)}
+      role='img'
+      aria-label={label}
+      title={label}
+    >
+      <span aria-hidden='true' className={styles.badgeGlyph}>
+        {glyph.kind === 'icon' ? <Icon icon={glyph.icon} size={14} /> : glyph.value}
+      </span>
+      <span className={styles.badgeLabel}>{label}</span>
+    </span>
+  )
+}
 
 type PresetSendStatus = 'idle' | 'sending' | 'synced' | 'error'
 
@@ -361,12 +387,12 @@ function PresetTree ({
                                         ✕
                                       </span>
                                     )}
-                                    {isApplied && <span className={clsx(styles.badge, styles.badgeApplied)}>{APPLIED_ON_PLAYER_LABEL}</span>}
-                                    {isLoadedPreview && <span className={clsx(styles.badge, styles.badgeLoaded)}>{LOADED_IN_PREVIEW_BADGE_LABEL}</span>}
-                                    {isSelected && <span className={clsx(styles.badge, styles.badgeSelected)}>{SELECTED_BADGE_LABEL}</span>}
-                                    {isStarting && <span className={clsx(styles.badge, styles.badgeStart)}>{START_BADGE_LABEL}</span>}
-                                    {preset.usesCamera && <span className={clsx(styles.badge, styles.badgeCam)}>{CAM_BADGE_LABEL}</span>}
-                                    {preset.isGallery && <span className={styles.badge}>{GALLERY_BADGE_LABEL}</span>}
+                                    {renderBadgeDot(isApplied, APPLIED_ON_PLAYER_LABEL, styles.badgeApplied)}
+                                    {renderBadgeDot(isLoadedPreview, LOADED_IN_PREVIEW_BADGE_LABEL, styles.badgeLoaded)}
+                                    {renderBadgeDot(isSelected, SELECTED_BADGE_LABEL, styles.badgeSelected)}
+                                    {renderBadgeDot(isStarting, START_BADGE_LABEL, styles.badgeStart)}
+                                    {renderBadgeDot(preset.usesCamera, CAM_BADGE_LABEL, styles.badgeCam)}
+                                    {renderBadgeDot(preset.isGallery, GALLERY_BADGE_LABEL)}
                                   </div>
                                   {rowUx.rowNotice && <div className={styles.rowNotice}>{rowUx.rowNotice}</div>}
                                 </div>

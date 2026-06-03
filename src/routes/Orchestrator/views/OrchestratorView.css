@@ -92,6 +92,14 @@
   --text-sm: 0.875rem;
   --text-md: 1rem;
   --text-lg: 1.125rem;
+  /* Orchestrator type ramp (visual-language 4.1): one calm ramp, 0.75rem floor,
+     1.125rem title cap. Size-only aliases of the raw rungs. Emphasis is by
+     weight, never size/color. Consuming-selector guidance: meta 1.3/500,
+     body 1.45/400, labels 600, control 1.4/500, title 1.3/600. */
+  --orch-text-meta: var(--text-xs); /* 0.75rem floor: metadata, pills, badges, empty-state, i18n */
+  --orch-text-body: var(--text-sm); /* 0.875rem: default body, labels, notices */
+  --orch-text-control: var(--text-md); /* 1rem: interactive controls and search inputs */
+  --orch-text-title: var(--text-lg); /* 1.125rem cap: Stage strip title only */
 
   display: grid;
   grid-template-columns: minmax(240px, var(--ref-panel-width, 320px)) minmax(0, 1fr);
