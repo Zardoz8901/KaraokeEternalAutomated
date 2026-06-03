@@ -691,6 +691,68 @@ describe('PresetTree', () => {
     })
   })
 
+  it('collapses each row badge to a glyph circle carrying its full accessible name at rest', async () => {
+    const container = document.createElement('div')
+    const root = createRoot(container)
+    const nodes = makeNodes()
+    nodes[0].children[0] = {
+      ...nodes[0].children[0],
+      usesCamera: true,
+    }
+
+    await act(async () => {
+      root.render(
+        <PresetTree
+          nodes={nodes}
+          expanded={new Set(['folder:1'])}
+          selectedPresetKey='preset:1'
+          loadedPreviewPresetKey='preset:1'
+          appliedPresetKey='preset:1'
+          startingPresetId={1}
+          onToggleFolder={() => {}}
+          onLoad={() => {}}
+          onSend={() => {}}
+          isDndEnabled={false}
+          onDragEnd={() => {}}
+        />,
+      )
+    })
+
+    const row = Array.from(container.querySelectorAll<HTMLElement>('[data-tree-focusable="true"]'))
+      .find(element => element.getAttribute('aria-label')?.startsWith('Preset test'))
+    expect(row).not.toBeUndefined()
+
+    for (const label of [
+      APPLIED_ON_PLAYER_LABEL,
+      LOADED_IN_PREVIEW_BADGE_LABEL,
+      SELECTED_BADGE_LABEL,
+      START_BADGE_LABEL,
+      CAM_BADGE_LABEL,
+    ]) {
+      const circle = row?.querySelector<HTMLElement>(`[role="img"][aria-label="${label}"]`)
+      expect(circle, `glyph circle for ${label}`).not.toBeNull()
+      // title parity with the accessible name (sighted hover decode; mirrors the .sendAck precedent)
+      expect(circle?.getAttribute('title')).toBe(label)
+      // the full word is a real in-DOM (visually-hidden) text node at rest — keeps the textContent/order guards green
+      expect(circle?.textContent).toContain(label)
+      // collapsed circles are NOT focus stops
+      expect(circle?.hasAttribute('tabindex')).toBe(false)
+      expect(circle?.getAttribute('data-tree-focusable')).toBeNull()
+    }
+
+    // grayscale distinctness: the shared-yellow (Selected/Start) and adjacent-hue (Loaded/Cam) pairs differ by MARK, not color
+    const markSig = (label: string): string => {
+      const glyph = row?.querySelector<HTMLElement>(`[role="img"][aria-label="${label}"] [aria-hidden="true"]`)
+      return glyph ? (glyph.textContent || glyph.tagName) : ''
+    }
+    expect(markSig(SELECTED_BADGE_LABEL)).not.toBe(markSig(START_BADGE_LABEL))
+    expect(markSig(LOADED_IN_PREVIEW_BADGE_LABEL)).not.toBe(markSig(CAM_BADGE_LABEL))
+
+    await act(async () => {
+      root.unmount()
+    })
+  })
+
   it('exposes row badge states in the preset row accessible name', async () => {
     const container = document.createElement('div')
     const root = createRoot(container)
@@ -760,15 +822,23 @@ describe('PresetTree', () => {
     })
   })
 
-  it('reserves a fixed-height no-wrap badge lane to avoid row reflow', () => {
+  it('reserves a fixed-height no-wrap badge lane of glyph circles to avoid row reflow', () => {
     const css = readPresetTreeCss()
     const presetMeta = cssBlock(css, '.presetMeta')
-    const badge = cssBlock(css, '.badge')
+    const badgeDot = cssBlock(css, '.badgeDot')
 
     expect(presetMeta).toContain('flex-wrap: nowrap;')
     expect(presetMeta).toContain('min-height: var(--orch-preset-badge-lane-height);')
     expect(presetMeta).toContain('overflow: hidden;')
-    expect(badge).toContain('max-width:')
-    expect(badge).toContain('text-overflow: ellipsis;')
+    // collapsed badge = fixed lane-height circle (reuses the .sendAck box), so it can never wrap or reflow the row
+    expect(badgeDot).toContain('width: var(--orch-preset-badge-lane-height);')
+    expect(badgeDot).toContain('height: var(--orch-preset-badge-lane-height);')
+    expect(badgeDot).toContain('border-radius: 999px;')
+  })
+
+  it('neutralizes the badge hover-lift under prefers-reduced-motion', () => {
+    const css = readPresetTreeCss()
+    // the in-lane micro-lift is size-neutral (filter + inset ring); reduce-motion makes it instant
+    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.badgeDot[\s\S]*?transition:\s*none/)
   })
 })
