@@ -8,6 +8,7 @@ import {
   GALLERY_BADGE_LABEL,
   LOADED_IN_PREVIEW_BADGE_LABEL,
   PRESET_STATE_GLYPHS,
+  PRESET_STATE_LEGEND,
   SELECTED_BADGE_LABEL,
   START_BADGE_LABEL,
 } from './orchestratorPresentationModel'
@@ -37,6 +38,45 @@ function renderBadgeDot (active: boolean, label: string, stateClass?: string): R
       </span>
       <span className={styles.badgeLabel}>{label}</span>
     </span>
+  )
+}
+
+// The tone-recipe state class for each legend mark — mirrors the row badge hues (§4.11).
+// Gallery is intentionally absent: it is no longer a badge, only a row accessible-name term.
+const PRESET_STATE_LEGEND_CLASS: Record<string, string | undefined> = {
+  [APPLIED_ON_PLAYER_LABEL]: styles.badgeApplied,
+  [LOADED_IN_PREVIEW_BADGE_LABEL]: styles.badgeLoaded,
+  [SELECTED_BADGE_LABEL]: styles.badgeSelected,
+  [START_BADGE_LABEL]: styles.badgeStart,
+  [CAM_BADGE_LABEL]: styles.badgeCam,
+}
+
+/**
+ * Persistent key for the collapsed preset-state glyph circles (§4.11), mounted unconditionally
+ * in the Presets panel header so every operator/viewer can decode the row badges. Each item pairs
+ * the same glyph-circle vocabulary as the rows (here aria-hidden/decorative) with an adjacent
+ * readable label + meaning. Non-interactive: not a focus stop, no row affordances.
+ */
+export function PresetStateLegend (): React.ReactElement {
+  return (
+    <div className={styles.legend} role='list' aria-label='Preset state key'>
+      {PRESET_STATE_LEGEND.map(({ label, meaning }) => {
+        const glyph = PRESET_STATE_GLYPHS[label]
+        return (
+          <div key={label} role='listitem' className={styles.legendItem}>
+            <span className={clsx(styles.badgeDot, PRESET_STATE_LEGEND_CLASS[label])} aria-hidden='true'>
+              <span className={styles.badgeGlyph}>
+                {glyph.kind === 'icon' ? <Icon icon={glyph.icon} size={14} /> : glyph.value}
+              </span>
+            </span>
+            <span className={styles.legendText}>
+              <span className={styles.legendLabel}>{label}</span>
+              <span className={styles.legendMeaning}>{meaning}</span>
+            </span>
+          </div>
+        )
+      })}
+    </div>
   )
 }
 
@@ -392,7 +432,6 @@ function PresetTree ({
                                     {renderBadgeDot(isSelected, SELECTED_BADGE_LABEL, styles.badgeSelected)}
                                     {renderBadgeDot(isStarting, START_BADGE_LABEL, styles.badgeStart)}
                                     {renderBadgeDot(preset.usesCamera, CAM_BADGE_LABEL, styles.badgeCam)}
-                                    {renderBadgeDot(preset.isGallery, GALLERY_BADGE_LABEL)}
                                   </div>
                                   {rowUx.rowNotice && <div className={styles.rowNotice}>{rowUx.rowNotice}</div>}
                                 </div>

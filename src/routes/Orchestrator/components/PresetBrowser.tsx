@@ -6,7 +6,7 @@ import { useAppDispatch, useAppSelector } from 'store/hooks'
 import { fetchCurrentRoom } from 'store/modules/rooms'
 import { ROOM_PREFS_PUSH } from 'shared/actionTypes'
 import { HYDRA_GALLERY } from './hydraGallery'
-import PresetTree from './PresetTree'
+import PresetTree, { PresetStateLegend } from './PresetTree'
 import { buildPresetTree, type PresetLeaf, type PresetTreeNode, type PresetFolder, type PresetItem } from './presetTree'
 import { getOrchestratorCapabilities } from './orchestratorCapabilities'
 import {
@@ -635,6 +635,7 @@ function PresetBrowser ({ currentCode, sendingPresetKey, presetSendStatus = 'idl
 
   return (
     <div className={styles.panel}>
+      <PresetStateLegend />
       {toolbarUx.showManagementToolbar && (
         <div className={styles.toolbar}>
           {toolbarUx.showNewFolder && (
