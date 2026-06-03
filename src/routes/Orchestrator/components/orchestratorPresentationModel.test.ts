@@ -46,6 +46,14 @@ describe('getOrchestratorPresentationModel', () => {
     expect(GALLERY_BADGE_LABEL).toBe('Gallery')
   })
 
+  it('drops the Gallery entry from the collapsed badge glyph and legend maps (phase-17)', () => {
+    // The Gallery badge is retired; the word survives only in the preset row accessible name.
+    expect(GALLERY_BADGE_LABEL in presentationModel.PRESET_STATE_GLYPHS).toBe(false)
+    expect(presentationModel.PRESET_STATE_LEGEND.some(entry => entry.label === GALLERY_BADGE_LABEL)).toBe(false)
+    expect(Object.keys(presentationModel.PRESET_STATE_GLYPHS)).toHaveLength(5)
+    expect(presentationModel.PRESET_STATE_LEGEND).toHaveLength(5)
+  })
+
   it('keeps shared preview, applied, and broadcast labels free of forbidden preview terms', () => {
     const labels = [
       LOCAL_PREVIEW_LABEL,

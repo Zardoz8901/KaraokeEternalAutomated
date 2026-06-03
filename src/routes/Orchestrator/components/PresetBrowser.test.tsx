@@ -189,6 +189,7 @@ vi.mock('./PresetTree', async () => {
         }),
       )
     },
+    PresetStateLegend: () => ReactModule.createElement('div', { 'data-testid': 'preset-state-legend' }),
   }
 })
 
@@ -270,6 +271,20 @@ describe('PresetBrowser runtime UX', () => {
     })
 
     expect(container.querySelector('[role="dialog"]')).toBeNull()
+
+    await act(async () => {
+      root.unmount()
+    })
+  })
+
+  it('renders the preset-state legend unconditionally, even without the management toolbar', async () => {
+    const { container, root } = await renderBrowser()
+
+    // default harness is a non-host viewer: management toolbar is hidden
+    expect(container.textContent).not.toContain('New Folder')
+    expect(container.textContent).not.toContain('Save Preset')
+    // the legend still renders at the top of the panel so viewers/guests can decode the row badges
+    expect(container.querySelector('[data-testid="preset-state-legend"]')).not.toBeNull()
 
     await act(async () => {
       root.unmount()

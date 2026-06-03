@@ -45,7 +45,7 @@ export const FORBIDDEN_PREVIEW_TERMS = ['Live', 'Player Output', 'Now Playing', 
 // existing Icon-component pictogram registered in §4.7) PLUS the full word as the accessible name.
 export type PresetStateGlyph
   = | { kind: 'text', value: string }
-    | { kind: 'icon', icon: 'VIDEO' | 'QR_CODE' }
+    | { kind: 'icon', icon: 'VIDEO' }
 
 export const PRESET_STATE_GLYPHS: Record<string, PresetStateGlyph> = {
   [APPLIED_ON_PLAYER_LABEL]: { kind: 'text', value: 'A' },
@@ -53,7 +53,6 @@ export const PRESET_STATE_GLYPHS: Record<string, PresetStateGlyph> = {
   [SELECTED_BADGE_LABEL]: { kind: 'text', value: 'S' },
   [START_BADGE_LABEL]: { kind: 'text', value: '★' },
   [CAM_BADGE_LABEL]: { kind: 'icon', icon: 'VIDEO' },
-  [GALLERY_BADGE_LABEL]: { kind: 'icon', icon: 'QR_CODE' },
 }
 
 export interface PresetStateLegendEntry {
@@ -68,7 +67,6 @@ export const PRESET_STATE_LEGEND: readonly PresetStateLegendEntry[] = [
   { label: SELECTED_BADGE_LABEL, meaning: 'Selected in the list' },
   { label: START_BADGE_LABEL, meaning: 'Loads at session start' },
   { label: CAM_BADGE_LABEL, meaning: 'Uses the camera relay' },
-  { label: GALLERY_BADGE_LABEL, meaning: 'Read-only gallery preset' },
 ]
 
 export const PREVIEW_STATUS_CLASS_KEY: Record<OrchestratorPreviewTruth, string> = {
