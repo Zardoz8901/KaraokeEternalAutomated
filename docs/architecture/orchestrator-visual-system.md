@@ -84,6 +84,7 @@ Each: **Interpretation · Explore · App-rule(s) · Tensions · Done-bar · Touc
 - **Explore:** the density target (comfortable-dense)? what counts as removable ornament? staying calm under bright/arbitrary Hydra output (chrome must stay separate and readable)? balancing density against the 44px touch minimum.
 - **App-rule:** minimal decoration (nothing decorative-only); Solarized chrome stays visually separate from Stage output; type/contrast tuned for sustained legibility; motion restrained + reduce-motion-safe; the spacing scale serves density without crowding; hit-slop reconciles density with 44px.
 - **Tensions:** dense vs 44px (resolve via hit-slop, HiG #13); calm vs emphasis (use hierarchy, not ornament).
+- **Motion is event-bound, not absent:** "restrained motion" means motion fires only as the felt confirmation of a real state change — the send ack, the row beat, the size-neutral badge micro-lift — never idle or decorative; all motion presence is on the time axis (one-shot, reduce-motion-safe), none on resting luminance, so the matte chrome never competes with Stage output (the concrete tokens/values are in orchestrator-visual-language.md §4.3/§4.5).
 - **Done-bar:** comfortable to watch and operate for a long set; nothing decorative-only survives.
 - **Touches:** everything — the overall aesthetic tenet; realized by the typography/contrast/motion/density specs below.
 

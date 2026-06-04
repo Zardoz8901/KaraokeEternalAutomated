@@ -2,4 +2,38 @@
 # Deferred (NOT in this closeout): HiG #14 folder-action discoverability, #15 PresetPicker menu rebuild,
 # #16 keyboard resize separator. See docs/analysis/orchestrator_hig_ux_backlog_2026_05_30.md.
 
-[]
+- id: orchestrator-spec-doc-sync
+  status: in_progress
+  owner: claude
+  branch: docs/orch-spec-doc-sync
+  base: main
+  worktree: { path: /home/steph/projects/KaraokeEternalAutomated, state: present }
+  merge_order: 300
+  goal: 'Phase A doc-truth reconciliation: bring the ratified spec + direction docs in lockstep with shipped code (glyph circles, micro-lift, VIDEO icon, dropped Gallery, removed legend), flip stale style-directions tags, and cut a fresh current_state dated doc. Pure docs, no code/tests.'
+  write_scope:
+    - docs/plans/active-slices.yaml
+    - docs/architecture/orchestrator-visual-language.md
+    - docs/architecture/orchestrator-style-directions.md
+    - docs/architecture/orchestrator-visual-system.md
+    - docs/analysis/current_state_2026_06_04.md
+    - docs/analysis/current_state_2026_03_05.md
+  protected_paths:
+    - src/
+    - server/
+    - shared/
+    - docs/architecture/orchestrator-player-live-decision.md
+  verification:
+    - npm run slices:check
+    - npm run typecheck
+    - npm run lint
+  acceptance:
+    - 'orchestrator-visual-language.md §4.11 describes collapsed glyph circles (not textual pills), §4.7 registers VIDEO/mdiVideo, §4.2 covers glyph-on-tint, the D3.2 rendered-badge order drops Gallery, and the legend add/remove is recorded; the already-reconciled OQ-8.1/8.2 + Doc-truth section are untouched.'
+    - 'orchestrator-style-directions.md flips D6.2 to DONE (and revisits the other merged tags), corrects the OQ-8.2 Cam-blue wording to --orch-synced cyan, and re-measures/supersedes the stale D8.5 raw-hue counts; orchestrator-visual-system.md notes Principle 7 = event-bound, not absent.'
+    - 'A fresh current_state_2026_06_04.md captures phase-11..18 + legend add/remove + video-crop fix and supersedes current_state_2026_03_05.md.'
+  non_goals:
+    - No code or test changes; this is documentation only.
+    - Do not re-touch the visual-language spec OQ-8.1/OQ-8.2 rows or its Doc-truth-reconciliation section (already reconciled).
+  notes:
+    - 'BLOCKING Phase A per docs/analysis/orchestrator_hig_ux_backlog_2026_05_30.md Forward-slices. Strict register: plain/declarative/operational/sourced/testable — no slogan/feel-poetry/second-person.'
+  next:
+    - implementation
