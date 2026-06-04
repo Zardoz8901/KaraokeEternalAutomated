@@ -126,40 +126,6 @@
   border-color: color-mix(in srgb, var(--orch-live) var(--orch-tone-border), transparent);
 }
 
-/* Persistent preset-state key in the Presets panel header — reuses the badge glyph-circle vocabulary (§4.11). */
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--orch-space-md);
-  margin: 0;
-}
-
-.legendItem {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--orch-space-2xs);
-  min-width: 0;
-}
-
-.legendText {
-  display: inline-flex;
-  align-items: baseline;
-  gap: var(--orch-space-2xs);
-  min-width: 0;
-}
-
-.legendLabel {
-  font-size: var(--orch-text-meta);
-  font-weight: 600;
-  color: var(--orch-text-strong);
-}
-
-.legendMeaning {
-  font-size: var(--orch-text-meta);
-  color: var(--orch-text);
-}
-
 .sendAck {
   display: inline-flex;
   align-items: center;

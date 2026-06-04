@@ -4,13 +4,12 @@ import path from 'node:path'
 import React, { act } from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { createRoot } from 'react-dom/client'
-import PresetTree, { PresetStateLegend } from './PresetTree'
+import PresetTree from './PresetTree'
 import {
   APPLIED_ON_PLAYER_LABEL,
   CAM_BADGE_LABEL,
   GALLERY_BADGE_LABEL,
   LOADED_IN_PREVIEW_BADGE_LABEL,
-  PRESET_STATE_LEGEND,
   SELECTED_BADGE_LABEL,
   START_BADGE_LABEL,
 } from './orchestratorPresentationModel'
@@ -842,87 +841,5 @@ describe('PresetTree', () => {
     const css = readPresetTreeCss()
     // the in-lane micro-lift is size-neutral (filter + inset ring); reduce-motion makes it instant
     expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.badgeDot[\s\S]*?transition:\s*none/)
-  })
-
-  it('renders the preset-state legend as a labeled list with one item per legend entry', async () => {
-    const container = document.createElement('div')
-    const root = createRoot(container)
-
-    await act(async () => {
-      root.render(<PresetStateLegend />)
-    })
-
-    const legend = container.querySelector('[role="list"][aria-label="Preset state key"]')
-    expect(legend).not.toBeNull()
-    expect(legend?.querySelectorAll('[role="listitem"]')).toHaveLength(PRESET_STATE_LEGEND.length)
-
-    await act(async () => {
-      root.unmount()
-    })
-  })
-
-  it('names every legend item with its label and meaning, and omits Gallery', async () => {
-    const container = document.createElement('div')
-    const root = createRoot(container)
-
-    await act(async () => {
-      root.render(<PresetStateLegend />)
-    })
-
-    const legend = container.querySelector('[role="list"][aria-label="Preset state key"]')
-    for (const { label, meaning } of PRESET_STATE_LEGEND) {
-      expect(legend?.textContent).toContain(label)
-      expect(legend?.textContent).toContain(meaning)
-    }
-    expect(legend?.textContent).not.toContain(GALLERY_BADGE_LABEL)
-
-    await act(async () => {
-      root.unmount()
-    })
-  })
-
-  it('renders one decorative glyph-circle per legend item, with the camcorder for Cam and no QR glyph', async () => {
-    const container = document.createElement('div')
-    const root = createRoot(container)
-
-    await act(async () => {
-      root.render(<PresetStateLegend />)
-    })
-
-    const legend = container.querySelector('[role="list"][aria-label="Preset state key"]')
-    // each item carries exactly one decorative (aria-hidden) glyph circle — the readable name is the adjacent text
-    // (direct-child selector so the Cam item's nested aria-hidden Icon svg is not double-counted)
-    expect(legend?.querySelectorAll('[role="listitem"] > [aria-hidden="true"]')).toHaveLength(PRESET_STATE_LEGEND.length)
-    // the camcorder (VIDEO) Icon is the only pictogram glyph left after the QR/Gallery drop
-    expect(legend?.querySelectorAll('svg')).toHaveLength(1)
-
-    await act(async () => {
-      root.unmount()
-    })
-  })
-
-  it('renders the legend as a non-interactive static key', async () => {
-    const container = document.createElement('div')
-    const root = createRoot(container)
-
-    await act(async () => {
-      root.render(<PresetStateLegend />)
-    })
-
-    const legend = container.querySelector('[role="list"][aria-label="Preset state key"]')
-    expect(legend?.querySelector('[data-tree-focusable]')).toBeNull()
-    expect(legend?.querySelector('[tabindex]')).toBeNull()
-
-    await act(async () => {
-      root.unmount()
-    })
-  })
-
-  it('styles the legend meaning as body text, never muted, per the §4.2 contrast lock', () => {
-    const css = readPresetTreeCss()
-    expect(cssBlock(css, '.legend')).not.toBe('')
-    const legendMeaning = cssBlock(css, '.legendMeaning')
-    expect(legendMeaning).not.toBe('')
-    expect(legendMeaning).not.toContain('--orch-muted')
   })
 })
