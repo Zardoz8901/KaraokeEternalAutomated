@@ -2,39 +2,4 @@
 # Deferred (NOT in this closeout): HiG #14 folder-action discoverability, #15 PresetPicker menu rebuild,
 # #16 keyboard resize separator. See docs/analysis/orchestrator_hig_ux_backlog_2026_05_30.md.
 
-- id: orchestrator-preview-video-crop-fix
-  status: in_progress
-  owner: claude
-  branch: fix/orch-preview-video-crop
-  base: main
-  worktree: { path: /home/steph/projects/KaraokeEternalAutomated, state: present }
-  merge_order: 290
-  goal: 'Fix the Orchestrator preview cropping to a corner / not scaling when devicePixelRatio != 1. The DPR-scaled fit dimensions were applied as the absolutely-positioned HydraVisualizer container inline CSS box, overflowing the overflow:hidden frame. Keep DPR scaling on the canvas backing store + setResolution; let the container fill its parent via CSS.'
-  write_scope:
-    - docs/plans/active-slices.yaml
-    - docs/analysis/orchestrator_preview_video_crop_2026_06_04.md
-    - src/routes/Player/components/Player/PlayerVisualizer/HydraVisualizer.tsx
-    - src/routes/Player/components/Player/PlayerVisualizer/HydraVisualizer.layout.test.tsx
-  protected_paths:
-    - server/
-    - src/lib/webrtc/
-    - src/routes/Player/components/Player/PlayerVisualizer/HydraVisualizer.css
-    - src/routes/Orchestrator/components/StagePanel.tsx
-    - src/routes/Orchestrator/components/HydraPreview.tsx
-    - src/routes/Orchestrator/views/orchestratorLayout.ts
-  verification:
-    - npm test -- src/routes/Player/components/Player/PlayerVisualizer/HydraVisualizer.layout.test.tsx src/routes/Player/components/Player/PlayerVisualizer/HydraVisualizer.camera.test.tsx src/routes/Player/components/Player/PlayerVisualizer/HydraVisualizer.applied.test.tsx
-    - npm test
-    - npm run typecheck
-    - npm run lint
-    - npm run slices:check
-  acceptance:
-    - 'HydraVisualizer canvas keeps width/height backing-store attributes (DPR-scaled) and setResolution parity; the container no longer pins an inline pixel CSS box and fills its parent via the stylesheet.'
-    - 'Player rendering is unchanged (Player passes CSS-pixel dims; container fills its CSS-pixel parent = identical size); Orchestrator preview fills the frame and scales on resize.'
-  non_goals:
-    - Do not change camera relay signaling, WebRTC hooks, or the camera source binding logic.
-    - Do not change fitPreviewToFrame DPR math or the StagePanel/HydraPreview wiring.
-  notes:
-    - 'HIGH-RISK: HydraVisualizer is shared by Player + Orchestrator preview. Player-safety traced: Player passes CSS-pixel dims (PlayerView innerWidth/viewportHeight), so filling the CSS-pixel parent is a no-op there. Visual confirm on BOTH surfaces by Steph (visual authority).'
-  next:
-    - implementation
+[]
