@@ -135,6 +135,99 @@ targets** (no measurable threshold), **motion guidance** (durations/easing/reduc
 visual** treatment, **iconography** system, **responsive breakpoints** (widths/tablet reflow),
 **elevation/depth** language, **i18n/text-length** resilience, **constructive error-copy** standard.
 
+## Forward slices — conformance finish → Player Live (operationalized 2026-06-04)
+
+Derived from the `orch-alignment-roadmap` workflow (run `wf_c4414b98-aff`, critic verdict
+approve-with-changes). **Verdict: the engineering is aligned (every shipped slice passed
+TDD/typecheck/lint/`slices:check`=0); the doc layer is drifted** — the ratified spec still
+describes textual tone pills while the code ships glyph circles, and `current_state_2026_03_05.md`
+is missing the last 4 merges. `active-slices.yaml` stays coordination-only; this is the durable
+forward record. A slice gets an `active-slices` record only when its branch/worktree is created.
+
+**Execution constraints (read first):**
+- **Serialize every slice that edits `orchestratorColorAudit.test.ts`:** `elevation-aqua-cleanup`,
+  `error-state-route`, `motion-tokenize`, `breakpoints-lockstep`, `reserved-snapshot-slot`. The CSS
+  scopes are line-disjoint but the test file is shared — one integrator owns the test edits, or run
+  them sequentially. **Do NOT run these as parallel agents.**
+- **`spec-doc-sync` is BLOCKING only for spec-graded slices** (`empty-error-states`,
+  `reserved-snapshot-slot`, `term-guard-surface-aware`, anything citing §4.11/§4.5/§4.7). The pure-CSS
+  cleanups (`elevation-aqua-cleanup`, `error-state-route`, `motion-tokenize`, `breakpoints-lockstep`)
+  are graded by the audit test, not the prose spec — they need NOT wait on the doc slice.
+
+### Phase A — doc-truth reconciliation (do first)
+- **`spec-doc-sync`** [M, pure docs] — bring the ratified spec in lockstep with shipped code.
+  - `orchestrator-visual-language.md`: §4.11 badges = collapsed **glyph circles** (`A/L/S/★/VIDEO` +
+    visually-hidden accessible name + hover `title`), §4.2 glyph-on-tint contrast (WCAG-1.4.11 3:1),
+    §4.5/§4.3 sanctioned **size-neutral micro-lift** (`brightness(1.12)` + inset `currentColor` ring,
+    no geometry change), §4.7 register **VIDEO/mdiVideo** (`icons.ts:48`). Drop **Gallery** from the
+    §4.11 rendered-badge list + the D3.2 order (L341/L500/L551/L587/L601); note `QR_CODE`
+    registered-but-orphaned and "Gallery" survives only as accessible-name text. Record the legend
+    **add (`70d0e6ad`) then remove (`70650635`)** + the "redundant with hover tooltips" rationale.
+    NOTE: the spec's OQ-8.1/OQ-8.2 + the "Doc-truth reconciliation" section (L275/L276/L338) are
+    **already reconciled — do not re-touch them.**
+  - `orchestrator-style-directions.md`: flip stale tags for merged work (D6.2→DONE; revisit
+    D2.1/D4.1/D7.1/D7.2/D7.3/D8.1/D8.2); correct OQ-8.2 "Cam badge is blue" → `--orch-synced` cyan
+    (:382/:483); **re-measure or supersede** the stale D8.5 raw-hue counts (:363, pre-role-routing).
+  - `orchestrator-visual-system.md`: Principle 7 one-line note — restraint = **event-bound, not absent**.
+  - Cut **`current_state_2026_06_04.md`** capturing the 4 entries missing from
+    `current_state_2026_03_05.md` (**phase-16 glyph circles, phase-17 legend add, legend remove,
+    video-crop fix** — phase-15 typography is ALREADY at `:13`); supersede the stale-dated file.
+
+### Phase B — residual conformance (CSS / markup)
+- **`elevation-aqua-cleanup`** [S, audit-test] — delete the 7 dead `--aqua-*` shims
+  (`OrchestratorView.css:83-89`, zero consumers) + an audit assertion of their absence. There is NO
+  tiered elevation scale to build (only a single `--orch-shadow` + focus-ring insets).
+- **`error-state-route`** [S, audit-test] — route `PresetBrowser.css .error` (:123) off raw
+  `--orch-red` onto `--orch-danger`/tone recipe; remove the deferred `\.error` allowlist exception
+  (`orchestratorColorAudit.test.ts:74`).
+- **`motion-tokenize`** [S, audit-test] — tokenize the 5 raw holdouts: `PresetBrowser.css:34/76`
+  (0.2s), `:119` (180ms + raw bezier), `:148` (shimmer 1.2s), `PresetTree.css:147` (sendAckSpin
+  800ms). Keep reduce-motion guards.
+- **`breakpoints-lockstep`** [M, audit-test] — define `--orch-bp-*` (980/979/640/~390); 979/980/640
+  px are hardcoded across 8 files. **CAVEAT: CSS custom properties cannot be used inside `@media`
+  conditions** — pick a real single-source mechanism (documented constant + lint, or build-time),
+  not naive `var()` in media queries.
+- **`empty-error-states`** [M; dependsOn `error-state-route` + `spec-doc-sync`] — shared token-driven
+  empty/error/loading treatment (`PresetBrowser.tsx:584/675/689/861`, `ApiReference.tsx:186`) on the
+  existing `presetEmptyState.ts` logic. Does NOT touch the audit test (can parallelize vs the CSS chain).
+- **`buffer-apg-finish`** [M, own component] — WAI-ARIA radiogroup keyboard pattern on StagePanel
+  buffer controls (roving tabindex + Arrow/Home/End + the deferred focus cue); roles exist
+  (`StagePanel.tsx:200/205`), key handling does not.
+- **`icon-i18n-stance`** [S/M, doc-only] — decide the i18n stance (zero today; ~40 hardcoded
+  aria-labels + all copy). Defer string extraction unless the stance says extract now.
+- **`drop-orphan-qr-icon`** [S, trivial code] — remove the orphaned `QR_CODE` registration
+  (`icons.ts:42`) — split out of `icon-i18n-stance` so that one stays no-code.
+
+### Phase C — Player-Live prerequisites
+- **`term-guard-surface-aware`** [M, security-adjacent labeling] — make `FORBIDDEN_PREVIEW_TERMS`
+  surface-aware (the Player-output label legitimately contains "Player Output"); promote
+  `OrchestratorPlayerOutputTruth` past its 2-value stub.
+- **`reserved-snapshot-slot`** [M, audit-test; dependsOn `term-guard-surface-aware` + `spec-doc-sync`]
+  — the §2 presence-gated `:has()` reserved Player-output snapshot geometry nested in `.stageFrame`
+  (OQ-2.1 large+inset); inert until runtime so no statically-authored track steals width.
+
+### Phase D — the payoff
+- **`player-live-runtime`** [L; dependsOn `reserved-snapshot-slot` + `term-guard-surface-aware`] —
+  Option B periodic Player-output snapshot per `orchestrator-player-live-decision.md`. Touches
+  `server/Player/socket.ts` + `HydraVisualizer.tsx` (both High-Risk Touchpoints) + the relay surface
+  → **full High-Risk Change Protocol + Red-Team Pass + full Validation Matrix.**
+
+### Deferred HiG (independent of Player-Live; after the conformance core)
+- **`splitter-keyboard-and-drag`** [M] — HiG #16 keyboard-operable resize separator
+  (`OrchestratorView.tsx:98/101` is `role='separator'` `tabIndex={-1}`, pointer-only) **designed
+  together with** the OQ-4.1 draggable Stage/Code splitter (same surface).
+- **`presetpicker-conformant-menu`** [M] — HiG #15: `aria-haspopup`/`aria-expanded`, menu role,
+  Escape-to-close, focus-trap + focus-return (`PresetPicker.tsx:58-66`).
+- **`presettree-folder-action-discoverability`** [S] — HiG #14: surface delete / set-player-folder
+  beyond `opacity:0`-until-hover (`PresetTree.css:86-103`); lowest priority (mutates the High-Risk
+  PresetTree surface).
+
+> **Correction to this doc's "Meta-finding" section above (re-verified 2026-06-04):** it is now
+> partially outdated. `orchestratorColorAudit.test.ts` DOES resolve `var()` existence
+> (`collectUnresolvedOrchVarRefs`) and — per spec OQ-8.1, RESOLVED — flat (non-`color-mix`) token-pair
+> WCAG contrast via `resolveTokenValue`. Only **composited `color-mix()` contrast** remains unverified
+> (e2e-blocked) — that is the genuine residual, not "no contrast/token resolution at all."
+
 ## HiG control-surface patterns (grounding)
 
 Persistent role/authority indicator (anti-hidden-mode) · one-owner-per-label taxonomy · status-pill vs
