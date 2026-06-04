@@ -40,9 +40,10 @@ export const CAM_BADGE_LABEL = 'Cam'
 export const GALLERY_BADGE_LABEL = 'Gallery'
 export const FORBIDDEN_PREVIEW_TERMS = ['Live', 'Player Output', 'Now Playing', 'On Display'] as const
 
-// Single-sourced preset-state glyph marks + legend for the collapsed badge circles (§4.11).
+// Single-sourced preset-state glyph marks for the collapsed badge circles (§4.11).
 // Each circle is dual-channel: a non-color glyph (grayscale-distinct letters/star, or an
-// existing Icon-component pictogram registered in §4.7) PLUS the full word as the accessible name.
+// existing Icon-component pictogram registered in §4.7) PLUS the full word as the accessible
+// name and hover title (the decode path; the standalone legend was dropped as redundant).
 export type PresetStateGlyph
   = | { kind: 'text', value: string }
     | { kind: 'icon', icon: 'VIDEO' }
@@ -54,20 +55,6 @@ export const PRESET_STATE_GLYPHS: Record<string, PresetStateGlyph> = {
   [START_BADGE_LABEL]: { kind: 'text', value: '★' },
   [CAM_BADGE_LABEL]: { kind: 'icon', icon: 'VIDEO' },
 }
-
-export interface PresetStateLegendEntry {
-  label: string
-  meaning: string
-}
-
-// D3.2 strongest-truth-first order — the Presets-panel key that decodes the collapsed circles.
-export const PRESET_STATE_LEGEND: readonly PresetStateLegendEntry[] = [
-  { label: APPLIED_ON_PLAYER_LABEL, meaning: 'Currently applied on the Player' },
-  { label: LOADED_IN_PREVIEW_BADGE_LABEL, meaning: 'Loaded in your Local Preview' },
-  { label: SELECTED_BADGE_LABEL, meaning: 'Selected in the list' },
-  { label: START_BADGE_LABEL, meaning: 'Loads at session start' },
-  { label: CAM_BADGE_LABEL, meaning: 'Uses the camera relay' },
-]
 
 export const PREVIEW_STATUS_CLASS_KEY: Record<OrchestratorPreviewTruth, string> = {
   off: 'statusOff',
