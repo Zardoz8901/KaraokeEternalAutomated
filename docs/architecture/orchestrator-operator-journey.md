@@ -4,7 +4,7 @@
 > runtime surfaces to the [status-ownership table](#cross-surface-status-ownership-table).
 > Companion to the [Synthesis UI Style Guide](orchestrator-synthesis-ui-style-guide.md),
 > [Preset Operator UX](orchestrator-preset-operator-ux.md), [Preview/Output Model](orchestrator-preview-output-model.md),
-> and the [Player Live decision ADR](orchestrator-player-live-decision.md) (Accepted: Option B — snapshot target).
+> and the [Player Live decision ADR](orchestrator-player-live-decision.md) (superseded 2026-06-04 by Owner Decision — Option A: Local Preview is the terminal Orchestrator surface; no Player-output copy is surfaced).
 >
 > This is a docs contract. It changes no runtime code.
 
@@ -52,7 +52,6 @@ Each leg lists what the user does, the runtime truth it produces, and which surf
 | `Selected` / `Loaded in preview` / `Start` / `Cam` / `Gallery` | **PresetTree — row badge** | — | per-row state; `Loaded in preview` is the row mirror of the preview's Load |
 | `Applied on Player` | **PresetTree — row badge** | — | Phase 7A applied-truth, per exact preset/gallery match; the strongest current Player-truth claim |
 | preset-policy / party-folder / empty-state copy | **PresetBrowser — panel notice** | — | one notice surface; rows show disabled Send, the panel explains why |
-| **`Player Output (snapshot)`** | **Preview overlay — reserved future slot** (adjacent to `Local Preview`) | — | **RESERVED, not yet implemented** — see §4 |
 
 ### Overlaps resolved
 
@@ -60,16 +59,16 @@ Each leg lists what the user does, the runtime truth it produces, and which surf
 - **`live` wording:** `Host live coding` (authority) and `Camera live` (camera connection) legitimately contain "live"; the preview is forbidden from it. Already enforced by `FORBIDDEN_PREVIEW_TERMS`.
 - **`Loaded in preview` (badge) vs `Local Preview` (overlay):** the badge marks *which row* is loaded; the overlay marks *the surface*. Distinct, kept.
 
-## 4. Reserved future slot — Player Output (snapshot)
+## 4. Terminal preview surface — no Player-output copy
 
-Per the [Player Live decision ADR](orchestrator-player-live-decision.md) (Accepted: **Option B — periodic Player-output snapshot** as the target), the UX **reserves** a `Player Output (snapshot)` surface in the **preview overlay**, adjacent to `Local Preview`:
+Per the Owner Decision (2026-06-04), a live image of what is playing is not required. The Orchestrator adopts **Option A: `Local Preview` is the terminal preview-overlay surface.** The preview overlay surfaces no copy of the Player's audience output.
 
-- It is **not implemented** until a future Option B runtime slice ships (which will publish the snapshot, gate its authz, and extend `OrchestratorPlayerOutputTruth`).
-- Until then, the slot is documented-only. The preview overlay must **not** finalize `Local Preview` as the terminal truth — it must leave room (label slot + layout) for the snapshot poster, shown as a clearly-timestamped "Player Output (snapshot, Xs ago)" distinct from `Local Preview`.
-- `Player Live` (continuous mirror, Option C) remains deferred and forbidden as a label until/unless C is ever chosen.
+- The real Player still renders audience output; the Orchestrator simply does not mirror or snapshot it. No `Player Output (snapshot)` slot is reserved in the preview overlay, and no second preview-overlay surface is held open for one.
+- `Player Output` and `Player Live` remain forbidden as labels on `Local Preview`, enforced by `FORBIDDEN_PREVIEW_TERMS`. Under Option A this guard is permanent, not transitional.
+- A continuous mirror or periodic snapshot (Option C) is no longer a roadmap item. It would require a fresh future ADR before any preview-overlay surface is reserved.
 
 ## 5. Downstream
 
-- **Gate 3b** reconciles the Stage strip + preview overlay to this table (incl. the pill/banner split and the reserved snapshot slot).
+- **Gate 3b** reconciles the Stage strip + preview overlay to this table (incl. the pill/banner split). `Local Preview` is terminal; no snapshot slot is reconciled.
 - **Gate 3c** aligns PresetTree row badges + PresetBrowser notice to this table.
 - **Gate 3a-ii** (separate slice) defines spacing/focus tokens + the density audit; this contract is layout-agnostic.

@@ -7,8 +7,14 @@ export type OrchestratorPreviewTruth
 
 export type OrchestratorAudioTruth = 'none' | 'simulated' | 'playerReactive'
 
-// The Player Output snapshot state is reserved by the Gate 3a-i/Option B ADR.
-// Do not extend this union until the future snapshot runtime slice exists.
+// OWNER DECISION 2026-06-04 (Option A — Local Preview is the terminal truth):
+// a live image of what is playing is not necessary, so the Orchestrator does not
+// surface a copy of the real Player's audience output. The two values below are
+// permanent and complete: 'noPlayer' (no Player connected) and
+// 'playerPresentNotMirrored' (a Player exists and has audience output, but it is
+// intentionally not mirrored here). Do NOT extend this union. Option B (periodic
+// snapshot) and Option C (live mirror) are dropped; C is only theoretically
+// possible behind a fresh future ADR and is no longer a roadmap item.
 export type OrchestratorPlayerOutputTruth = 'noPlayer' | 'playerPresentNotMirrored'
 
 export interface OrchestratorPresentationInput {

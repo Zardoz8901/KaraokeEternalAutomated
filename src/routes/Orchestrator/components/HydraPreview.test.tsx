@@ -246,7 +246,7 @@ describe('HydraPreview', () => {
     })
   })
 
-  it('keeps the preview status overlay open for a future Player Output snapshot sibling', async () => {
+  it('keeps the preview status overlay single-column with no Player Output sibling (Option A terminal)', async () => {
     installFakeAudioContext()
     const container = document.createElement('div')
     const root = createRoot(container)

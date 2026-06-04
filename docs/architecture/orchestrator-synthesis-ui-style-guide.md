@@ -34,7 +34,7 @@ Design work must show the current mode clearly. Do not rely on server rejection 
 
 Preset operator and Browse-only runtime UI work must follow the [Orchestrator Preset Operator UX](orchestrator-preset-operator-ux.md) decision spec.
 
-Preview, Player-applied state, and future Player Live work must follow the [Orchestrator Preview/Output Model](orchestrator-preview-output-model.md). That model is the durable source of truth for Local Preview, Preview using Player MP4, Applied on Player, Player Output, and Player Live labels. Which **surface owns** each status label (and the operator/host journey) is defined by the [Operator & Host Journey + Status-Ownership contract](orchestrator-operator-journey.md).
+Preview and Player-applied state must follow the [Orchestrator Preview/Output Model](orchestrator-preview-output-model.md). That model is the durable source of truth for Local Preview, Preview using Player MP4, and Applied on Player labels. Under Option A (2026-06-04) the Orchestrator surfaces no copy of the audience display, so there is no Player Live work and no Player Output panel label. Which **surface owns** each status label (and the operator/host journey) is defined by the [Operator & Host Journey + Status-Ownership contract](orchestrator-operator-journey.md).
 
 ## Preview/Output Mental Model
 
@@ -44,8 +44,8 @@ Use this split:
 
 - **Local Preview:** immediate edit and preset-audition feedback in this browser.
 - **Applied on Player:** runtime confirmation that the Player evaluated and ticked the accepted visualizer run.
-- **Player Output:** the actual audience display rendered by the Player.
-- **Player Live:** future mirror, stream, or snapshot of Player Output (whether it is built — and as snapshot or live mirror — is decided in the [Player Live ADR](orchestrator-player-live-decision.md)). Do not use this label until that feature exists.
+- **Player Output:** the actual audience display rendered by the Player. The Orchestrator does not surface a copy of it (Option A, terminal); it is named here only to keep the preview honestly distinct from it.
+- **Player Live:** not built and not on the roadmap. Under Option A the Orchestrator surfaces no mirror, stream, or snapshot of the audience display. Any future live mirror would require a fresh ADR; do not use this label.
 
 Source binding should be visible when it changes the user's expectation: Preview using Player MP4, Preview waiting for Player media, or Fallback external source. These labels should stay near the preview or the affected preset action, not in detached instructional text.
 
@@ -348,7 +348,7 @@ Before merging Orchestrator UI work, verify:
 - Advanced controls are progressively disclosed without blocking expert access.
 - Preset send behavior matches server authority.
 - Local preview and room broadcast state cannot be confused.
-- Local preview, Applied on Player, Player Output, and future Player Live labels follow the Preview/Output Model.
+- Local preview and Applied on Player labels follow the Preview/Output Model; the preview never claims Player Output or Player Live (permanent `FORBIDDEN_PREVIEW_TERMS` guard).
 - Failure states are visible and recoverable.
 - Keyboard and touch interactions are covered.
 - Labels, values, units, and defaults are visible for synthesis parameters.

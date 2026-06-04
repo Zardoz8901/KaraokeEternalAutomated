@@ -91,8 +91,8 @@ Standard users authenticate through Authentik OIDC. Guest room assignment is han
 - [SSO Overlay Architecture](architecture/sso-overlay.md) — Detailed SSO integration
 - [Orchestrator Synthesis UI Style Guide](architecture/orchestrator-synthesis-ui-style-guide.md) — UX rules for Hydra, preset, menu, and future synthesis-control work
 - [Orchestrator Preset Operator UX](architecture/orchestrator-preset-operator-ux.md) — Decision spec for Preset operator and Browse-only visual workflows
-- [Orchestrator Preview/Output Model](architecture/orchestrator-preview-output-model.md) — Product-language contract for Local Preview, Applied on Player, Player Output, and future Player Live mirroring
-- [ADR: Orchestrator Player Live boundary](architecture/orchestrator-player-live-decision.md) — Accepted: Option B (periodic Player-output snapshot) is the target; local-only is the fallback, live mirror deferred
+- [Orchestrator Preview/Output Model](architecture/orchestrator-preview-output-model.md) — Product-language contract for Local Preview and Applied on Player labels; under Option A (2026-06-04) the Orchestrator surfaces no copy of the audience display
+- [ADR: Orchestrator Player Live boundary](architecture/orchestrator-player-live-decision.md) — Superseded 2026-06-04 by Option A (local-only): the Orchestrator surfaces no copy of the audience display. Options B (periodic snapshot) and C (live mirror) are dropped; a live mirror is possible only behind a fresh future ADR
 - [Orchestrator Operator & Host Journey + Status-Ownership](architecture/orchestrator-operator-journey.md) — Journey map (browse→…→recover) and the cross-surface status-label ownership contract (Gate 3a-i)
 - [Orchestrator HiG Product Interpretation & Visual System](architecture/orchestrator-visual-system.md) — The style direction: Orchestrator as a calm, dense operator workstation; the 9 product-interpretation principles behind the style-guide rules
 - [Orchestrator Style Directions](architecture/orchestrator-style-directions.md) — Concrete per-principle style directions (DONE/PARTIAL/OPEN, guideline-cited) + the open questions that gate adoption

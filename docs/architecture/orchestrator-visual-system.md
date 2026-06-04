@@ -20,8 +20,9 @@ principles expressed as concrete testable rules.**
 ## Cross-cutting locked constraints (every principle honors these)
 
 - Solarized-only tokens; no relabeling; `FORBIDDEN_PREVIEW_TERMS` (preview is never Live/Player Output/
-  Now Playing/On Display); the one-owner-per-label status table; the authority model; Player Output
-  snapshot stays reserved-but-unbuilt (Option B).
+  Now Playing/On Display) — a permanent guard under Option A; the one-owner-per-label status table; the
+  authority model. The Orchestrator does not surface a copy of the Player's audience output (Option A,
+  terminal): Local Preview is the operator's authoritative working view and no Player-Output slot is reserved.
 - Mobile/touch is first-class (the camera operator's primary device). Local Nix Chromium e2e is blocked,
   so prefer **statically verifiable** rules (tokens, audits, render-tests) over screenshot-only ones.
 
@@ -39,13 +40,13 @@ Each: **Interpretation · Explore · App-rule(s) · Tensions · Done-bar · Touc
 - **Done-bar:** a returning operator completes browse→load→preview→send→confirm without hunting; nothing on screen exists only to impress.
 - **Touches:** `OrchestratorView` layout, `StagePanel`, `PresetBrowser`.
 
-### 2. Local Preview and Player Output are distinct visual objects
-- **Interpretation:** not one surface relabeled — two distinct objects with distinct framing. Local Preview is the operator's approximate working view; Player Output (snapshot, future) is the audience truth. They must *look* different so they are never confused — the visual reinforcement of `FORBIDDEN_PREVIEW_TERMS`.
-- **Explore:** how to visually separate them (frame/border treatment, a persistent label chip, a reserved adjacent panel, distinct elevation)? where does the Player Output snapshot sit relative to Local Preview when Option B ships? how to signal "these may differ"?
-- **App-rule:** Local Preview always carries its `Local Preview` chip + an "approximate" treatment; reserve a *distinct, adjacent* slot for Player Output (snapshot), never overlaid or merged; the two read as two objects at a glance.
-- **Tensions:** the snapshot is unbuilt — reserve, don't build; never label preview as output.
-- **Done-bar:** a viewer instantly tells the local approximation from the audience truth.
-- **Touches:** `HydraPreview`, `StagePanel`, the reserved slot (operator-journey §4), the elevation system (spec below).
+### 2. Local Preview is the operator's authoritative working view; no Player-Output copy is surfaced
+- **Interpretation:** Local Preview is the operator's approximate working view; it is rendered locally and is not the Player's rendered output. The real Player has an audience display, but the Orchestrator does not surface a copy of it (Option A, terminal). Local Preview must never read as that audience truth — the visual reinforcement of the permanent `FORBIDDEN_PREVIEW_TERMS` guard.
+- **Explore:** how to mark Local Preview as approximate (frame/border treatment, a persistent label chip, distinct elevation) so it never reads as the audience display?
+- **App-rule:** Local Preview always carries its `Local Preview` chip + an "approximate" treatment; the Orchestrator surfaces no Player-Output panel and reserves no slot for one (Option A, terminal).
+- **Tensions:** never label the local preview as output. (A live mirror of the audience display is out of scope under Option A and would require a fresh ADR before any surface is reserved.)
+- **Done-bar:** a viewer instantly reads the preview as the operator's local approximation, never as audience truth.
+- **Touches:** `HydraPreview`, `StagePanel`, the elevation system (spec below).
 
 ### 3. Presets are manipulable objects with state, not just list rows
 - **Interpretation:** a preset is an object that *has state* (selected / loaded-in-preview / applied-on-player / starting / camera-using / gallery-vs-saved) and *affordances* (load, send, manage). The row reads as an actionable object, with its state as part of its identity — not a text line.
@@ -116,7 +117,7 @@ Still to define:
 - **Quantitative contrast targets** — adopt WCAG-equivalent numbers (4.5:1 body, 3:1 large/UI/focus), a token-pair pass/fail matrix, and an audit that resolves token values (serves principle 8).
 - **Motion system** — duration/easing tokens + an allowed-motion policy + a blanket reduce-motion contract (serves principle 7).
 - **Latency/progress patterns** — response-time budgets, debounce timing, spinner-vs-skeleton-vs-optimistic, stalled-state surfacing (serves principles 5, 6).
-- **Elevation/depth** — z-layer + surface/shadow/border system for shell<docks<banner<popover<modal and the Local-Preview-vs-Player-Output object separation (serves principles 2, 7).
+- **Elevation/depth** — z-layer + surface/shadow/border system for shell<docks<banner<popover<modal (serves principle 7).
 - **Empty-state visual** treatment, **iconography** system, **responsive breakpoint** tokens, **constructive error-copy** standard, and an **i18n/text-length** stance — each a small docs-first spec.
 
 (The full per-spec exploratory criteria were drafted alongside this doc; if a separate companion is wanted,
@@ -124,7 +125,7 @@ expand each bullet into a brief using the same Explore/Criteria/Done-bar structu
 
 ## Design tenets (quick reference)
 
-1. Workstation, not dashboard. 2. Preview and Output are two objects. 3. Presets are stateful objects.
+1. Workstation, not dashboard. 2. Local Preview is the terminal working view (no Player-Output copy). 3. Presets are stateful objects.
 4. Code is an instrument, role-weighted. 5. Visible, immediate, modeless. 6. Status near its subject.
 7. Dense, calm, legible, low ornament. 8. Solarized is semantic. 9. HiG → concrete testable rules.
 
@@ -133,8 +134,9 @@ expand each bullet into a brief using the same Explore/Criteria/Done-bar structu
 - **This doc** = direction/interpretation (the "why").
 - **[Style Directions](orchestrator-style-directions.md)** = the concrete per-principle directions (tagged DONE/PARTIAL/OPEN), open questions, and guideline citations that realize these principles — the "what to actually do".
 - **Synthesis UI Style Guide** = the rules that implement the direction.
-- **Preview/Output Model · Operator Journey + Status-Ownership · Preset Operator UX · Player Live ADR** =
-  locked product contracts this direction must honor.
+- **Preview/Output Model · Operator Journey + Status-Ownership · Preset Operator UX** =
+  locked product contracts this direction must honor. (The Player Live ADR is superseded by Option A,
+  2026-06-04: the Orchestrator surfaces no copy of the audience display.)
 - **HiG UX backlog** = the concrete opportunities/bugs that move surfaces toward this direction.
 
 ## How this guides current and future work
