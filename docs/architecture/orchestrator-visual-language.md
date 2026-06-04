@@ -338,8 +338,10 @@ user-facing string.**
 ### Doc-truth reconciliation (bookkeeping, no code change)
 
 D3.2 (per-row badge + accessible-name order, strongest-truth-first) is **already satisfied in code**:
-`PresetTree.tsx:328-333` paints `Applied on Player → Loaded in preview → Selected → Start → Cam → Gallery`
-and `:282-289` composes the identical order; the regression guard already exists
+the rendered glyph circles paint `Applied on Player → Loaded in preview → Selected → Start → Cam`
+(`PresetTree.tsx:390-394`; the Gallery badge was dropped, so it is **not** a rendered glyph), and the row
+accessible name composes the same strongest-truth order with `Gallery` appended as an accessible-name-only
+term (`PresetTree.tsx:317-328`); the regression guard already exists
 (`PresetTree.test.tsx:572-624,626-657`). The stale prose at
 [orchestrator-style-directions.md](orchestrator-style-directions.md)`:139-140,:169` (claims the JSX paints
 `Selected → Loaded → Applied …` and a reorder is owed, citing the old `:326-330`) should be corrected to
@@ -423,6 +425,15 @@ a named keyframe (the one exempt looping/determinate affordance) and is killed u
 easings collapse to `--orch-ease-standard`; keep `linear` only as the shimmer timing-function.
 **Allowed-motion policy:** motion only communicates state change or spatial origin; zero ambient/decorative
 animation.
+
+**Sanctioned size-neutral hover/focus micro-lift (badge circles).** The collapsed badge glyph circles
+(§4.11) get an in-lane hover/focus response that is **geometry-constant by construction** so it can never clip
+the fixed badge lane or reflow rows: `filter: brightness(1.12)` plus an inward `box-shadow: inset 0 0 0 1px
+color-mix(in srgb, currentColor 70%, transparent)` (`PresetTree.css:96-102`), triggered on
+`.presetRow:hover/:focus-visible/:focus-within`. It transitions `filter` + `box-shadow` only, both on
+`--orch-motion-fast` `--orch-ease-standard` (`PresetTree.css:72-74`) — **no transform, no width/height/margin
+change, no animated font-weight**. The blanket reduce-motion rule neutralizes its transition (the lift
+applies instantly, no movement). This is the one sanctioned hover emphasis on the badge lane.
 
 **Reduce-motion (blanket + per-file, because this is CSS Modules):** add ONE shell-scoped rule in
 `OrchestratorView.css`:
@@ -517,7 +528,12 @@ when helpful" — it supersedes it for icon-only controls). **No symbol-alone fo
 Load and Send remain text-bearing buttons (`PresetTree.tsx:343/357`); subordinate management verbs
 (rename/move/delete/start) may be icon-only but stay quieter (`--orch-muted`) and named. Single glyph family:
 the cited PresetTree mixes SVG `Icon` glyphs with Unicode emoji glyphs — record the Unicode set as a
-**sanctioned allowed set** (do not assert a false "single family" that the code violates). **Static check:**
+**sanctioned allowed set** (do not assert a false "single family" that the code violates). **Cam badge glyph:**
+the camcorder `VIDEO`/`mdiVideo` icon (`icons.ts:48`) is the registered Cam-state pictogram, rendered at
+`size={14}` inline-with-lane via the `Icon` component (`PresetTree.tsx:36`). **`QR_CODE` is
+registered-but-orphaned** (`icons.ts:42`): it was the Gallery-state glyph, but the Gallery badge was dropped
+(`PRESET_STATE_GLYPHS` has no Gallery entry, `orchestratorPresentationModel.ts:51-57`; the row stops at Cam,
+`PresetTree.tsx:394`), so `QR_CODE` has no live consumer — keep it registered, do not re-wire it. **Static check:**
 render-test that every icon-only control has an accessible name; the existing aria-label/title pattern at
 `PresetTree.tsx:206-430` is the pattern.
 
@@ -577,6 +593,18 @@ The role layer is **half-built**: `--orch-primary/live/success/applied/warning/d
 This spec **authors the missing role names** so every D3.2 state has a named role, and routes the raw-hue
 consumers through them. **No new palette family** — each role aliases an existing Solarized hue already in the
 `ORCH_SOLARIZED_TOKENS_START/END` block.
+
+**Badge artifact — collapsed glyph circle, not a textual tone pill.** Each per-row state badge renders as a
+fixed lane-height **glyph circle** (it reuses the `.sendAck` box geometry), NOT a text pill. The circle is
+dual-channel: an `aria-hidden` non-color glyph — a grayscale-distinct letter/star (`A` Applied, `L` Loaded,
+`S` Selected, `★` Start) or an `Icon`-component pictogram (`VIDEO` camcorder for Cam) — PLUS the full state
+word as the accessible name and hover `title` (the decode path). The marks are single-sourced as
+`PRESET_STATE_GLYPHS` (`orchestratorPresentationModel.ts:51-57`); the renderer paints the circle with
+`role='img'` + `aria-label={label}` + `title={label}` and a visually-hidden in-DOM `.badgeLabel` span
+(`PresetTree.tsx:24-41`, `.badgeDot`/`.badgeGlyph`/`.badgeLabel` at `PresetTree.css:58-94`). The hue rides the
+tone-recipe **state class** below (`.badgeApplied`/`.badgeLoaded`/`.badgeSelected`/`.badgeCam`,
+`PresetTree.css:104-127`); **color is never the sole channel** — glyph + accessible name + order carry the
+meaning if hue is unavailable. Lane geometry is constant (OQ-3.1 no-reflow lane).
 
 Add to the `.container` token block, immediately after the existing role tokens (`OrchestratorView.css:40`):
 
@@ -639,6 +667,12 @@ yellow/red/violet/magenta`) appears in a tone/badge/state class **outside the ro
 raw-hue consumers can be migrated without a single RED step; (d) tone classes compose `var(--orch-tone-fill |
 -emphasis-fill | -border)`, not bespoke `NN%` literals. `--orch-tone-emphasis-fill` is allowed ONLY on the
 `Failed`/`Camera error` alarm classes.
+
+> **No standalone state legend (provenance).** A persistent panel-header preset-state legend
+> (`PresetStateLegend` / `PRESET_STATE_LEGEND`) was added (`70d0e6ad`) then **removed** (`70650635`) as
+> redundant with the per-badge hover `title` + the row accessible name, which already carry every state's
+> full word at the point of use. No legend symbol survives in `src/`. Decode of a badge circle is the badge's
+> own `title`/`aria-label`, not a separate key. Do not re-introduce a standalone legend.
 
 ---
 
