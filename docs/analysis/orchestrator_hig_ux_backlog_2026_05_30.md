@@ -223,6 +223,38 @@ guard stays in force, and `OrchestratorPlayerOutputTruth` stays at its 2-value
   beyond `opacity:0`-until-hover (`PresetTree.css:86-103`); lowest priority (mutates the High-Risk
   PresetTree surface).
 
+### Residual research items outside the conformance wave (code-verified 2026-06-04)
+
+A coverage check of every still-OPEN/PARTIAL style-direction against the code (not just the doc tag).
+The Phase-B conformance wave + the deferred-HiG items above cover most of the research; these are the
+items that were NOT in either, with their *verified* status:
+
+- **`no-hero-entry-guard`** [S, real slice] — D1.1. The no-hero/landing good state exists (grep-clean in
+  `OrchestratorView.tsx`) but is **unguarded**; the audit has no `FORBIDDEN_ENTRY`/no-hero grep. Add a
+  static assertion (the `FORBIDDEN_PREVIEW_TERMS` pattern) so regression is CI-caught. Visual-language §5
+  already specs it (`FORBIDDEN_ENTRY_TERMS` over `ENTRY_AUDITED_FILES`).
+- **`entry-search-accelerator`** [S, real slice] — D1.2/D1.3 (OQ-1.1 RESOLVED → no autofocus + a `/`
+  accelerator to Presets search via `aria-keyshortcuts` + in-field hint). Verified **unbuilt** (no
+  `aria-keyshortcuts` / `/` handler in `PresetBrowser.tsx` / `useOrchestratorWorkspace.ts`). Small a11y/UX slice.
+- **D2.2 approximate-frame dashed hairline** [optional polish] — the preview already carries a subtle
+  border (`HydraPreview.css:4`); only the *dashed* "approximate" variant is unbuilt. Cosmetic; fold into
+  `empty-error-states` or skip.
+- **D9.1 verification-mechanism column** [doc-only] — visual-system Principle 9 names the
+  rule→verification mapping in prose but has no column/table. Add it when next touching that doc.
+- **D4.4 code-dock subordinate surface** [largely done] — `.codeDock` already recesses
+  (`OrchestratorView.css:227`); residual is codifying the "Stage ≥ Code surface" rule in the style guide.
+- **D3.5 keyboard preset-reorder** [met] — the *Move to folder* button (`PresetTree.tsx:448`) + arrow-key
+  handlers satisfy the WCAG 2.5.7 "drag-not-the-sole-mechanism" bar. Full keyboard drag-reorder is optional.
+- **D5.5 banner Apply/Dismiss in-flight** [N/A] — Apply/Dismiss are instant local ops
+  (`OrchestratorView.tsx:117-120`), no network latency, so an in-flight state is not warranted.
+- **Composited `color-mix()` contrast** (D7.6/D8.4/OQ-8.1 residue) [e2e-blocked] — flat-pair WCAG is
+  audited; composited-tint contrast stays a docs-checklist item until the Nix Chromium e2e is unblocked.
+
+**Open decisions still yours** (taste/policy, not build slices): OQ-4.2 (mobile pending-edits), OQ-6.2
+(camera onto frame — note D6.2 resolved the collision differently), OQ-6.3 (390px proximity), OQ-7.1
+(hard vs two-tier font floor), OQ-7.2 (44px policy for the remaining controls), OQ-9.3 (folder-action
+pointer scope, overlaps OQ-5.2/HiG #14).
+
 > **Correction to this doc's "Meta-finding" section above (re-verified 2026-06-04):** it is now
 > partially outdated. `orchestratorColorAudit.test.ts` DOES resolve `var()` existence
 > (`collectUnresolvedOrchVarRefs`) and — per spec OQ-8.1, RESOLVED — flat (non-`color-mix`) token-pair

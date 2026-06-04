@@ -2,4 +2,33 @@
 # Deferred (NOT in this closeout): HiG #14 folder-action discoverability, #15 PresetPicker menu rebuild,
 # #16 keyboard resize separator. See docs/analysis/orchestrator_hig_ux_backlog_2026_05_30.md.
 
-[]
+- id: orchestrator-research-coverage-reconcile
+  status: in_progress
+  owner: claude
+  branch: docs/orch-research-coverage-reconcile
+  base: main
+  worktree: { path: /home/steph/projects/KaraokeEternalAutomated, state: present }
+  merge_order: 320
+  goal: 'Make the backlog the complete forward record of the HiG/style-guide research: code-verified the residual OPEN/PARTIAL directions, record the genuinely-real ones (D1.1 no-hero guard, D1.2/D1.3 entry accelerator) + the minor/doc items, and add a reconciliation note to the style-directions consolidated OQ list pointing to the visual-language §3/§6 decisions-of-record. Pure docs.'
+  write_scope:
+    - docs/plans/active-slices.yaml
+    - docs/analysis/orchestrator_hig_ux_backlog_2026_05_30.md
+    - docs/architecture/orchestrator-style-directions.md
+  protected_paths:
+    - src/
+    - server/
+    - docs/architecture/orchestrator-visual-language.md
+  verification:
+    - npm run slices:check
+    - npm run typecheck
+    - npm run lint
+  acceptance:
+    - 'The backlog Forward-slices gains a "Residual research items" subsection enumerating the code-verified remaining directions with status (real slice / largely-done / doc-only / e2e-blocked / open decision).'
+    - 'The style-directions consolidated OQ list carries a reconciliation header noting most OQs are RESOLVED/RATIFIED of record in orchestrator-visual-language.md §3/§6, and naming the genuinely-open ones.'
+  non_goals:
+    - No code/test change; no new feature slices implemented.
+    - Do not re-open or re-decide any RESOLVED/RATIFIED OQ; only reconcile the list to the decisions-of-record.
+  notes:
+    - 'Answers "does the roadmap encompass the full extent of the research?" — verification narrowed the gap to 2 real small slices + minor/doc items + the OQ-list drift.'
+  next:
+    - implementation
