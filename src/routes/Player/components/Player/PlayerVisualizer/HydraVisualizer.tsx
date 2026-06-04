@@ -793,7 +793,11 @@ function HydraVisualizer ({
     return () => cancelAnimationFrame(rafRef.current)
   }, [isPlaying, tick])
 
-  const containerStyle: React.CSSProperties = { width, height }
+  // width/height drive the canvas backing store (below) + setResolution for crisp output.
+  // The on-screen CSS box must NOT be pinned to those (possibly DPR-scaled) pixels — that
+  // overflowed the overflow:hidden preview frame and clipped the render into a corner. The
+  // container fills its positioned parent via the stylesheet (.container { width/height:100% }).
+  const containerStyle: React.CSSProperties = {}
   if (typeof layer === 'number') {
     containerStyle.zIndex = layer
   }
@@ -843,8 +847,8 @@ class HydraErrorBoundary extends React.Component<
       return (
         <div
           style={{
-            width: this.props.width,
-            height: this.props.height,
+            width: '100%',
+            height: '100%',
             background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
             position: 'absolute',
             top: 0,
