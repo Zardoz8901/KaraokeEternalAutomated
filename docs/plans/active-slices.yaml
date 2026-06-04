@@ -2,42 +2,4 @@
 # Deferred (NOT in this closeout): HiG #14 folder-action discoverability, #15 PresetPicker menu rebuild,
 # #16 keyboard resize separator. See docs/analysis/orchestrator_hig_ux_backlog_2026_05_30.md.
 
-- id: orchestrator-remove-preset-legend
-  status: in_progress
-  owner: claude
-  branch: refactor/orch-remove-preset-legend
-  base: main
-  worktree: { path: /home/steph/projects/KaraokeEternalAutomated, state: present }
-  merge_order: 280
-  goal: 'Remove the preset-state legend added in phase-17 (redundant with per-badge hover title tooltips). Keep the phase-17 Gallery-badge drop. Drop the now-dead PRESET_STATE_LEGEND data and its consumers.'
-  write_scope:
-    - docs/plans/active-slices.yaml
-    - docs/analysis/orchestrator_remove_preset_legend_2026_06_04.md
-    - src/routes/Orchestrator/components/orchestratorPresentationModel.ts
-    - src/routes/Orchestrator/components/orchestratorPresentationModel.test.ts
-    - src/routes/Orchestrator/components/PresetTree.tsx
-    - src/routes/Orchestrator/components/PresetTree.css
-    - src/routes/Orchestrator/components/PresetTree.test.tsx
-    - src/routes/Orchestrator/components/PresetBrowser.tsx
-    - src/routes/Orchestrator/components/PresetBrowser.test.tsx
-  protected_paths:
-    - server/
-    - src/lib/webrtc/
-    - src/routes/Player/
-    - src/components/Icon/icons.ts
-  verification:
-    - npm test -- src/routes/Orchestrator/components/PresetTree.test.tsx src/routes/Orchestrator/components/PresetBrowser.test.tsx src/routes/Orchestrator/components/orchestratorPresentationModel.test.ts src/routes/Orchestrator/components/orchestratorColorAudit.test.ts
-    - npm test
-    - npm run typecheck
-    - npm run lint
-    - npm run slices:check
-  acceptance:
-    - 'PresetStateLegend, PRESET_STATE_LEGEND, and PresetStateLegendEntry are removed; the Presets panel renders no legend.'
-    - 'Row badges still collapse to glyph circles with their full word as the accessible name + hover title (decode path retained); the Gallery badge stays dropped.'
-  non_goals:
-    - Do not revert the Gallery-badge drop or any other phase-17 change beyond the legend.
-    - Do not touch the camera/video preview sizing (that is the separate video-crop fix).
-  notes:
-    - 'Removes the legend half of phase-17; keeps the Gallery-badge drop. PRESET_STATE_LEGEND had no other consumer (grep-verified), so its data + interface are removed too.'
-  next:
-    - implementation
+[]
