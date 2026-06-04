@@ -20,7 +20,7 @@ Use these terms consistently:
 | Fallback external source | Hydra used external/random video because no current Player MP4 source is available or required. | "This source is not the Player MP4." |
 | Applied on Player | The Player confirmed eval, first tick, and sanitized source-binding data for an accepted visualizer run. | "The Player applied this run." |
 | Player Output | The actual visual output rendered by the Player display for the audience. | "This is the authoritative audience truth." |
-| Player Live | A future mirror, stream, or snapshot of Player Output (existence under decision — see [ADR](orchestrator-player-live-decision.md)). | "This is a live view of Player Output" only after that feature exists. |
+| Player Live | A continuous mirror, stream, or snapshot of Player Output. Not built and not a roadmap item under Option A; would require a fresh ADR (see [ADR](orchestrator-player-live-decision.md)). | Forbidden as a label on Local Preview; usable only if such a feature is ever built. |
 
 Never label the local Hydra preview as **Live**, **Player Output**, **Now Playing**, or **On Display**.
 
@@ -39,15 +39,14 @@ Allowed current labels:
 - Preset rows and nearby status surfaces own `Applied on Player` when the applied metadata matches the preset or gallery key.
 - Broadcast state remains separate: `Sending`, `Synced`, `Failed`, and remote-update copy describe socket/broadcast flow, not Player output.
 - `Player Output` should describe the actual display surface. Do not use it for inferred status text.
-- `Player Live` belongs only to a future mirror/snapshot/stream surface. It must not be introduced as a label for the current preview.
+- `Player Live` and `Player Output` must not be introduced as labels for the Local Preview. The Orchestrator surfaces no mirror or snapshot of Player output; under Option A this prohibition is permanent.
 - Source-binding warnings should appear near the preview or affected preset action, not in a detached help banner.
 
 ## Consequences
 
-Future UI work can improve the Orchestrator in two separate tracks:
+Future UI work improves Local Preview clarity only: rename and annotate the existing preview/status copy without adding runtime protocol. `Local Preview` is the terminal Orchestrator preview surface.
 
-- Local Preview clarity: rename and annotate the existing preview/status copy without adding runtime protocol.
-- Player Live: whether to add a Player-output snapshot or a live mirror — or stay local-only — is a deliberate decision framed in [ADR: Orchestrator Player Live boundary](orchestrator-player-live-decision.md). Any mirror/stream is a later high-risk architecture slice for actual Player-output transport, rendering, validation, and failure states.
+The Player still renders actual audience output; the Orchestrator does not surface a copy of it. Per the Owner Decision (2026-06-04), Option A is adopted: no Player-output snapshot or live mirror is on the roadmap. A mirror or snapshot (Option C) would be a later high-risk architecture slice for actual Player-output transport, rendering, validation, and failure states, and would require a fresh ADR before adoption.
 
 This guide intentionally does not change server/socket protocol, Player rendering, route guards, preset CRUD, package, Nix, workflow, or e2e behavior.
 

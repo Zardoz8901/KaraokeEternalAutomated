@@ -120,10 +120,11 @@ measure contrast). The token-mapping *fix* itself is not blocked (static, grep/t
 
 Status taxonomy + one-owner-per-label; pill-vs-banner split; `FORBIDDEN_PREVIEW_TERMS` & fixed
 preview/output vocabulary; Solarized semantic token mapping; explicit-action separation
-(Load≠Send≠Save≠Camera); authority boundary + capability-mirrors-authority disclosure; the reserved
-(unbuilt) Player Output snapshot slot; visible focus on most surfaces (gaps are *narrow*: PresetTree
-rows, ApiReference action buttons, resize separator); two workspace layouts + Library-as-nav; empty/
-policy **copy** (only visual treatment is open). Source: style guide + operator-journey + preset-operator-ux.
+(Load≠Send≠Save≠Camera); authority boundary + capability-mirrors-authority disclosure; visible focus
+on most surfaces (gaps are *narrow*: PresetTree rows, ApiReference action buttons, resize separator);
+two workspace layouts + Library-as-nav; empty/policy **copy** (only visual treatment is open). Source:
+style guide + operator-journey + preset-operator-ux. (The former reserved Player Output snapshot slot
+is removed per the 2026-06-04 owner decision — Local Preview is terminal.)
 
 ## Doc-system gaps (future style-guide expansion, beyond Gate 3)
 
@@ -135,7 +136,7 @@ targets** (no measurable threshold), **motion guidance** (durations/easing/reduc
 visual** treatment, **iconography** system, **responsive breakpoints** (widths/tablet reflow),
 **elevation/depth** language, **i18n/text-length** resilience, **constructive error-copy** standard.
 
-## Forward slices — conformance finish → Player Live (operationalized 2026-06-04)
+## Forward slices — conformance finish (Local Preview is terminal) (operationalized 2026-06-04)
 
 Derived from the `orch-alignment-roadmap` workflow (run `wf_c4414b98-aff`, critic verdict
 approve-with-changes). **Verdict: the engineering is aligned (every shipped slice passed
@@ -146,13 +147,13 @@ forward record. A slice gets an `active-slices` record only when its branch/work
 
 **Execution constraints (read first):**
 - **Serialize every slice that edits `orchestratorColorAudit.test.ts`:** `elevation-aqua-cleanup`,
-  `error-state-route`, `motion-tokenize`, `breakpoints-lockstep`, `reserved-snapshot-slot`. The CSS
-  scopes are line-disjoint but the test file is shared — one integrator owns the test edits, or run
-  them sequentially. **Do NOT run these as parallel agents.**
-- **`spec-doc-sync` is BLOCKING only for spec-graded slices** (`empty-error-states`,
-  `reserved-snapshot-slot`, `term-guard-surface-aware`, anything citing §4.11/§4.5/§4.7). The pure-CSS
-  cleanups (`elevation-aqua-cleanup`, `error-state-route`, `motion-tokenize`, `breakpoints-lockstep`)
-  are graded by the audit test, not the prose spec — they need NOT wait on the doc slice.
+  `error-state-route`, `motion-tokenize`, `breakpoints-lockstep`. The CSS scopes are line-disjoint
+  but the test file is shared — one integrator owns the test edits, or run them sequentially.
+  **Do NOT run these as parallel agents.**
+- **`spec-doc-sync` is BLOCKING only for spec-graded slices** (`empty-error-states`, anything citing
+  §4.11/§4.5/§4.7). The pure-CSS cleanups (`elevation-aqua-cleanup`, `error-state-route`,
+  `motion-tokenize`, `breakpoints-lockstep`) are graded by the audit test, not the prose spec — they
+  need NOT wait on the doc slice.
 
 ### Phase A — doc-truth reconciliation (do first)
 - **`spec-doc-sync`** [M, pure docs] — bring the ratified spec in lockstep with shipped code.
@@ -198,19 +199,19 @@ forward record. A slice gets an `active-slices` record only when its branch/work
 - **`drop-orphan-qr-icon`** [S, trivial code] — remove the orphaned `QR_CODE` registration
   (`icons.ts:42`) — split out of `icon-i18n-stance` so that one stays no-code.
 
-### Phase C — Player-Live prerequisites
-- **`term-guard-surface-aware`** [M, security-adjacent labeling] — make `FORBIDDEN_PREVIEW_TERMS`
-  surface-aware (the Player-output label legitimately contains "Player Output"); promote
-  `OrchestratorPlayerOutputTruth` past its 2-value stub.
-- **`reserved-snapshot-slot`** [M, audit-test; dependsOn `term-guard-surface-aware` + `spec-doc-sync`]
-  — the §2 presence-gated `:has()` reserved Player-output snapshot geometry nested in `.stageFrame`
-  (OQ-2.1 large+inset); inert until runtime so no statically-authored track steals width.
+### Terminal decision — Local Preview is the terminal truth (owner decision 2026-06-04)
+The owner decided 2026-06-04 that a live image of what is playing is not necessary. **Option A
+(Local Preview is the terminal truth) is adopted; the ADR `orchestrator-player-live-decision.md` is
+updated to record A as terminal.** Option B (periodic Player-output snapshot) and Option C (live
+mirror) are both dropped from the roadmap. C remains theoretically possible only behind a fresh
+future ADR and is no longer a roadmap item.
 
-### Phase D — the payoff
-- **`player-live-runtime`** [L; dependsOn `reserved-snapshot-slot` + `term-guard-surface-aware`] —
-  Option B periodic Player-output snapshot per `orchestrator-player-live-decision.md`. Touches
-  `server/Player/socket.ts` + `HydraVisualizer.tsx` (both High-Risk Touchpoints) + the relay surface
-  → **full High-Risk Change Protocol + Red-Team Pass + full Validation Matrix.**
+The conformance roadmap therefore **ends at Phase B**. The former Phase C
+(`term-guard-surface-aware`, `reserved-snapshot-slot`) and Phase D (`player-live-runtime`) are
+removed: no Player-output snapshot or mirror will be built, no Stage frame slot is reserved for one,
+and `FORBIDDEN_PREVIEW_TERMS` does not need to become surface-aware. The `FORBIDDEN_PREVIEW_TERMS`
+guard stays in force, and `OrchestratorPlayerOutputTruth` stays at its 2-value
+(`'noPlayer' | 'playerPresentNotMirrored'`) form.
 
 ### Deferred HiG (independent of Player-Live; after the conformance core)
 - **`splitter-keyboard-and-drag`** [M] — HiG #16 keyboard-operable resize separator

@@ -24,9 +24,12 @@
 > - **Authority model.** owner/admin = live-code authority; collaborator/operator = saved DB presets only;
 >   Browse-only = Load/audition locally, no send. Gallery broadcast is host/admin-only. UI mirrors the
 >   server boundary; rejection is never the primary UX.
-> - **Player Output (snapshot) is Option B, accepted-as-target but reserved-but-UNBUILT.** Reserve the
->   adjacent layout slot + label slot + truth-union extension point; render NOTHING until a future runtime
->   slice. Player Live (Option C) is deferred and forbidden as a label.
+> - **Local Preview is the terminal truth surface (Option A, owner decision 2026-06-04).** The Orchestrator
+>   surfaces no copy of the real audience output: no reserved layout slot, no reserved label slot, no
+>   truth-union extension point for a snapshot. `.stageFrame` is permanently single-preview. The real Player
+>   still has audience output — Option A declines to mirror it here, it does not deny it. `Player Output` and
+>   `Player Live` remain forbidden as labels on the local preview. Option C (a live mirror) is no longer a
+>   roadmap item and would require a fresh ADR.
 > - **Local Nix Chromium e2e is BLOCKED.** Prefer statically verifiable rules (token audit, render-test,
 >   source grep) over screenshot-only ones.
 > - **Contrast targets are LOCKED:** ≥4.5:1 body text, ≥3:1 large text / UI components / borders / focus
@@ -119,7 +122,7 @@ spec-like: the **Max for Live Production Guidelines** (Ableton, official, on Git
 widget sizing, **Ableton Sans**, dynamic colors that follow the active Live theme + legibility checked across
 all themes, symmetric left/right margins, no size-flash on load, correct disabled-state colors —
 independently echo decisions in this doc (crisp rendering; the Solarized `--orch-*` role tokens + OS
-light/dark respect; the alignment/spacing contract; the presence-gated no-flash snapshot, OQ-2.1). **Bitwig**
+light/dark respect; the alignment/spacing contract). **Bitwig**
 publishes no design system: everything cited for it below is **observed-design** (user guide + independent
 teardowns), not a spec. The rest of this doc cites true published standards (Apple HiG, WCAG, NN/g); the DAW
 material stays a *reference layer*, with Ableton's M4L guideline the one genuinely citable item in it.
@@ -155,9 +158,9 @@ between content panes**. The spatial frame is **state-invariant across visits**;
   they are co-located peers sharing the rail, never two competing regions.
 - **Vertical axis (rows, the right column):** **Stage on TOP, Code on BOTTOM.**
 
-Grid summary: the reference rail is on the left; Local Preview (live output) is top-right and dominant; the
-Code editor is directly beneath it; the real Player snapshot (when built) sits beside Local Preview inside
-the Stage.
+Grid summary: the reference rail is on the left; Local Preview is top-right and dominant; the Code editor is
+directly beneath it. The Stage holds Local Preview alone — no reserved Player-output surface beside it (Option
+A; see §2 "Stage is permanently single-preview").
 
 > **Anchor honesty.** The columns (`OrchestratorView.css:77`) and the role-variant row-span swaps
 > (`.containerOperatorStageExpanded .stageDock { grid-row: 1/3 }`, `OrchestratorView.css:192`) are
@@ -183,34 +186,19 @@ vertical splitter (option c) is **deferred** — it adds persisted geometry + ro
 tier the static clamp does not need. **Static check:** render-test asserts host grid track 1 = `minmax(0,1fr)`
 and track 2 = a bounded clamp, never `1fr`.
 
-### Reserved Player Output snapshot — geometry & placement (OQ-2.1)
+### Stage is permanently single-preview (OQ-2.1, Option A)
 
-The snapshot is **not a new top-level grid cell**; it nests *inside* `.stageFrame` so Stage owns the
-preview/output peering and the outer grid stays a stable two-axis frame at all roles. When Option B ships:
-
-```css
-/* presence-gated modifier on .stageFrame, applied ONLY when the snapshot child mounts */
-grid-template-columns: minmax(0, 1fr) minmax(0, clamp(8rem, 26%, 16rem));
-```
-
-Local Preview in the primary (large) cell; `Player Output (snapshot, Xs ago)` poster in the smaller adjacent
-inset (picture-by-picture, side-by-side, **never overlapping**). The asymmetry keeps Local Preview dominant
-(Stage-first) while the persistent real-output snapshot lets the host compare approximate-vs-real **without a
-mode-flip** (a segmented swap reintroduces "which am I looking at" ambiguity; coequal halves the working
-preview).
-
-**Reserve correctly (critical):** pre-B, `.stageFrame` stays **single-column** `minmax(0, 1fr)` (today's
-centered single-object layout, `StagePanel.css:192`) and renders nothing. A statically-authored second track
-`minmax(0, clamp(8rem,…))` would *not* collapse — its 8rem floor would steal width before the snapshot ever
-ships. The two-column template switches on only when the snapshot child mounts (presence-gated modifier or
-`:has(> .snapshotCell)`). **Static check:** pre-B render-test asserts `.stageFrame` has no second-cell node,
-claims no `Player Output` label, AND is single-column (no reserved inset width).
+Owner decision 2026-06-04: the Orchestrator does not surface a copy of the real audience output. `.stageFrame`
+holds Local Preview alone — a single centered object (`StagePanel.css:192`), `grid-template-columns: minmax(0,
+1fr)`. There is no reserved second cell, no presence-gated two-column template, and no inset poster. The real
+Player retains its own audience output; Option A declines to mirror it here. **Static check:** render-test
+asserts `.stageFrame` is single-column with no second-cell node and claims no `Player Output` label.
 
 ### Elevation / depth — `--orch-z-*` scale + border/shape/label-only grammar
 
 Both preview objects, the docks, and all static chrome share the **same z-floor**; only popovers/sheets/
-banners rise. Depth is carried by **border, shape, and label only — never shadow.** Local Preview and the
-reserved snapshot are **same-tier peers** distinguished by frame style + label + (snapshot) timestamp.
+banners rise. Depth is carried by **border, shape, and label only — never shadow.** Local Preview sits at the
+shared z-floor; only popovers/sheets/banners rise above it.
 
 Add the named scale to the `.container` token block (`OrchestratorView.css`, near `:42-60`) and migrate every
 magic z-index:
@@ -258,7 +246,7 @@ review — see §1).
 | **OQ-1.1** | No programmatic focus on entry; add one documented `/` accelerator to the Presets search (only when focus is not in a text field/editor) via `aria-keyshortcuts` + in-field hint. | Auto-focusing an input on load reassigns the AT landmark (WCAG SC 3.2.1); accelerator is additive (`useOrchestratorWorkspace.ts:152`, `PresetBrowser.tsx:653-659`, `CodeEditor.tsx:342`). | high | easy | RESOLVED |
 | **OQ-1.2** | Persist ONLY inert view-shape (ref-panel width, expanded-folder set, active rail panel, preview buffer) under one versioned fail-safe key. Persist nothing in the truth lane. | Restores furniture without manufacturing a stale Player/applied claim; Selected/Loaded seed null, applied re-derived live (`PresetBrowser.tsx:84-85,156-164`). | high | easy | RATIFIED |
 | **OQ-1.3** | No command palette. Keep per-surface labeled controls; accelerators (`Cmd/Ctrl-Enter` send gated to `canLiveCode`, `/` to search) are additive, role-scoped, in one documented table. | A palette is a hidden modal mode (Principle 5) and only e2e-verifiable; duplicates `orchestratorCapabilities.ts:48-69` authority. | high | easy | RESOLVED |
-| **OQ-2.1** | Local Preview large + Player Output snapshot smaller adjacent inset inside `.stageFrame`; presence-gated 2-col template; same z-tier peers. | Persistent compare without a mode-flip; reserve-without-stealing-width (see §2). | medium | moderate | RATIFIED |
+| **OQ-2.1** | Resolved by Option A (owner decision 2026-06-04): `.stageFrame` is permanently single-preview; no reserved Player-output surface, no presence-gated 2-col template. | The Orchestrator surfaces no copy of the real audience output (see §2). | high | moderate | RESOLVED |
 | **OQ-2.2** | Borrowing Player MP4 changes ONLY the `.statusUsingPlayerMp4` source capsule (cyan tint + `Preview using Player MP4`); frame/radius/z-tier and primary `Local Preview` label stay constant. No per-source "approximate" qualifier. | A stronger frame would imply output authority — forbidden; the capsule already states the source delta (`HydraPreview.css:50-54`, `orchestratorPresentationModel.ts:83`). | high | easy | RESOLVED |
 | **OQ-3.1** | Dense row + reserved fixed-height badge lane, NOT a card/split-lane; Gallery painted on-row; no thumbnail. | Constant lane geometry → no mid-set reflow; thumbnail would imply output truth (`PresetTree.css:2,266-273`). | high | hard | **HONORED** |
 | **OQ-3.2** | Single-click = Select; explicit Load button = Load (local only, never broadcasts); Space = Send; **Enter = Select** (not Load). | State Truth Model forbids collapsing Selected/Loaded; `PresetTree.tsx:317,339-368`; Enter→Select is the tested binding (`PresetTree.test.tsx:143`). | high | moderate | **HONORED** |
@@ -269,7 +257,7 @@ review — see §1).
 | **OQ-5.2 + OQ-9.3** | Quiet-by-default on fine-pointer (`opacity: var(--orch-quiet-opacity, 0.55)` + `pointer-events:auto`), intensify on hover/`:focus-within`; **always full-opacity on coarse-pointer/touch and keyboard**, gated by `@media (hover/pointer)` capability queries, NOT width. No kebab/overflow. | Today's `opacity:0; pointer-events:none` (`PresetTree.css:104-106`) makes folder Delete/Set-player unreachable on touch at desktop width; width-gated mobile rule (`:367-371`) strands touch laptops. | high | easy | RESOLVED |
 | **OQ-6.1** | Strip broadcast pill is SOLE owner of `Sending/Synced/Failed` TEXT; just-sent row gets a row-local NON-textual ack (spinner→check/fail glyph) + mobile Presets-tab dot. Host send-group also drops to non-textual; extend ownership audit to ingest the CodeEditor send-group strings — same slice. | One-owner-per-label; `CodeEditor.tsx:508` `Synced` collides with the strip and is audit-invisible today (`orchestratorStatus.ts:64`, `orchestratorStatusOwnership.test.ts:70`). | high | moderate | **HONORED** |
 | **OQ-6.2 / D6.2** | Keep cameraPipeline in the Stage header right group; **relabel** `Camera Off/Partial/Live` → `Source: no camera` / `Source binding partial` / `Source bound`; extend `orchestratorStatusOwnership.test.ts` with a `stageCameraBinding` surface — SAME slice (relabel-before-audit). | `Camera Live` (`StagePanel.tsx:102`, `hydraPreviewUtils.ts:9`) leaks the forbidden term `Live` and is audit-invisible; relabel removes the leak + closes the coverage gap. Update `hydraPreviewUtils.test.ts:45/57/69` in-slice. | high | moderate | RATIFIED |
-| **OQ-6.3** | Keep the locked three-row mobile Stage-header wrap; width-bound the camera card (`flex:1 1 auto; max-width:100%; min-width:0` + ellipsis on label & detail); buffer radiogroup keeps its own touch-sized row; raise the two sub-floor camera literals. | Collapsing pills or pinning a preview-overlay status line both fight the locked Stage Header Contract / crowd the reserved snapshot (`StagePanel.css:86,94,227-230`, style guide :253-257). | high | easy | RESOLVED |
+| **OQ-6.3** | Keep the locked three-row mobile Stage-header wrap; width-bound the camera card (`flex:1 1 auto; max-width:100%; min-width:0` + ellipsis on label & detail); buffer radiogroup keeps its own touch-sized row; raise the two sub-floor camera literals. | Collapsing pills or pinning a preview-overlay status line both fight the locked Stage Header Contract (`StagePanel.css:86,94,227-230`, style guide :253-257). | high | easy | RESOLVED |
 | **OQ-7.1** | Single hard floor of `--orch-text-meta` 0.75rem everywhere; no sub-0.75rem tier; migrate every sub-floor literal up. | One audit-able number beats a two-tier exception list on an e2e-blocked surface; 12px is the comfortable dim-room minimum (`OrchestratorView.css:71`, `StagePanel.css:94`). | high | easy | RESOLVED |
 | **OQ-7.2** | Per-control policy table requiring **effective ≥44px** on the mobile breakpoint via painted-size-OR-hit-slop(`::before`); never inflate painted size on fine-pointer; pills excluded; extend the hit-slop audit to the next-smallest controls. | Hit-slop is the proven pattern (`orchestratorColorAudit.test.ts:191-192`); re-anchored to the real `max-width:980px` breakpoint (no `pointer:coarse` query exists in-tree). | high | easy | RESOLVED |
 | **OQ-8.1** | Hybrid: ship the docs pass/fail matrix now + extend the audit to compute WCAG contrast on **flat (non-`color-mix`) token pairs** via `resolveTokenValue()`; defer composited tint pairs to docs-checklist; assert glyph-on-tint against base03/base02 + tinted backdrop as the floor. | Flat-pair math needs no browser (`orchestratorColorAudit.test.ts:55-74,140-154`); docs-only repeats the silent-fallback bug class. | high | easy | RESOLVED |
@@ -288,20 +276,19 @@ review — see §1).
 
 ### ADR blocks for higher-stakes / taste calls
 
-**ADR — Spatial elevation: border/shape/label, never shadow-for-depth (OQ-2.1 + elevation scale)**
-*Context:* Local Preview and the reserved Player Output snapshot must read as two distinct objects; the
-naive move is a drop shadow to "lift" one. *Decision:* depth is carried by frame style + label + timestamp;
-the two are same-tier peers on the base03 plane; `--orch-shadow` stays popover/modal/drag-lift only; the
-snapshot nests inside `.stageFrame` as a presence-gated inset, not a new grid cell. *Consequences:* honest
-non-hierarchical peering survives color-blindness and bright Hydra bleed; the outer grid never reflows when
-Option B ships; an audit can enforce "no shadow on static chrome" cheaply. Reversible-moderate.
+**ADR — Spatial elevation: border/shape/label, never shadow-for-depth (elevation scale)**
+*Context:* the Stage and docks could be tempted to use a drop shadow to "lift" the preview frame.
+*Decision:* depth is carried by frame style and label only; static chrome and the preview frame stay on the
+base03 z-floor; `--orch-shadow` stays popover/modal/drag-lift only. *Consequences:* a flat plane survives
+color-blindness and bright Hydra bleed; an audit can enforce "no shadow on static chrome" cheaply.
+Reversible-moderate.
 
 **ADR — `Applied on Player` stays binary (OQ-3.3)**
 *Context:* a superseded preset could decay with a "recently applied" tint. *Decision:* strictly binary,
 drops instantly on key mismatch; superseded messaging is owned solely by the strip Remote-update pill.
 *Consequences:* no soft claim that reads as "still kind of live" (a latent `FORBIDDEN_PREVIEW_TERMS`-adjacent
-overclaim); no motion token / reduce-motion guard needed; reconsider only when an Option B snapshot provides
-proof. Reversible-easy (a tasteful decay can be added later behind real proof).
+overclaim); no motion token / reduce-motion guard needed; reconsider only behind a fresh ADR introducing a
+Player-output surface that could prove it. Reversible-easy (a tasteful decay could be added later behind such proof).
 
 **ADR — Cyan stays the single live-signal role; no new camera hue (OQ-8.2)**
 *Context:* the charter proposed splitting camera onto magenta to fix "cyan overload". *Decision:* keep one
@@ -698,7 +685,7 @@ and the test that guards it.
 | No-hero entry invariant + entry defaults (OQ-1.1, facet) | **Product Layout Contract** | `orchestratorColorAudit.test.ts`: `FORBIDDEN_ENTRY_TERMS` className/string grep over `ENTRY_AUDITED_FILES`; defaults stay presets/stage |
 | Persistence boundary (inert view-shape only) (OQ-1.2) | **Core UX Rules** → Persistence boundary | unit-test: versioned key, fail-safe-to-default, no truth-lane key |
 | Stage row ≥ Code clamp (OQ-4.1) | **Product Layout Contract** | render-test host grid track 1 = `1fr`, track 2 = bounded clamp |
-| Reserved snapshot geometry (OQ-2.1) | **Stage Header Contract** / Preview/Output Model | pre-B render-test: single-column, no inset node/label |
+| Stage permanently single-preview (OQ-2.1, Option A) | **Stage Header Contract** / Preview/Output Model | render-test: `.stageFrame` single-column, no second-cell node, no `Player Output` label |
 | Buffer APG radiogroup + `::after` active cue (OQ-5.1) | **Synthesis Controls** → Selection Controls | render-test roving tabindex/arrow keys; audit `.bufferButtonActive::after` |
 | Capability-query folder-action reveal + `--orch-quiet-opacity` (OQ-5.2/9.3) | **Accessibility And Input** / Menuing | grep: `@media (hover/pointer)` not width; quiet opacity token defined |
 | cameraPipeline source-binding relabel + `stageCameraBinding` surface (OQ-6.2/D6.2) | **Stage Header Contract** + operator-journey table | `orchestratorStatusOwnership.test.ts` new surface; `hydraPreviewUtils.test.ts` updated |
@@ -725,15 +712,16 @@ recorded with its ratified outcome and stays reversible; revisit any anytime.
    operator may expect the safe `auto` default rather than a remembered manual buffer. Yes-to-all, or
    exclude buffer?
 
-2. **OQ-2.1 — Snapshot geometry when Option B ships.** *Recommend:* Local Preview large + snapshot smaller
-   adjacent inset (picture-by-picture), same z-tier, presence-gated so nothing reserves width until built.
-   *Why:* persistent compare without a mode-flip while keeping Local Preview dominant. *Adjust option:*
-   coequal side-by-side halves (more symmetric, but halves your working preview).
+2. **OQ-2.1 — Player-output surface in the Orchestrator.** *Superseded 2026-06-04 by owner decision:* adopt
+   Option A — Local Preview is the terminal truth surface and the Orchestrator surfaces no copy of the real
+   audience output. The earlier ratified snapshot geometry (large preview + presence-gated inset) is dropped;
+   `.stageFrame` is permanently single-preview. Option C (a live mirror) is no longer a roadmap item and would
+   require a fresh ADR.
 
 3. **OQ-3.3 — Stale `Applied on Player`.** *Recommend:* strictly binary — drops instantly on mismatch; the
    strip Remote-update pill owns "something newer is applied". *Why:* any decay reads as a competing Player
-   claim with no proof. *Adjust option:* allow a tasteful "recently applied" decay later, only once an
-   Option B snapshot can prove it.
+   claim with no proof. *Adjust option:* allow a tasteful "recently applied" decay later, only behind a fresh
+   ADR introducing a Player-output surface that can prove it.
 
 4. **OQ-6.2 / D6.2 — Relabel the cameraPipeline block.** *Recommend:* `Source bound` / `Source binding
    partial` / `Source: no camera` (drops the `Camera <state>` stem entirely). *Why:* removes a latent
@@ -778,7 +766,8 @@ recorded with its ratified outcome and stays reversible; revisit any anytime.
 - **Locked product contracts honored:** [Preview/Output Model](orchestrator-preview-output-model.md),
   [Operator Journey + Status-Ownership](orchestrator-operator-journey.md),
   [Preset Operator UX](orchestrator-preset-operator-ux.md),
-  [Player Live ADR](orchestrator-player-live-decision.md) (Option B accepted-as-target, reserved-but-unbuilt).
+  [Player Live ADR](orchestrator-player-live-decision.md) (Option A adopted 2026-06-04 — Local Preview
+  terminal; Options B and C dropped, C only behind a fresh ADR).
 - **CI guards referenced:** `orchestratorColorAudit.test.ts`, `orchestratorStatusOwnership.test.ts`,
   `orchestratorPresentationModel.ts` (the `FORBIDDEN_PREVIEW_TERMS` + reserved truth-union guard).
 

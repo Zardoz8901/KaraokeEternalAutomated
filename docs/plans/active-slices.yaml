@@ -2,4 +2,49 @@
 # Deferred (NOT in this closeout): HiG #14 folder-action discoverability, #15 PresetPicker menu rebuild,
 # #16 keyboard resize separator. See docs/analysis/orchestrator_hig_ux_backlog_2026_05_30.md.
 
-[]
+- id: orchestrator-option-a-terminal
+  status: in_progress
+  owner: claude
+  branch: refactor/orch-option-a-terminal
+  base: main
+  worktree: { path: /home/steph/projects/KaraokeEternalAutomated, state: present }
+  merge_order: 310
+  goal: 'Adopt Option A (Local Preview terminal) as the decision: drop the Player-output snapshot (B) and mirror (C). Flip the ADR, remove the reserved Player-Output surface from the docs (presence-gated snapshot geometry, OQ-2.1, reserve-a-slot directions, Phase C/D backlog slices), reframe the reservation guards/comments in code. Keep the FORBIDDEN_PREVIEW_TERMS guard and the 2-value OrchestratorPlayerOutputTruth stub.'
+  write_scope:
+    - docs/plans/active-slices.yaml
+    - docs/architecture/orchestrator-player-live-decision.md
+    - docs/architecture/orchestrator-visual-language.md
+    - docs/architecture/orchestrator-style-directions.md
+    - docs/architecture/orchestrator-visual-system.md
+    - docs/architecture/orchestrator-operator-journey.md
+    - docs/architecture/orchestrator-preview-output-model.md
+    - docs/architecture/orchestrator-synthesis-ui-style-guide.md
+    - docs/architecture/orchestrator-preset-operator-ux.md
+    - docs/ARCHITECTURE.md
+    - docs/analysis/orchestrator_hig_ux_backlog_2026_05_30.md
+    - docs/analysis/current_state_2026_06_04.md
+    - src/routes/Orchestrator/components/orchestratorPresentationModel.ts
+    - src/routes/Orchestrator/views/OrchestratorView.spatial.test.tsx
+    - src/routes/Orchestrator/components/HydraPreview.test.tsx
+  protected_paths:
+    - server/
+    - src/lib/
+    - src/routes/Player/
+  verification:
+    - npm test -- src/routes/Orchestrator/views/OrchestratorView.spatial.test.tsx src/routes/Orchestrator/components/HydraPreview.test.tsx src/routes/Orchestrator/components/orchestratorPresentationModel.test.ts
+    - npm test
+    - npm run typecheck
+    - npm run lint
+    - npm run slices:check
+  acceptance:
+    - 'The ADR records Option A as the accepted terminal decision; B and C are dropped (C remains conceptually possible only behind a fresh ADR). No doc reserves a Player-Output surface, presence-gated snapshot geometry, or OQ-2.1 inset.'
+    - 'The backlog Forward-slices drops Phase C (term-guard-surface-aware, reserved-snapshot-slot) and Phase D (player-live-runtime); the conformance roadmap ends at Phase B.'
+    - 'Code: the 2-value OrchestratorPlayerOutputTruth stub and FORBIDDEN_PREVIEW_TERMS guard are retained; only reservation comments/test framing are reworded (assertions unchanged). Full suite + typecheck + lint green.'
+  non_goals:
+    - Do not remove the FORBIDDEN_PREVIEW_TERMS guard or the 2-value OrchestratorPlayerOutputTruth stub.
+    - Do not delete the concept that the Player has real audience output; only remove the reserved Orchestrator surface for snapshotting it.
+    - No Player/server/relay change.
+  notes:
+    - 'Reverses the ratified Option-B target per owner decision 2026-06-04 ("a live image of what is playing is not necessary"). Strict doc register preserved.'
+  next:
+    - implementation

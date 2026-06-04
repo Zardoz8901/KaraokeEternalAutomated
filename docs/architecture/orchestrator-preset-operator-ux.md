@@ -96,7 +96,7 @@ The UI must not collapse these states into one label:
 
 `Load` is locked to this exact behavior: **set this client's local Stage preview and selected preset only; do not broadcast to the room; do not claim player-applied state.**
 
-The current implementation can safely show Selected, Loaded locally, Sent, Synced, failed send, remote update available, and Applied on Player when the Player-applied metadata matches the preset or gallery key. It must not show "Live", "Now playing", "On Display", or "Player Output" for a preset unless a future Player-output mirror provides proof.
+The current implementation can safely show Selected, Loaded locally, Sent, Synced, failed send, remote update available, and Applied on Player when the Player-applied metadata matches the preset or gallery key. It must not show "Live", "Now playing", "On Display", or "Player Output" for a preset; under Option A (2026-06-04) the Orchestrator surfaces no audience-output mirror, so these labels are permanently disallowed.
 
 ## State Copy Matrix
 
@@ -158,7 +158,7 @@ The current client receives enough state to mirror local send echo, remote code 
 
 Applied on Player means the Player evaluated and ticked the accepted visualizer run. It does not prove that the local preview pixels match the Player, and it does not provide a live mirror of the audience display.
 
-Do not implement these labels without a future Player-output mirror or equivalent protocol:
+These labels are permanently disallowed under Option A (2026-06-04); the Orchestrator surfaces no audience-output mirror, so none of them has a truthful basis:
 
 - "Live preset"
 - "Now on display"
@@ -166,7 +166,7 @@ Do not implement these labels without a future Player-output mirror or equivalen
 - "Player Live"
 - "Player Output" as a preview-panel label
 
-A future Player Live slice may add a mirror, stream, snapshot, or equivalent Player-output proof; whether and how is decided in the [Player Live ADR](orchestrator-player-live-decision.md). That is outside this spec unless explicitly planned.
+Option A (2026-06-04) is terminal: no Player Live slice is planned and the Orchestrator surfaces no mirror, stream, or snapshot of the audience display. A live mirror remains theoretically possible only behind a fresh future ADR; it is not a roadmap item.
 
 ## Acceptance Criteria
 

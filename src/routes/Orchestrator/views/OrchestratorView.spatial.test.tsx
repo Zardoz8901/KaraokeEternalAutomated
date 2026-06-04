@@ -41,7 +41,7 @@ describe('Orchestrator spatial model', () => {
     expect(container).not.toContain('44dvh')
   })
 
-  it('keeps the pre-Option-B Stage frame as a single-preview flex reserve', async () => {
+  it('Option A terminal — Stage frame is permanently single-preview, no Player-Output cell', async () => {
     const stageCss = readCss('src/routes/Orchestrator/components/StagePanel.css')
     const stageFrame = cssBlock(stageCss, '.stageFrame')
 

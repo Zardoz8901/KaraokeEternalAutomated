@@ -1,9 +1,13 @@
 # ADR: Orchestrator Player Live boundary — local preview vs snapshot vs mirror
 
-- **Status:** Accepted (2026-05-30) — **Option B** (periodic Player-output snapshot) is the target; **A** remains the zero-cost fallback; **C** (live mirror) is deferred behind explicit triggers.
+- **Status:** Accepted (2026-06-04, terminal) — **Option A** (Local Preview is the terminal truth) is the accepted decision: the Orchestrator reserves no Player-output surface. **Option B** (periodic snapshot) is dropped — it was the prior 2026-05-30 target, reversed by owner decision. **Option C** (live mirror) is no longer a roadmap item and would require a fresh future ADR. Superseded the 2026-05-30 Option-B-target status; see the Superseded/Updated note below.
 - **Date:** 2026-05-30
 - **Supersedes:** the unregistered "player-live-mirroring-architecture-spec" follow-on note in the Phase 9/10 slice records, which pre-assumed mirroring. This ADR reframes that as a neutral decision.
 - **Related:** [Orchestrator Preview/Output Model](orchestrator-preview-output-model.md)
+
+## Superseded/Updated 2026-06-04
+
+Owner decision 2026-06-04: a live image of what is playing is not necessary. This reverses the prior **2026-05-30 status, which set Option B (periodic Player-output snapshot) as the target.** Option A (Local Preview is the terminal truth) is now the accepted, terminal decision. Option B is dropped as a roadmap item. Option C (live mirror) remains theoretically possible only behind a fresh future ADR and is no longer a roadmap item. The Context, Options, and Evaluation sections below are retained unchanged as historical record — they remain accurate descriptions of the options. Only the Recommendation, Decision, and Consequences sections were reconciled to Option A.
 
 ## Context
 
@@ -63,9 +67,9 @@ Engineering cost · security/authz surface · latency & bandwidth · failure/deg
 | Closes "is this the audience view?" gap | no | mostly | fully |
 | Truth-union change | none | additive | additive (multi-state) |
 
-## Recommendation (not a decision)
+## Recommendation (historical, 2026-05-30)
 
-**Lean B as the pragmatic target, A as the zero-cost fallback, C deferred behind explicit triggers.** Rationale:
+The 2026-05-30 recommendation leaned B as the pragmatic target, A as the zero-cost fallback, and C deferred behind explicit triggers. It is retained here as historical record; it was superseded by the 2026-06-04 owner decision recorded above and in the Decision section. The original rationale was:
 
 - A is already true and shippable; it costs nothing and remains the honest default.
 - B closes the real product gap operators name — an actual, low-frequency "this is what the audience sees" — at far lower cost and risk than C, and it degrades *honestly*.
@@ -73,14 +77,16 @@ Engineering cost · security/authz surface · latency & bandwidth · failure/deg
 
 ## Decision
 
-**Accepted 2026-05-30: Option B (periodic Player-output snapshot) is the target.** A remains the honest zero-cost fallback (and ships today); C (live mirror) is deferred behind explicit triggers (e.g. "operators report snapshots are insufficient for live VJ-style timing") and would require a Security-Sensitive runtime slice with a full red-team of the guest-camera re-broadcast surface.
+**Accepted 2026-06-04 (terminal): Option A — Local Preview is the terminal truth.** The Orchestrator surfaces only its Local Preview and reserves no Player-output surface, status slot, or screen real estate. This reverses the prior 2026-05-30 Decision (Option B target), per owner decision: a live image of what is playing is not necessary.
 
-This is a **target, not an implementation**. No runtime or truth-model change happens in this slice. A future B runtime slice will implement the snapshot publish/receive path (bound to the pinned Player identity) and extend `OrchestratorPlayerOutputTruth` with a snapshot state (e.g. `'playerOutputSnapshot'` plus a staleness field), distinct from any "live" claim.
+Option B (periodic Player-output snapshot) is dropped as a roadmap item. Option C (live mirror) is no longer a roadmap item; it remains theoretically feasible only behind a fresh future ADR (and, if ever pursued, a Security-Sensitive runtime slice with a full red-team of the guest-camera re-broadcast surface).
 
-**Deferred sub-decision (resolve when the B runtime slice is planned):** who may receive Player-output snapshots — recommended default is room owner/admin plus operators with Orchestrator access, gated server-side, consistent with the existing room-authority model.
+The real Player still has actual audience output (`Player Output` in the [Preview/Output Model](orchestrator-preview-output-model.md)); Option A does not deny this. It declines to surface a copy of that output in the Orchestrator.
+
+No runtime or truth-model change happens. `OrchestratorPlayerOutputTruth = 'noPlayer' | 'playerPresentNotMirrored'` (`orchestratorPresentationModel.ts:12`) is correct and terminal under Option A; it is not extended.
 
 ## Consequences
 
-- **Gate 3 (UX architecture pass) consumes this decision.** Only the preview↔Player-output truth tier and the Stage-strip layout depend on it (~20% of the status vocabulary); the rest of Gate 3a can be drafted in parallel. If A: finalize "Local Preview" as terminal and reserve no slot. If B/C: reserve a "Player Output" status slot and screen real estate adjacent to Local Preview, and pre-allocate ownership of "Player Output" vs "Local Preview" in the cross-surface status table.
-- **No runtime/truth-model change in this slice.** Any `OrchestratorPlayerOutputTruth` extension above is a design artifact only.
-- The reserved **Player Live** label remains forbidden on the local preview until the chosen feature actually exists.
+- **Gate 3 (UX architecture pass) consumes this decision as Option A.** The Orchestrator finalizes "Local Preview" as the terminal truth and reserves no "Player Output" status slot or screen real estate adjacent to it. No "Player Output" vs "Local Preview" ownership split is allocated in the cross-surface status table.
+- **No runtime/truth-model change.** `OrchestratorPlayerOutputTruth` is not extended; the two-value union is terminal under Option A.
+- The reserved **Player Live** / **Player Output** labels remain forbidden on the Local Preview. Under Option A this is **permanent, not transitional**: the local preview must never claim to be `Player Output`, `Player Live`, `Live`, or equivalent (the `FORBIDDEN_PREVIEW_TERMS` guard), because no Orchestrator surface mirrors Player output and none is planned. Lifting the guard would require a fresh ADR introducing such a surface.
