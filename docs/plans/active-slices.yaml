@@ -2,40 +2,4 @@
 # Deferred (NOT in this closeout): HiG #14 folder-action discoverability, #15 PresetPicker menu rebuild,
 # #16 keyboard resize separator. See docs/analysis/orchestrator_hig_ux_backlog_2026_05_30.md.
 
-- id: orchestrator-conformance-cleanups
-  status: in_progress
-  owner: claude
-  branch: phase-B-orch-conformance-cleanups
-  base: main
-  worktree: { path: /home/steph/projects/KaraokeEternalAutomated, state: present }
-  merge_order: 330
-  goal: 'Phase B mechanical conformance cleanups (one serialized slice — all touch orchestratorColorAudit.test.ts): delete the 7 dead --aqua-* shims (D7.4), route PresetBrowser .error off raw --orch-red onto --orch-danger and drop its audit allowlist carve-out (D8.5/error-state-route), and tokenize the 3 raw PresetBrowser transitions onto --orch-motion-*/--orch-ease-standard (D7.2 residual). The shimmer + sendAckSpin looping animations stay exempt per §4.3.'
-  write_scope:
-    - docs/plans/active-slices.yaml
-    - docs/analysis/orchestrator_conformance_cleanups_2026_06_04.md
-    - src/routes/Orchestrator/views/OrchestratorView.css
-    - src/routes/Orchestrator/components/PresetBrowser.css
-    - src/routes/Orchestrator/components/orchestratorColorAudit.test.ts
-  protected_paths:
-    - server/
-    - src/lib/
-    - src/routes/Player/
-    - src/routes/Orchestrator/components/PresetTree.css
-  verification:
-    - npm test -- src/routes/Orchestrator/components/orchestratorColorAudit.test.ts
-    - npm test
-    - npm run typecheck
-    - npm run lint
-    - npm run slices:check
-  acceptance:
-    - 'The 7 --aqua-* shims are gone from OrchestratorView.css (zero consumers — grep-verified) and an audit asserts their absence.'
-    - 'PresetBrowser .error uses --orch-danger (not raw --orch-red); the .error allowlist carve-out is removed and collectFileWideRawHues() stays empty.'
-    - 'PresetBrowser transitions :34/:76/:119 route through --orch-motion-base + --orch-ease-standard; an audit asserts no raw transition duration/easing remains; shimmer/sendAckSpin loops untouched.'
-  non_goals:
-    - Do not touch breakpoints-lockstep (separate slice; CSS-custom-props cannot be used in @media).
-    - Do not tokenize the looping shimmer/sendAckSpin animations (§4.3 exempt).
-    - No Player/server/relay change.
-  notes:
-    - 'Serialized per the backlog Forward-slices constraint — one integrator owns the shared orchestratorColorAudit.test.ts edits. TDD: extend audit (RED) then route CSS (GREEN).'
-  next:
-    - implementation
+[]
