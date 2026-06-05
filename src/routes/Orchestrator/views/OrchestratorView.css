@@ -79,15 +79,6 @@
   --orch-z-banner: 110;
   --orch-z-modal: 120;
 
-  /* Temporary compatibility aliases for child modules during this slice. */
-  --aqua-glass-bg: var(--orch-surface-soft);
-  --aqua-blur: none;
-  --aqua-radius: var(--orch-radius-md);
-  --aqua-shadow: var(--orch-shadow);
-  --aqua-gloss: none;
-  --aqua-border: 1px solid var(--orch-border-subtle);
-  --aqua-accent: var(--orch-cyan);
-
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
   --text-md: 1rem;

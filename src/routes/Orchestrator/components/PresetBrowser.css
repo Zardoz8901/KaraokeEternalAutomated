@@ -31,7 +31,7 @@
   font-size: var(--text-sm);
   font-weight: 650;
   cursor: pointer;
-  transition: border-color 0.2s, background-color 0.2s;
+  transition: border-color var(--orch-motion-base) var(--orch-ease-standard), background-color var(--orch-motion-base) var(--orch-ease-standard);
   min-height: 40px;
 }
 
@@ -73,7 +73,7 @@
   font-size: 16px;
   outline: none;
   box-sizing: border-box;
-  transition: border-color 0.2s, background-color 0.2s;
+  transition: border-color var(--orch-motion-base) var(--orch-ease-standard), background-color var(--orch-motion-base) var(--orch-ease-standard);
 }
 
 .searchInput:focus {
@@ -116,11 +116,11 @@
   background: color-mix(in srgb, var(--orch-warning) var(--orch-tone-fill), transparent);
   border-color: color-mix(in srgb, var(--orch-warning) var(--orch-tone-border), transparent);
   color: var(--orch-text);
-  transition: opacity 180ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity var(--orch-motion-base) var(--orch-ease-standard);
 }
 
 .error {
-  color: var(--orch-red);
+  color: var(--orch-danger);
 }
 
 .loadingLabel {

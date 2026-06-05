@@ -71,7 +71,6 @@ function stripNeutralChromeAllowlist (file: string, source: string): string {
   if (file === 'PresetBrowser.css') {
     return [
       '\\.toolbarButton:hover',
-      '\\.error',
     ].reduce((nextSource, selector) => stripBlock(nextSource, selector), source)
   }
 
@@ -276,8 +275,8 @@ describe('Orchestrator color audit', () => {
   it('leaves no raw hue in migrated state surfaces outside the neutral-chrome and deferred allowlist (file-wide)', () => {
     // The allowlist is intentionally narrow:
     // - neutral interaction chrome in PresetTree folder/drag/row hover affordances;
-    // - neutral PresetBrowser toolbar hover chrome;
-    // - deferred PresetBrowser .error, which needs markup before contrast-safe routing.
+    // - neutral PresetBrowser toolbar hover chrome.
+    // (PresetBrowser .error is no longer carved out — it routes through --orch-danger.)
     // This file-wide sweep covers selectors that cssBlock cannot reliably reach,
     // including grouped-leading-member standalones and pseudo-class declarations.
     expect(collectFileWideRawHues()).toEqual([])
@@ -352,6 +351,19 @@ describe('Orchestrator color audit', () => {
   it('documents hit-slop for the smallest Orchestrator controls', () => {
     expect(readComponentCss('StagePanel.css')).toContain('.bufferButton::before')
     expect(readComponentCss('CodeEditor.css')).toContain('.resendButton::before')
+  })
+
+  it('removes the dead --aqua-* compatibility shims from the token block', () => {
+    // Zero `var(--aqua-*)` consumers remain; the neutralized shims are dead weight (D7.4).
+    expect(readOrchestratorViewCss()).not.toMatch(/--aqua-/)
+  })
+
+  it('tokenizes PresetBrowser transitions onto the motion scale (no raw duration/easing)', () => {
+    // Looping shimmer/sendAckSpin animations are the §4.3-exempt determinate affordances; this
+    // targets `transition:` declarations only, which must route through --orch-motion-*/--orch-ease-standard.
+    const presetBrowser = readComponentCss('PresetBrowser.css')
+    expect(presetBrowser).not.toMatch(/transition:[^;]*(?:0\.2s|180ms|cubic-bezier)/)
+    expect(presetBrowser).toMatch(/transition:[^;]*var\(--orch-motion-/)
   })
 
   it('defines the semantic role, tone, motion, and z-layer tokens exactly', () => {
@@ -517,8 +529,10 @@ describe('Orchestrator color audit', () => {
     expect(source).not.toMatch(/var\(--orch-(?:blue|cyan|yellow)\)/)
   })
 
-  it('keeps PresetBrowser error deferred until empty-error-states can add non-text affordance', () => {
-    expect(cssBlock(readComponentCss('PresetBrowser.css'), '.error')).toContain('color: var(--orch-red)')
+  it('routes the PresetBrowser error label through the danger role token', () => {
+    const errorBlock = cssBlock(readComponentCss('PresetBrowser.css'), '.error')
+    expect(errorBlock).toContain('color: var(--orch-danger)')
+    expect(errorBlock).not.toContain('var(--orch-red)')
   })
 
   it('migrates scoped z-index literals to the z-layer scale', () => {
