@@ -2,38 +2,4 @@
 # Deferred (NOT in this closeout): HiG #14 folder-action discoverability, #15 PresetPicker menu rebuild,
 # #16 keyboard resize separator. See docs/analysis/orchestrator_hig_ux_backlog_2026_05_30.md.
 
-- id: orchestrator-no-hero-entry-guard
-  status: in_progress
-  owner: claude
-  branch: phase-B-no-hero-entry-guard
-  base: main
-  worktree: { path: /home/steph/projects/KaraokeEternalAutomated, state: present }
-  merge_order: 340
-  goal: 'D1.1 no-hero static guard: add a FORBIDDEN_ENTRY_TERMS grep to the color audit so the Orchestrator entry (OrchestratorView.tsx) cannot regress into hero/landing/welcome/dashboard/splash markup. Plus correct the false "QR_CODE orphaned" claim — QRPrefs.tsx consumes it, so it is NOT a deletion candidate.'
-  write_scope:
-    - docs/plans/active-slices.yaml
-    - docs/analysis/orchestrator_no_hero_guard_2026_06_05.md
-    - src/routes/Orchestrator/components/orchestratorColorAudit.test.ts
-    - docs/architecture/orchestrator-visual-language.md
-    - docs/analysis/orchestrator_hig_ux_backlog_2026_05_30.md
-  protected_paths:
-    - server/
-    - src/lib/
-    - src/routes/Player/
-    - src/components/Icon/icons.ts
-  verification:
-    - npm test -- src/routes/Orchestrator/components/orchestratorColorAudit.test.ts
-    - npm test
-    - npm run typecheck
-    - npm run lint
-    - npm run slices:check
-  acceptance:
-    - 'orchestratorColorAudit.test.ts asserts OrchestratorView.tsx contains no hero/landing/welcome/onboard/splash/dashboard markup (D1.1 regression guard, visual-language §5 FORBIDDEN_ENTRY_TERMS).'
-    - 'The backlog drops the drop-orphan-qr-icon slice and records that QR_CODE is consumed by QRPrefs.tsx (not orphaned); visual-language §4.7 reasoning corrected accordingly.'
-  non_goals:
-    - Do not delete the QR_CODE icon (live consumer at QRPrefs.tsx:34).
-    - Do not change entry defaults/behavior; this guards the existing good state only.
-  notes:
-    - 'Verification caught that QR_CODE is NOT orphaned (QRPrefs consumes it) → drop-orphan-qr-icon is an invalid slice. This slice corrects that doc claim.'
-  next:
-    - implementation
+[]
