@@ -366,6 +366,19 @@ describe('Orchestrator color audit', () => {
     expect(presetBrowser).toMatch(/transition:[^;]*var\(--orch-motion-/)
   })
 
+  it('keeps the Orchestrator entry free of hero/landing/dashboard markup (no-hero guard, D1.1)', () => {
+    // The Orchestrator is a workstation entry, not a marketing/landing surface
+    // (visual-language §5 FORBIDDEN_ENTRY_TERMS, D1.1). This is a regression guard
+    // over the already-clean OrchestratorView.tsx — it must never grow a hero/splash/
+    // welcome/onboard/dashboard scaffold. Word-boundary match avoids false hits on
+    // substrings like "download" (no \bdashboard inside it; "dash" is not a term).
+    const FORBIDDEN_ENTRY_TERMS = ['hero', 'landing', 'welcome', 'onboard', 'splash', 'dashboard']
+    const source = readAuditedFile('src/routes/Orchestrator/views/OrchestratorView.tsx').toLowerCase()
+    const offenders = FORBIDDEN_ENTRY_TERMS.filter(term => new RegExp(`\\b${term}`).test(source))
+
+    expect(offenders).toEqual([])
+  })
+
   it('defines the semantic role, tone, motion, and z-layer tokens exactly', () => {
     const values = collectOrchestratorViewPropertyValues()
 

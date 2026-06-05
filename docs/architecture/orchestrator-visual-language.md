@@ -517,10 +517,12 @@ Load and Send remain text-bearing buttons (`PresetTree.tsx:343/357`); subordinat
 the cited PresetTree mixes SVG `Icon` glyphs with Unicode emoji glyphs — record the Unicode set as a
 **sanctioned allowed set** (do not assert a false "single family" that the code violates). **Cam badge glyph:**
 the camcorder `VIDEO`/`mdiVideo` icon (`icons.ts:48`) is the registered Cam-state pictogram, rendered at
-`size={14}` inline-with-lane via the `Icon` component (`PresetTree.tsx:36`). **`QR_CODE` is
-registered-but-orphaned** (`icons.ts:42`): it was the Gallery-state glyph, but the Gallery badge was dropped
-(`PRESET_STATE_GLYPHS` has no Gallery entry, `orchestratorPresentationModel.ts:51-57`; the row stops at Cam,
-`PresetTree.tsx:394`), so `QR_CODE` has no live consumer — keep it registered, do not re-wire it. **Static check:**
+`size={14}` inline-with-lane via the `Icon` component (`PresetTree.tsx:36`). **`QR_CODE`
+(`icons.ts:42`) is NOT an Orchestrator preset badge** — it was once the Gallery-state glyph, but the Gallery
+badge was dropped (`PRESET_STATE_GLYPHS` has no Gallery entry, `orchestratorPresentationModel.ts:51-57`; the
+row stops at Cam, `PresetTree.tsx:394`). It is **not orphaned**, though: it has a live consumer outside the
+Orchestrator at `QRPrefs.tsx:34` (`<Icon icon='QR_CODE' />`, the room QR-code prefs surface). Keep it
+registered; it is not a deletion candidate. **Static check:**
 render-test that every icon-only control has an accessible name; the existing aria-label/title pattern at
 `PresetTree.tsx:206-430` is the pattern.
 

@@ -161,8 +161,10 @@ forward record. A slice gets an `active-slices` record only when its branch/work
     visually-hidden accessible name + hover `title`), §4.2 glyph-on-tint contrast (WCAG-1.4.11 3:1),
     §4.5/§4.3 sanctioned **size-neutral micro-lift** (`brightness(1.12)` + inset `currentColor` ring,
     no geometry change), §4.7 register **VIDEO/mdiVideo** (`icons.ts:48`). Drop **Gallery** from the
-    §4.11 rendered-badge list + the D3.2 order (L341/L500/L551/L587/L601); note `QR_CODE`
-    registered-but-orphaned and "Gallery" survives only as accessible-name text. Record the legend
+    §4.11 rendered-badge list + the D3.2 order (L341/L500/L551/L587/L601); note `QR_CODE` is no
+    longer rendered as an Orchestrator preset badge but remains a registered icon with a live
+    consumer at `QRPrefs.tsx:34` (so it is NOT orphaned), and "Gallery" survives only as
+    accessible-name text on the Orchestrator preset row. Record the legend
     **add (`70d0e6ad`) then remove (`70650635`)** + the "redundant with hover tooltips" rationale.
     NOTE: the spec's OQ-8.1/OQ-8.2 + the "Doc-truth reconciliation" section (L275/L276/L338) are
     **already reconciled — do not re-touch them.**
@@ -196,8 +198,10 @@ forward record. A slice gets an `active-slices` record only when its branch/work
   (`StagePanel.tsx:200/205`), key handling does not.
 - **`icon-i18n-stance`** [S/M, doc-only] — decide the i18n stance (zero today; ~40 hardcoded
   aria-labels + all copy). Defer string extraction unless the stance says extract now.
-- **`drop-orphan-qr-icon`** [S, trivial code] — remove the orphaned `QR_CODE` registration
-  (`icons.ts:42`) — split out of `icon-i18n-stance` so that one stays no-code.
+- ~~**`drop-orphan-qr-icon`**~~ — **DROPPED 2026-06-05, invalid slice.** `QR_CODE` (`icons.ts:42`)
+  is NOT orphaned: it has a live consumer at `QRPrefs.tsx:34` (`<Icon icon='QR_CODE' />`, the room
+  QR-code prefs surface). It must stay registered. The premise of this slice was a stale "no live
+  consumer" reading; verification (grep across `src/`) found exactly one consumer. No code change.
 
 ### Terminal decision — Local Preview is the terminal truth (owner decision 2026-06-04)
 The owner decided 2026-06-04 that a live image of what is playing is not necessary. **Option A
