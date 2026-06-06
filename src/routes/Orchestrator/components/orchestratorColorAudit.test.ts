@@ -599,3 +599,59 @@ describe('Orchestrator color audit', () => {
     expect(source).toContain('.container *')
   })
 })
+
+describe('Orchestrator breakpoint lockstep (§4.8)', () => {
+  const cssFiles = auditedFiles.filter(file => file.endsWith('.css'))
+
+  // Every @media width condition as {file, kind, px}. The leading `\(` distinguishes a media
+  // condition `@media (max-width: Npx)` from the CSS `max-width: Npx;` property (no preceding paren).
+  function collectMediaBreakpoints (): Array<{ file: string, kind: string, px: number }> {
+    const out: Array<{ file: string, kind: string, px: number }> = []
+    for (const file of cssFiles) {
+      const source = readAuditedFile(file)
+      for (const match of source.matchAll(/\((max|min)-width:\s*(\d+)px\)/g)) {
+        out.push({ file, kind: match[1], px: Number(match[2]) })
+      }
+    }
+    return out
+  }
+
+  it('uses only the sanctioned breakpoint values (979 / 980 / 640)', () => {
+    const allowed = new Set([979, 980, 640])
+    const offenders = collectMediaBreakpoints()
+      .filter(bp => !allowed.has(bp.px))
+      .map(bp => `${bp.file}: ${bp.kind}-width ${bp.px}px`)
+    expect(offenders).toEqual([])
+  })
+
+  it('keeps a uniform desktop/mobile split: mobile is always max-width 979 (never 980), desktop is min-width 980', () => {
+    const bps = collectMediaBreakpoints()
+    // A `max-width: 980px` overlaps the `min-width: 980px` desktop rule at exactly 980px (both apply).
+    // The uniform split keeps mobile at 979 so the boundary is clean across every panel.
+    const overlap = bps.filter(bp => bp.kind === 'max' && bp.px === 980).map(bp => bp.file)
+    expect(overlap).toEqual([])
+    expect(bps.filter(bp => bp.kind === 'min' && bp.px === 980).length).toBeGreaterThan(0)
+    expect(bps.filter(bp => bp.kind === 'max' && bp.px === 979).length).toBeGreaterThan(0)
+  })
+
+  it('declares the documented breakpoint tokens as the named source of truth', () => {
+    const view = readOrchestratorViewCss()
+    expect(view).toMatch(/--orch-bp-desktop:\s*980px/)
+    expect(view).toMatch(/--orch-bp-narrow:\s*640px/)
+    expect(view).toMatch(/--orch-bp-phone:\s*390px/)
+  })
+
+  it('keeps the JS desktop/mobile split on a single NARROW_BREAKPOINT constant (no bare 980 literals)', () => {
+    const layout = readAuditedFile('src/routes/Orchestrator/views/orchestratorLayout.ts')
+    expect(layout).toMatch(/export const NARROW_BREAKPOINT = 980/)
+
+    for (const file of [
+      'src/routes/Orchestrator/views/orchestratorWorkspaceModel.ts',
+      'src/routes/Orchestrator/views/useOrchestratorWorkspace.ts',
+    ]) {
+      const source = readAuditedFile(file)
+      expect(source).toMatch(/NARROW_BREAKPOINT/)
+      expect(source).not.toMatch(/innerWidth < 980\b/)
+    }
+  })
+})

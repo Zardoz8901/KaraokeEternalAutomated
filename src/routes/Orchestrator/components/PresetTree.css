@@ -423,7 +423,7 @@
   border-color: color-mix(in srgb, var(--orch-danger) var(--orch-tone-border), transparent);
 }
 
-@media (max-width: 980px) {
+@media (max-width: 979px) {
   .tree {
     gap: var(--orch-space-lg);
     padding-right: 0;

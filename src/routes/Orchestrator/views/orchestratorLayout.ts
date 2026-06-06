@@ -8,7 +8,7 @@ interface FitPreviewOptions {
   minW?: number
 }
 
-const NARROW_BREAKPOINT = 980
+export const NARROW_BREAKPOINT = 980
 const PREVIEW_MIN = 240
 const PREVIEW_PADDING = 32
 const PREVIEW_RATIO = 0.75

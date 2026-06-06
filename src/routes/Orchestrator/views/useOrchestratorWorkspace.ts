@@ -42,6 +42,7 @@ import {
   type OrchestratorWorkspaceModel,
 } from './orchestratorWorkspaceModel'
 import { type OrchestratorDesktopPanel, type OrchestratorMobileTab } from './orchestratorShellModel'
+import { NARROW_BREAKPOINT } from './orchestratorLayout'
 import {
   getPointerRefPanelWidth,
   getStoredRefPanelWidth,
@@ -251,7 +252,7 @@ export function useOrchestratorWorkspace (): UseOrchestratorWorkspaceResult {
       debouncedCode: code,
       userHasEdited: true,
     }))
-    if (ui.innerWidth < 980) {
+    if (ui.innerWidth < NARROW_BREAKPOINT) {
       setActiveMobileTab('stage')
     }
   }, [cancelPendingRemoteSync, ui.innerWidth])
@@ -291,7 +292,7 @@ export function useOrchestratorWorkspace (): UseOrchestratorWorkspaceResult {
       userHasEdited: true,
     }))
     dispatchHydraPayload(payload)
-    if (ui.innerWidth < 980) {
+    if (ui.innerWidth < NARROW_BREAKPOINT) {
       setActiveMobileTab('stage')
     }
   }, [
@@ -318,7 +319,7 @@ export function useOrchestratorWorkspace (): UseOrchestratorWorkspaceResult {
       debouncedCode: nextCode,
       userHasEdited: true,
     }))
-    if (ui.innerWidth < 980) {
+    if (ui.innerWidth < NARROW_BREAKPOINT) {
       setActiveMobileTab('code')
     }
   }, [
@@ -339,7 +340,7 @@ export function useOrchestratorWorkspace (): UseOrchestratorWorkspaceResult {
       debouncedCode: nextCode,
       userHasEdited: true,
     }))
-    if (ui.innerWidth < 980) {
+    if (ui.innerWidth < NARROW_BREAKPOINT) {
       setActiveMobileTab('code')
     }
   }, [cancelPendingRemoteSync, ui.innerWidth])
