@@ -562,6 +562,16 @@ one-owner audit guards `Failed` placement.
 
 ### 4.10 i18n / text-length stance
 
+**Stance (owner decision 2026-06-06): English-only, defer extraction.** The app ships no
+internationalization framework (no `react-intl` / `i18next` / `intl` dependency anywhere) and all
+Orchestrator copy + the ~26 `aria-label`s are inline English. The Orchestrator stays consistent with
+that: **do not extract strings into a message catalog and do not adopt an i18n framework now.** Revisit
+only when localization is a real product requirement (at which point the inline strings are the
+extraction surface). This is a deliberate *defer*, not a rejection — so the text-length robustness
+rules below **stay in force** to keep the layout i18n-ready rather than hard-blocking a future
+localization. (The §4.7 icon stance — `aria-label` + `title` on every icon-only control — is already
+shipped and unaffected by this decision.)
+
 Assume any label can be **~1.5× longer** (translation / long room/preset names) and never break layout.
 Reuse the established `max-width` + ellipsis clamps already on the strip (`OrchestratorStatusStrip.css:14`
 13rem, `:29` 15rem, `:36` 11rem) and tree (`PresetTree.css:59` 9rem) as the pattern: status/metadata text
@@ -570,8 +580,9 @@ pixel-assumed layout.** **Accessible-name relationship:** the accessible name MU
 untruncated label (the row name composes the fuller semantic name `Preset <name>, <badges…>` at
 `PresetTree.tsx:282-293`); where text is visually elided, `aria-label`/`title` carry the untruncated value —
 never the truncated string. Status strings stay short standalone tokens (no English-word-order sentence
-concatenation). **Static check:** render-test that the row accessible name contains the full name; grep that
-status text uses `max-width` + ellipsis rather than fixed widths.
+concatenation). **Static check:** render-test that the row accessible name contains the full name
+(existing PresetTree/StagePanel render tests); the ellipsis-not-fixed-width grep is
+`orchestratorI18nReadiness.test.ts` (every elided rule clamps via `max-width`, never a fixed px width).
 
 ### 4.11 Semantic role-layer completion + tone recipe (D8.1, D8.2, OQ-8.2, OQ-8.3)
 
