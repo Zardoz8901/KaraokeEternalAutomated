@@ -322,6 +322,90 @@ describe('StagePanel', () => {
     })
   })
 
+  function bufferRadios (container: HTMLElement): HTMLButtonElement[] {
+    return Array.from(
+      container.querySelectorAll('[role="radiogroup"][aria-label="Preview output buffer"] [role="radio"]'),
+    ) as HTMLButtonElement[]
+  }
+
+  async function pressKey (radio: HTMLButtonElement, key: string) {
+    await act(async () => {
+      radio.focus()
+      radio.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }))
+    })
+  }
+
+  it('applies roving tabindex so only the checked buffer radio is tabbable (APG radiogroup)', async () => {
+    const container = document.createElement('div')
+    const root = createRoot(container)
+    await renderStagePanel(root, { buffer: 'o2' })
+
+    // BUFFER_OPTIONS order: auto, o0, o1, o2, o3 -> o2 is index 3.
+    expect(bufferRadios(container).map(r => r.getAttribute('tabindex'))).toEqual(['-1', '-1', '-1', '0', '-1'])
+
+    await act(async () => {
+      root.unmount()
+    })
+  })
+
+  it('navigates the buffer radiogroup with ArrowRight/ArrowDown, selecting and focusing (wraps last->first)', async () => {
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+    const onBufferChange = vi.fn()
+    await renderStagePanel(root, { buffer: 'auto', onBufferChange })
+
+    const radios = bufferRadios(container)
+
+    await pressKey(radios[0], 'ArrowRight')
+    expect(onBufferChange).toHaveBeenLastCalledWith('o0')
+    expect(document.activeElement).toBe(radios[1])
+
+    // ArrowDown from the last radio (o3) wraps to the first (auto).
+    await pressKey(radios[4], 'ArrowDown')
+    expect(onBufferChange).toHaveBeenLastCalledWith('auto')
+    expect(document.activeElement).toBe(radios[0])
+
+    await act(async () => {
+      root.unmount()
+    })
+    container.remove()
+  })
+
+  it('navigates the buffer radiogroup with ArrowUp/ArrowLeft (wraps first->last) and Home/End', async () => {
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+    const onBufferChange = vi.fn()
+    await renderStagePanel(root, { buffer: 'auto', onBufferChange })
+
+    const radios = bufferRadios(container)
+
+    // ArrowUp from the first radio (auto) wraps to the last (o3).
+    await pressKey(radios[0], 'ArrowUp')
+    expect(onBufferChange).toHaveBeenLastCalledWith('o3')
+    expect(document.activeElement).toBe(radios[4])
+
+    // ArrowLeft moves one step back (o2 -> o1).
+    await pressKey(radios[3], 'ArrowLeft')
+    expect(onBufferChange).toHaveBeenLastCalledWith('o1')
+    expect(document.activeElement).toBe(radios[2])
+
+    // End jumps to the last radio, Home to the first.
+    await pressKey(radios[2], 'End')
+    expect(onBufferChange).toHaveBeenLastCalledWith('o3')
+    expect(document.activeElement).toBe(radios[4])
+
+    await pressKey(radios[2], 'Home')
+    expect(onBufferChange).toHaveBeenLastCalledWith('auto')
+    expect(document.activeElement).toBe(radios[0])
+
+    await act(async () => {
+      root.unmount()
+    })
+    container.remove()
+  })
+
   it('renders the Preview qualifier in the Stage title', async () => {
     const container = document.createElement('div')
     const root = createRoot(container)

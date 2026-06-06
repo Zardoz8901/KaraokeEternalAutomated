@@ -73,6 +73,34 @@ function StagePanel ({
   const latestFrameSizeRef = useRef<{ width?: number, height?: number } | null>(null)
   const [measuredPreviewSize, setMeasuredPreviewSize] = useState<PreviewSize | null>(null)
   const previewCode = useMemo(() => buildPreviewCode(code, buffer), [code, buffer])
+  const bufferButtonRefs = useRef<Array<HTMLButtonElement | null>>([])
+
+  // WAI-ARIA radiogroup keyboard pattern: roving tabindex + selection-follows-focus.
+  const handleBufferKeyDown = useCallback((event: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
+    const lastIndex = BUFFER_OPTIONS.length - 1
+    let targetIndex: number
+    switch (event.key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+        targetIndex = index === lastIndex ? 0 : index + 1
+        break
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        targetIndex = index === 0 ? lastIndex : index - 1
+        break
+      case 'Home':
+        targetIndex = 0
+        break
+      case 'End':
+        targetIndex = lastIndex
+        break
+      default:
+        return
+    }
+    event.preventDefault()
+    onBufferChange(BUFFER_OPTIONS[targetIndex].key)
+    bufferButtonRefs.current[targetIndex]?.focus()
+  }, [onBufferChange])
   const cameraUsage = useMemo(() => detectCameraUsage(previewCode), [previewCode])
   const [boundCameraSources, setBoundCameraSources] = useState<string[]>([])
   const previewSize = measuredPreviewSize ?? { width, height }
@@ -198,15 +226,18 @@ function StagePanel ({
             </div>
           )}
           <div className={styles.bufferControls} role='radiogroup' aria-label='Preview output buffer'>
-            {BUFFER_OPTIONS.map(option => (
+            {BUFFER_OPTIONS.map((option, index) => (
               <button
                 key={option.key}
+                ref={(node) => { bufferButtonRefs.current[index] = node }}
                 type='button'
                 role='radio'
                 aria-checked={buffer === option.key}
                 aria-label={`Output buffer ${option.label}`}
+                tabIndex={buffer === option.key ? 0 : -1}
                 className={`${styles.bufferButton} ${buffer === option.key ? styles.bufferButtonActive : ''}`}
                 onClick={() => onBufferChange(option.key)}
+                onKeyDown={event => handleBufferKeyDown(event, index)}
               >
                 {option.label}
               </button>
