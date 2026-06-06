@@ -103,6 +103,33 @@ describe('ApiReference', () => {
     })
   })
 
+  it('announces the empty result as a polite status region when no function matches', async () => {
+    const container = document.createElement('div')
+    const root = createRoot(container)
+
+    await act(async () => {
+      root.render(<ApiReference />)
+    })
+
+    const search = container.querySelector('input[type="search"]') as HTMLInputElement | null
+    expect(search).not.toBeNull()
+
+    await act(async () => {
+      if (!search) return
+      search.value = 'zzz-no-such-function'
+      search.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+
+    const status = container.querySelector('[role="status"]')
+    expect(status).not.toBeNull()
+    expect(status?.getAttribute('aria-live')).toBe('polite')
+    expect((status?.textContent ?? '').trim()).toBe('No functions match this search.')
+
+    await act(async () => {
+      root.unmount()
+    })
+  })
+
   it('supports inserting or replacing editor code from selected examples', async () => {
     const container = document.createElement('div')
     const root = createRoot(container)

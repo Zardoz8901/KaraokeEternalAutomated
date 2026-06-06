@@ -686,14 +686,14 @@ function PresetBrowser ({ currentCode, sendingPresetKey, presetSendStatus = 'idl
         </div>
       )}
 
-      {error && <div className={styles.error}>{error}</div>}
+      {error && <div className={styles.error} role='alert'>{error}</div>}
 
       {!loading && !error && presetPanelNotice && (
-        <div className={styles.policyNotice}>{presetPanelNotice.message}</div>
+        <div className={styles.policyNotice} role='status' aria-live='polite'>{presetPanelNotice.message}</div>
       )}
 
       {!loading && !error && filteredTree.length === 0 && (
-        <div className={styles.empty}>{presetPanelState?.message ?? ROOM_EMPTY_PRESET_PANEL_MESSAGE}</div>
+        <div className={styles.empty} role='status' aria-live='polite'>{presetPanelState?.message ?? ROOM_EMPTY_PRESET_PANEL_MESSAGE}</div>
       )}
 
       {!loading && !error && filteredTree.length > 0 && (
