@@ -2,44 +2,4 @@
 # Deferred (NOT in this closeout): HiG #14 folder-action discoverability, #15 PresetPicker menu rebuild,
 # #16 keyboard resize separator. See docs/analysis/orchestrator_hig_ux_backlog_2026_05_30.md.
 
-- id: orchestrator-breakpoints-lockstep
-  status: in_progress
-  owner: claude
-  branch: phase-B-breakpoints-lockstep
-  base: main
-  worktree: { path: /home/steph/projects/KaraokeEternalAutomated, state: present }
-  merge_order: 370
-  goal: 'Phase B: keep the Orchestrator responsive breakpoints in lockstep (§4.8). (1) Fix the off-boundary mobile @media in PresetTree.css + PresetBrowser.css (max-width:980 -> 979) so the desktop/mobile split is uniform 979/980 across all panels (980 max-width overlapped the 980 min-width desktop rule at exactly 980px). (2) Declare documented --orch-bp-* tokens (named source of truth; CSS custom props CANNOT be used in @media so they are documentary). (3) Single-source the JS split on the exported NARROW_BREAKPOINT constant (orchestratorLayout.ts), replacing bare `innerWidth < 980` in orchestratorWorkspaceModel.ts + useOrchestratorWorkspace.ts. (4) Add a breakpoint-lockstep audit (orchestratorColorAudit.test.ts) asserting the @media set + JS single source. This slice OWNS the audit-test edits.'
-  write_scope:
-    - docs/plans/active-slices.yaml
-    - docs/analysis/orchestrator_breakpoints_lockstep_2026_06_06.md
-    - src/routes/Orchestrator/components/orchestratorColorAudit.test.ts
-    - src/routes/Orchestrator/components/PresetTree.css
-    - src/routes/Orchestrator/components/PresetBrowser.css
-    - src/routes/Orchestrator/views/OrchestratorView.css
-    - src/routes/Orchestrator/views/orchestratorLayout.ts
-    - src/routes/Orchestrator/views/orchestratorWorkspaceModel.ts
-    - src/routes/Orchestrator/views/useOrchestratorWorkspace.ts
-  protected_paths:
-    - server/
-    - src/lib/
-    - src/routes/Player/
-    - src/components/Icon/icons.ts
-  verification:
-    - npm test -- src/routes/Orchestrator/components/orchestratorColorAudit.test.ts
-    - npm test
-    - npm run typecheck
-    - npm run lint
-    - npm run slices:check
-  acceptance:
-    - 'No @media (max-width: 980px) remains; mobile is uniformly max-width 979, desktop min-width 980, secondary 640. Audit asserts the @media breakpoint set is {979,980,640} with a uniform split.'
-    - '--orch-bp-desktop/narrow/phone declared in OrchestratorView.css; NARROW_BREAKPOINT exported and referenced by orchestratorWorkspaceModel.ts + useOrchestratorWorkspace.ts (no bare innerWidth < 980).'
-    - 'No runtime behavior change except the 1px boundary alignment at exactly 980px (PresetTree/PresetBrowser now switch to desktop at 980px like every other panel).'
-  non_goals:
-    - Do NOT add a CSS custom property inside an @media condition (unsupported; the tokens are documentary).
-    - Do NOT introduce a build-time/PostCSS pipeline (plain css-loader; the lockstep is enforced by the audit + the single JS constant).
-    - Do NOT add a 390px @media (the phone target is documented in §4.8 but not implemented; only the token is declared).
-  notes:
-    - 'Branch created before this record (process slip); record added before commit. Standard scope; orchestratorWorkspaceModel/useOrchestratorWorkspace are NOT High-Risk Touchpoints. The 980->979 fix has a 1px-wide boundary effect at exactly 980px — low-risk, makes all panels consistent; optional Steph eyeball at the 980px boundary.'
-  next:
-    - implementation
+[]
