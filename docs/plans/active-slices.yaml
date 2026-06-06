@@ -2,41 +2,4 @@
 # Deferred (NOT in this closeout): HiG #14 folder-action discoverability, #15 PresetPicker menu rebuild,
 # #16 keyboard resize separator. See docs/analysis/orchestrator_hig_ux_backlog_2026_05_30.md.
 
-- id: orchestrator-icon-i18n-stance
-  status: in_progress
-  owner: claude
-  branch: phase-B-icon-i18n-stance
-  base: main
-  worktree: { path: /home/steph/projects/KaraokeEternalAutomated, state: present }
-  merge_order: 380
-  goal: 'Phase B (final roadmap slice): record the i18n stance. Owner decision 2026-06-06 = English-only, defer extraction. The app has NO i18n framework (no react-intl/i18next/intl deps); the Orchestrator matches it. Document the stance in visual-language §4.10 (English-only now; strings/aria-labels stay inline; do NOT extract; revisit when localization is a real product requirement) while keeping the text-length robustness rules in force so layout stays i18n-ready. Add the one un-covered §4.10 static check as a light guard: ellipsis-not-fixed-width (status/label text clamps via max-width, never a fixed px width). Accessible-name-contains-full-label is already covered by existing PresetTree/StagePanel tests.'
-  write_scope:
-    - docs/plans/active-slices.yaml
-    - docs/analysis/orchestrator_icon_i18n_stance_2026_06_06.md
-    - docs/architecture/orchestrator-visual-language.md
-    - docs/analysis/orchestrator_hig_ux_backlog_2026_05_30.md
-    - src/routes/Orchestrator/components/orchestratorI18nReadiness.test.ts
-  protected_paths:
-    - server/
-    - src/lib/
-    - src/routes/Player/
-    - src/components/Icon/icons.ts
-    - src/routes/Orchestrator/components/orchestratorColorAudit.test.ts
-  verification:
-    - npm test -- src/routes/Orchestrator/components/orchestratorI18nReadiness.test.ts
-    - npm test
-    - npm run typecheck
-    - npm run lint
-    - npm run slices:check
-  acceptance:
-    - 'visual-language §4.10 records the English-only/defer stance decisively (decision + rationale + revisit trigger), keeping the existing text-length rules as the i18n-ready guard.'
-    - 'New orchestratorI18nReadiness.test.ts locks ellipsis-not-fixed-width across the Orchestrator CSS (every text-overflow:ellipsis rule avoids a fixed px width) + asserts the cited StatusStrip max-width+ellipsis exemplar.'
-    - 'No production code change (doc + guard test only); orchestratorColorAudit.test.ts untouched. Backlog marks icon-i18n-stance DONE.'
-  non_goals:
-    - Do NOT adopt an i18n framework or extract any strings (owner chose defer).
-    - Do NOT restyle any ellipsis/label CSS; the guard locks the existing good state (no production change).
-    - Do NOT touch orchestratorColorAudit.test.ts.
-  notes:
-    - 'Ground truth 2026-06-06: zero i18n framework repo-wide; ~26 Orchestrator aria-labels inline; all 7 ellipsis rules already use max-width/100%/flex (no fixed px) so the guard is GREEN-on-add. The §4.7 icon stance (aria-label+title on icon-only controls) is already shipped — this slice is the i18n half only.'
-  next:
-    - implementation
+[]
