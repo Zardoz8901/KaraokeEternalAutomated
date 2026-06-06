@@ -2,42 +2,4 @@
 # Deferred (NOT in this closeout): HiG #14 folder-action discoverability, #15 PresetPicker menu rebuild,
 # #16 keyboard resize separator. See docs/analysis/orchestrator_hig_ux_backlog_2026_05_30.md.
 
-- id: orchestrator-buffer-apg-finish
-  status: in_progress
-  owner: claude
-  branch: phase-B-buffer-apg-finish
-  base: main
-  worktree: { path: /home/steph/projects/KaraokeEternalAutomated, state: present }
-  merge_order: 360
-  goal: 'Phase B: finish the WAI-ARIA radiogroup keyboard pattern on the StagePanel buffer controls. The ARIA structure (role=radiogroup + 5 role=radio with aria-checked) already exists (StagePanel.tsx:200-213); add the keyboard interaction the APG radio pattern requires: roving tabindex (only the checked radio is tabbable), Arrow Right/Down -> next + select + focus, Arrow Left/Up -> previous + select + focus (both wrap), Home -> first, End -> last. Selection follows focus (calls onBufferChange). The focus cue already exists (.bufferButton:focus-visible, StagePanel.css:164) so there is NO new visual surface.'
-  write_scope:
-    - docs/plans/active-slices.yaml
-    - docs/analysis/orchestrator_buffer_apg_finish_2026_06_06.md
-    - src/routes/Orchestrator/components/StagePanel.tsx
-    - src/routes/Orchestrator/components/StagePanel.test.tsx
-  protected_paths:
-    - server/
-    - src/lib/
-    - src/routes/Player/
-    - src/components/Icon/icons.ts
-    - src/routes/Orchestrator/components/orchestratorColorAudit.test.ts
-    - src/routes/Orchestrator/components/stagePanelUtils.ts
-  verification:
-    - npm test -- src/routes/Orchestrator/components/StagePanel.test.tsx
-    - npm test
-    - npm run typecheck
-    - npm run lint
-    - npm run slices:check
-  acceptance:
-    - 'Roving tabindex: the checked radio is tabIndex=0, the other four tabIndex=-1.'
-    - 'ArrowRight/ArrowDown selects+focuses the next radio (wraps last->first); ArrowLeft/ArrowUp the previous (wraps first->last); Home=first; End=last. Each navigation calls onBufferChange with the target key and moves DOM focus to that radio.'
-    - 'Click behavior unchanged; aria-checked still reflects buffer; no visual change (focus cue already present).'
-  non_goals:
-    - Do NOT touch orchestratorColorAudit.test.ts (breakpoints-lockstep owns audit-test edits).
-    - Do NOT change stagePanelUtils.ts (BUFFER_OPTIONS / detectOutputBuffer / buildPreviewCode are stable).
-    - Do NOT restyle .bufferButton; the focus cue (.bufferButton:focus-visible) already exists.
-    - No camera-relay / player-routing change; this is keyboard a11y on the buffer radiogroup only.
-  notes:
-    - 'Ground truth verified 2026-06-06: buttons are plain <button> with onClick only; no tabIndex/onKeyDown. .bufferButton:focus-visible already provides the focus ring. Standard scope (StagePanel is NOT a High-Risk Touchpoint); behavior fully captured by render tests (keydown -> onBufferChange + document.activeElement).'
-  next:
-    - implementation
+[]
