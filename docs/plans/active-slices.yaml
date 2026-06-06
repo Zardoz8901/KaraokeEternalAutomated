@@ -2,47 +2,4 @@
 # Deferred (NOT in this closeout): HiG #14 folder-action discoverability, #15 PresetPicker menu rebuild,
 # #16 keyboard resize separator. See docs/analysis/orchestrator_hig_ux_backlog_2026_05_30.md.
 
-- id: orchestrator-empty-error-states
-  status: in_progress
-  owner: claude
-  branch: phase-B-empty-error-states
-  base: main
-  worktree: { path: /home/steph/projects/KaraokeEternalAutomated, state: present }
-  merge_order: 350
-  goal: 'Phase B: shared token-driven empty/error/loading treatment across the Presets panel (PresetBrowser) and ApiReference, on the existing presetEmptyState.ts logic. (1) Route PresetBrowser.css .loading/.error/.empty/.policyNotice font-size from raw --text-xs to the semantic --orch-text-meta (visual-language §4.6; ApiReference already does this). (2) Standardize a11y roles: error=role=alert; empty + policyNotice = role=status aria-live=polite (loading already has role=status); ApiReference emptyState = role=status (§4.6 status-line, §4.9 never-silent). No visual change; no behavior change.'
-  write_scope:
-    - docs/plans/active-slices.yaml
-    - docs/analysis/orchestrator_empty_error_states_2026_06_06.md
-    - src/routes/Orchestrator/components/PresetBrowser.css
-    - src/routes/Orchestrator/components/PresetBrowser.tsx
-    - src/routes/Orchestrator/components/ApiReference.tsx
-    - src/routes/Orchestrator/components/ApiReference.test.tsx
-    - src/routes/Orchestrator/components/orchestratorEmptyStateTreatment.test.ts
-  protected_paths:
-    - server/
-    - src/lib/
-    - src/routes/Player/
-    - src/components/Icon/icons.ts
-    - src/routes/Orchestrator/components/orchestratorColorAudit.test.ts
-    - src/routes/Orchestrator/components/presetEmptyState.ts
-  verification:
-    - npm test -- src/routes/Orchestrator/components/orchestratorEmptyStateTreatment.test.ts
-    - npm test
-    - npm run typecheck
-    - npm run lint
-    - npm run slices:check
-  acceptance:
-    - 'PresetBrowser.css empty/error/loading classes use var(--orch-text-meta), not raw var(--text-xs); .error stays --orch-danger; idle color stays --orch-muted.'
-    - 'PresetBrowser error div = role=alert; empty + policyNotice divs = role=status aria-live=polite; ApiReference emptyState div = role=status. Loading retains role=status.'
-    - 'No visual change (--orch-text-meta === var(--text-xs)); copy unchanged and still sourced from presetEmptyState.ts; orchestratorColorAudit.test.ts untouched (parallelizable vs breakpoints-lockstep).'
-  non_goals:
-    - Do NOT touch orchestratorColorAudit.test.ts (the breakpoints-lockstep slice owns the audit-test edits; this slice must be parallelizable).
-    - Do NOT introduce --orch-text-body as a literal in empty states (§4.6 lock).
-    - Do NOT conflate .empty with the bordered .policyNotice; keep policyNotice bordered, empty bare (§4.6 lock).
-    - No illustration / CTA / hero; the notice stays a status line, not an action surface (§4.6).
-    - Do NOT change ApiReference .emptyState box visual (dashed border) — only add the role; it is outside the §4.6 Presets-panel scope.
-    - Do NOT extract the inline "Failed to ..." error fallbacks into a copy module (already §4.9-conformant voice; out of scope).
-  notes:
-    - 'Ground truth verified 2026-06-06: ApiReference.css .emptyState already uses --orch-text-meta + --orch-muted-soft; PresetBrowser.css .loading/.error/.empty/.policyNotice use raw --text-xs (the gap). Roles: PresetBrowser .loading already role=status aria-live=polite; .error/.empty/.policyNotice have none; ApiReference .emptyState has none.'
-  next:
-    - implementation
+[]
