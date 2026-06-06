@@ -203,8 +203,12 @@ forward record. A slice gets an `active-slices` record only when its branch/work
 - **`buffer-apg-finish`** [M, own component] — WAI-ARIA radiogroup keyboard pattern on StagePanel
   buffer controls (roving tabindex + Arrow/Home/End + the deferred focus cue); roles exist
   (`StagePanel.tsx:200/205`), key handling does not.
-- **`icon-i18n-stance`** [S/M, doc-only] — decide the i18n stance (zero today; ~40 hardcoded
-  aria-labels + all copy). Defer string extraction unless the stance says extract now.
+- ~~**`icon-i18n-stance`**~~ — **DONE 2026-06-06** (owner decision: **English-only, defer extraction**).
+  No i18n framework adopted, no strings extracted. Recorded in visual-language §4.10 (English-only now;
+  inline strings/aria-labels; revisit when localization is a real requirement; text-length robustness
+  rules kept in force so layout stays i18n-ready). Light guard `orchestratorI18nReadiness.test.ts`
+  (ellipsis-not-fixed-width). The §4.7 icon stance was already shipped. Analysis:
+  `docs/analysis/orchestrator_icon_i18n_stance_2026_06_06.md`.
 - ~~**`drop-orphan-qr-icon`**~~ — **DROPPED 2026-06-05, invalid slice.** `QR_CODE` (`icons.ts:42`)
   is NOT orphaned: it has a live consumer at `QRPrefs.tsx:34` (`<Icon icon='QR_CODE' />`, the room
   QR-code prefs surface). It must stay registered. The premise of this slice was a stale "no live
