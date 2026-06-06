@@ -15,7 +15,7 @@ import {
   type OrchestratorMobileTab,
   type OrchestratorShellModel,
 } from './orchestratorShellModel'
-import { getPreviewSize, type PreviewSize } from './orchestratorLayout'
+import { getPreviewSize, NARROW_BREAKPOINT, type PreviewSize } from './orchestratorLayout'
 
 interface RemoteVisualizerSource {
   hydraCode?: string
@@ -92,7 +92,7 @@ export function getOrchestratorWorkspaceModel ({
     activeMobilePanel: normalizedMobilePanel,
     canShowApiPanel: shellModel.visibleDesktopPanels.includes('api'),
     canShowCodePanel: shellModel.visibleMobileTabs.includes('code'),
-    isMobile: innerWidth < 980,
+    isMobile: innerWidth < NARROW_BREAKPOINT,
     previewSize: getPreviewSize(innerWidth),
   }
 }

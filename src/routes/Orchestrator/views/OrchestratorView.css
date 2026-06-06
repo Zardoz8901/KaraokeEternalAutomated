@@ -79,6 +79,14 @@
   --orch-z-banner: 110;
   --orch-z-modal: 120;
 
+  /* Documented breakpoint tokens — the named source of truth (§4.8). CSS custom properties
+     CANNOT be used inside @media conditions, so these mirror the hardcoded @media literals
+     (979/980 split, 640 secondary) and the JS NARROW_BREAKPOINT for reference; the breakpoint
+     lockstep audit keeps them in sync. */
+  --orch-bp-desktop: 980px;
+  --orch-bp-narrow: 640px;
+  --orch-bp-phone: 390px;
+
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
   --text-md: 1rem;
