@@ -183,7 +183,7 @@ function ApiReference ({ onInsertExample, onReplaceWithExample }: ApiReferencePr
             </button>
           ))}
           {filtered.length === 0 && (
-            <div className={styles.emptyState}>No functions match this search.</div>
+            <div className={styles.emptyState} role='status' aria-live='polite'>No functions match this search.</div>
           )}
         </section>
 

@@ -190,9 +190,16 @@ forward record. A slice gets an `active-slices` record only when its branch/work
   px are hardcoded across 8 files. **CAVEAT: CSS custom properties cannot be used inside `@media`
   conditions** — pick a real single-source mechanism (documented constant + lint, or build-time),
   not naive `var()` in media queries.
-- **`empty-error-states`** [M; dependsOn `error-state-route` + `spec-doc-sync`] — shared token-driven
-  empty/error/loading treatment (`PresetBrowser.tsx:584/675/689/861`, `ApiReference.tsx:186`) on the
-  existing `presetEmptyState.ts` logic. Does NOT touch the audit test (can parallelize vs the CSS chain).
+- ~~**`empty-error-states`**~~ — **DONE 2026-06-06** (slice `phase-B-empty-error-states`, analysis
+  `docs/analysis/orchestrator_empty_error_states_2026_06_06.md`). Routed the PresetBrowser
+  empty/error/loading group font to `--orch-text-meta` (§4.6); added live-region roles
+  (error=`role='alert'`; empty+policyNotice+ApiReference emptyState = `role='status' aria-live='polite'`).
+  New `orchestratorEmptyStateTreatment.test.ts` (does NOT touch the audit test). No visual/behavior change.
+- **`error-copy-sourcing`** [S/M, follow-up to `empty-error-states`] — **residual §4.9 gap.** The eleven
+  inline `toErrorMessage(err, 'Failed to …')` fallbacks in `PresetBrowser.tsx`
+  (`:135,297,337,377,411,450,486,504,525,546,568`) are conformant in *voice* but not sourced from a copy
+  module / unit-assertable, which §4.9 asks for ("strings live in presetEmptyState.ts / presetOperatorUx.ts").
+  Extract them into a copy module + unit-assert. Deliberately deferred from the treatment slice.
 - **`buffer-apg-finish`** [M, own component] — WAI-ARIA radiogroup keyboard pattern on StagePanel
   buffer controls (roving tabindex + Arrow/Home/End + the deferred focus cue); roles exist
   (`StagePanel.tsx:200/205`), key handling does not.
