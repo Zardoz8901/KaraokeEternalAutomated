@@ -2,4 +2,29 @@
 # Deferred (NOT in this closeout): HiG #14 folder-action discoverability, #15 PresetPicker menu rebuild,
 # #16 keyboard resize separator. See docs/analysis/orchestrator_hig_ux_backlog_2026_05_30.md.
 
-[]
+- id: docs-current-state-closeout
+  status: in_progress
+  owner: claude
+  branch: docs/current-state-closeout
+  base: main
+  worktree: { path: /home/steph/projects/KaraokeEternalAutomated, state: present }
+  merge_order: 390
+  goal: 'Close out the Orchestrator conformance sprint: cut a fresh canonical tracker (current_state_2026_06_07.md) reflecting Phase B completion (the five Phase B slices merged 2026-06-05/06), supersede current_state_2026_06_04.md, and flip the CLAUDE.md / AGENTS.md "Latest Current State" pointer. Closes DoD item 5 (docs updated) for the Phase B work.'
+  write_scope:
+    - docs/plans/active-slices.yaml
+    - docs/analysis/current_state_2026_06_07.md
+  protected_paths:
+    - server/
+    - src/
+    - docs/architecture/
+  verification:
+    - npm run slices:check
+  acceptance:
+    - 'current_state_2026_06_07.md lists the five Phase B slices as completed and marks the conformance track COMPLETE; supersedes current_state_2026_06_04.md.'
+    - 'CLAUDE.md / reference/AGENTS.md "Latest Current State" pointer resolves to current_state_2026_06_07.md (local-only — both are gitignored; CLAUDE.md is a symlink to reference/AGENTS.md).'
+  non_goals:
+    - No code change; docs-only closeout. The remaining backlog (error-copy-sourcing, HiG #14/#15/#16, OQ-8.1 verification) is recorded, not executed.
+  notes:
+    - 'docs/analysis/* is gitignored -> the new tracker is force-added. The pointer flip is local-only (CLAUDE.md is an untracked symlink to the untracked reference/AGENTS.md). typecheck/lint/test unaffected (no code change); slices:check is the gate.'
+  next:
+    - cleanup
