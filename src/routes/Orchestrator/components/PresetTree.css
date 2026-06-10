@@ -245,27 +245,27 @@
   border-top-color: var(--orch-border-subtle);
 }
 
+/* G0 flat register: rows are flat list lines spanning the folder, so the children
+   wrapper carries no inset — row padding owns the indent. */
 .children {
   min-height: 0;
   overflow: hidden;
-  padding: 0 var(--orch-space-lg) 0 var(--orch-space-xl);
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--orch-space-md);
+  gap: 0;
   opacity: 0;
-  transition: opacity var(--orch-motion-base) var(--orch-ease-standard), padding var(--orch-motion-base) var(--orch-ease-standard);
+  transition: opacity var(--orch-motion-base) var(--orch-ease-standard);
 }
 
 .childrenWrapOpen .children {
   opacity: 1;
-  padding-top: var(--orch-space-md);
-  padding-bottom: var(--orch-space-lg);
 }
 
 .empty {
   color: var(--orch-muted);
   font-size: var(--text-xs);
-  padding: var(--orch-space-sm) var(--orch-space-2xs);
+  padding: var(--orch-space-sm) var(--orch-space-lg);
 }
 
 .dragHandle {
@@ -289,21 +289,26 @@
 
 .presetDragging {
   box-shadow: var(--orch-shadow);
-  border-color: color-mix(in srgb, var(--orch-cyan) 55%, transparent);
+  border: 1px solid color-mix(in srgb, var(--orch-cyan) 55%, transparent);
   background: color-mix(in srgb, var(--orch-cyan) 12%, transparent);
 }
 
+/* G0 flat register: a row is a flat list line with a 1px separator — no per-row
+   card chrome (radius/full border/own surface). Selection and focus cues unchanged. */
 .presetRow {
   display: flex;
   align-items: center;
   gap: var(--orch-space-md);
   min-height: 3.25rem;
-  padding: var(--orch-space-lg);
-  border-radius: var(--orch-radius-md);
-  border: 1px solid var(--orch-border-subtle);
-  background: color-mix(in srgb, var(--orch-base03) 54%, transparent);
+  padding: var(--orch-space-lg) var(--orch-space-xl);
+  border-bottom: 1px solid var(--orch-border-subtle);
+  background: transparent;
   transition: background-color var(--orch-motion-fast) var(--orch-ease-standard), border-color var(--orch-motion-fast) var(--orch-ease-standard), box-shadow var(--orch-motion-base) var(--orch-ease-standard);
   cursor: pointer;
+}
+
+.presetRow:last-child {
+  border-bottom: none;
 }
 
 .presetRow:hover,
@@ -388,21 +393,15 @@
   background: var(--orch-surface-soft);
 }
 
+/* G0 flat register: Send is neutral until state — distinguished by text strength and
+   the shared default-action border, never a resting role tint. */
 .actionPrimary {
-  /* Loaded actions route through --orch-loaded instead of direct --orch-blue. */
-  background: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-fill), transparent);
-  border-color: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-border), transparent);
-  color: var(--orch-loaded);
+  color: var(--orch-text-strong);
+  border-color: var(--orch-border-strong);
 }
 
 .actionSecondary {
   color: var(--orch-text);
-}
-
-.actionPrimary:hover,
-.actionPrimary:focus-visible {
-  background: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-fill), transparent);
-  border-color: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-border), transparent);
 }
 
 .actionActive {
@@ -431,11 +430,6 @@
 
   .folderHeader {
     padding: var(--orch-space-lg);
-  }
-
-  .children {
-    padding-left: var(--orch-space-md);
-    padding-right: var(--orch-space-md);
   }
 
   .presetRow {

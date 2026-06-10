@@ -22,7 +22,10 @@ describe('Preset operator visual contract', () => {
     expect(source).toContain('min-width: 2.25rem')
     expect(source).toContain('min-width: 2.75rem')
     expect(source).toContain('@media (prefers-reduced-motion: reduce)')
-    expect(source).toContain('--orch-blue')
+    // G0 flat register: Send is neutral-until-state — default-action strength comes from
+    // --orch-text-strong/--orch-border-strong, never a resting blue tint.
+    expect(source).toContain('--orch-text-strong')
+    expect(source).toContain('--orch-border-strong')
     expect(source).toContain('--orch-warning')
   })
 

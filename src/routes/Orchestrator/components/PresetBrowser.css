@@ -35,20 +35,17 @@
   min-height: 40px;
 }
 
-.toolbarButton:hover {
+.toolbarButton:hover,
+.toolbarButtonPrimary:hover {
   border-color: color-mix(in srgb, var(--orch-cyan) 42%, transparent);
   background: color-mix(in srgb, var(--orch-cyan) 10%, transparent);
 }
 
+/* G0 flat register: Save Preset is neutral until state — default action reads through
+   text strength and the strong border, not a resting tint. */
 .toolbarButtonPrimary {
-  background: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-fill), transparent);
-  border-color: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-border), transparent);
-  color: var(--orch-loaded);
-}
-
-.toolbarButtonPrimary:hover {
-  background: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-fill), transparent);
-  border-color: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-border), transparent);
+  color: var(--orch-text-strong);
+  border-color: var(--orch-border-strong);
 }
 
 .toolbarButton:focus-visible,

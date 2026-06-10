@@ -129,9 +129,9 @@ The runtime token source is still `src/routes/Orchestrator/views/OrchestratorVie
 | `--orch-gap-xs` | `0.35rem` | compact gaps, status-strip gaps |
 | `--orch-gap-sm` | `0.5rem` | common group gaps, mobile Stage wrapping |
 | `--orch-gap-md` | `0.75rem` | major group gaps, panel rhythm |
-| `--orch-radius-sm` | `6px` | compact controls, badges, preview/status capsules |
-| `--orch-radius-md` | `8px` | rows, search fields, mid-sized panels |
-| `--orch-radius-lg` | `10px` | larger panels, modals, grouped lists |
+| `--orch-radius-sm` | `2px` | compact controls, status capsules (G0 flat register, ratified 2026-06-10) |
+| `--orch-radius-md` | `2px` | search/modal fields, small buttons (G0) |
+| `--orch-radius-lg` | `0` | panels, modals, folders — panes are square (G0) |
 | `--orch-control-height` | `2.25rem` | compact desktop command target |
 | `--orch-touch-target` | `44px` | mobile touch target minimum |
 | `--orch-focus` | `var(--orch-blue)` | visible keyboard focus color |
@@ -157,7 +157,28 @@ Usage rules:
 - Preset rows use `--orch-space-md` internal gaps, `--orch-space-lg` desktop padding, and `--orch-space-xl` mobile padding. Row action groups use `--orch-space-sm` only when target size remains compliant.
 - Status pills use `--orch-space-xs --orch-space-md` padding and `--orch-space-sm` strip gaps. Pills are status text, not touch targets.
 - Preview overlay and badge micro-layout may use `--orch-space-2xs` or `--orch-space-xs`; do not use those values for clickable target spacing.
-- Radius usage stays simple: `--orch-radius-sm` for compact controls and pills, `--orch-radius-md` for rows and fields, `--orch-radius-lg` for panels/modals. `999px` remains allowed only for true pills; `50%` remains allowed only for circles/dots.
+- Radius usage stays simple: `--orch-radius-sm` for compact controls and capsules, `--orch-radius-md` for fields, `--orch-radius-lg` for panels/modals. **G0 flat register (ratified 2026-06-10):** the scale resolves to `2px / 2px / 0` — panes and rows are square; `999px` is reserved for the circular badge/ack glyph dots only (former text pills are `--orch-radius-sm` rectangles); `50%` remains allowed only for circles/dots.
+
+#### Flat register (G0, ratified 2026-06-10)
+
+Owner verdict: the chrome must read as a flat instrument panel (the §1 reference-point ADOPT
+column), not a rounded-chip web surface. Binding rules, graded by
+`orchestratorColorAudit.test.ts` ("keeps the flat-register chrome"):
+
+- **Square chrome:** radius tokens are `2px / 2px / 0`. No new rounded chrome.
+- **De-carded rows:** preset rows are flat list lines separated by 1px `--orch-border-subtle`
+  lines spanning the folder — no per-row radius, full border, or own card surface. Selection
+  (yellow inset rail + `--orch-surface-strong`), hover fill, and focus rings are unchanged.
+- **Opaque structural surfaces:** `--orch-surface-soft`, `--orch-border`, `--orch-border-subtle`,
+  `--orch-border-strong`, and `--orch-muted-soft` are opaque mixes over `base03` — no alpha
+  washes in structural chrome. State tints (tone recipe) and scrims/shadows keep transparency.
+- **Neutral-until-state buttons:** command buttons (Load/Send/Save/Random/picker chrome) carry
+  no resting role tint. The default action is distinguished by size, text strength
+  (`--orch-text-strong`), and `--orch-border-strong`. Role color appears only on
+  active/checked/alarm states (e.g. `.actionActive`, `.camActive`, `.actionDanger`,
+  `.bufferButtonActive`) via the unchanged tone recipe.
+- **Tight lift:** `--orch-shadow` is `0 2px 8px` — a hard, close shadow on the unchanged
+  popover/modal/drag-lift allowlist; never a soft diffuse float.
 
 Migration mapping for Gate 3d:
 

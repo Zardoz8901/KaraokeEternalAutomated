@@ -3,12 +3,13 @@
   display: inline-flex;
 }
 
+/* G0 flat register: picker chrome is neutral until state — no resting role tints. */
 .toggle {
   padding: var(--orch-space-sm) var(--orch-space-xl);
-  background: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-fill), transparent);
-  border: 1px solid color-mix(in srgb, var(--orch-loaded) var(--orch-tone-border), transparent);
+  background: var(--orch-surface-soft);
+  border: 1px solid var(--orch-border);
   border-radius: var(--orch-radius-md);
-  color: var(--orch-loaded);
+  color: var(--orch-text);
   font-size: var(--text-sm);
   font-weight: 650;
   cursor: pointer;
@@ -16,8 +17,9 @@
 }
 
 .toggle:hover {
-  background: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-fill), transparent);
-  border-color: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-border), transparent);
+  background: color-mix(in srgb, var(--orch-base01) 16%, transparent);
+  border-color: var(--orch-border-strong);
+  color: var(--orch-text-strong);
 }
 
 .toggle:focus-visible,
@@ -67,9 +69,9 @@
 .random {
   padding: var(--orch-space-sm) var(--orch-space-md);
   border-radius: var(--orch-radius-sm);
-  border: 1px solid color-mix(in srgb, var(--orch-selected) var(--orch-tone-border), transparent);
-  background: color-mix(in srgb, var(--orch-selected) var(--orch-tone-fill), transparent);
-  color: var(--orch-selected);
+  border: 1px solid var(--orch-border);
+  background: var(--orch-surface);
+  color: var(--orch-text);
   font-size: 12px;
   cursor: pointer;
   white-space: nowrap;
@@ -119,9 +121,8 @@
 }
 
 .actionPrimary {
-  background: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-fill), transparent);
-  border-color: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-border), transparent);
-  color: var(--orch-loaded);
+  color: var(--orch-text-strong);
+  border-color: var(--orch-border-strong);
 }
 
 .empty {

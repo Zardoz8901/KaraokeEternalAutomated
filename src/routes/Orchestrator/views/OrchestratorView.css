@@ -21,16 +21,19 @@
 
   --orch-bg: var(--orch-base03);
   --orch-surface: var(--orch-base02);
-  --orch-surface-soft: color-mix(in srgb, var(--orch-base02) 68%, transparent);
+  /* G0 flat register (ratified 2026-06-10): structural surfaces and borders are OPAQUE
+     mixes over base03 — crisp 1px lines, no alpha washes. State tints (tone recipe) and
+     scrims/shadows keep their transparency by design. */
+  --orch-surface-soft: color-mix(in srgb, var(--orch-base02) 68%, var(--orch-base03));
   --orch-surface-raised: color-mix(in srgb, var(--orch-base02) 82%, var(--orch-base03));
   --orch-surface-strong: color-mix(in srgb, var(--orch-base02) 92%, var(--orch-base03));
-  --orch-border: color-mix(in srgb, var(--orch-base01) 34%, transparent);
-  --orch-border-subtle: color-mix(in srgb, var(--orch-base01) 18%, transparent);
-  --orch-border-strong: color-mix(in srgb, var(--orch-base01) 52%, transparent);
+  --orch-border: color-mix(in srgb, var(--orch-base01) 34%, var(--orch-base03));
+  --orch-border-subtle: color-mix(in srgb, var(--orch-base01) 18%, var(--orch-base03));
+  --orch-border-strong: color-mix(in srgb, var(--orch-base01) 52%, var(--orch-base03));
   --orch-text: var(--orch-base1);
   --orch-text-strong: var(--orch-base2);
   --orch-muted: var(--orch-base0);
-  --orch-muted-soft: color-mix(in srgb, var(--orch-base0) 70%, transparent);
+  --orch-muted-soft: color-mix(in srgb, var(--orch-base0) 70%, var(--orch-base03));
   --orch-primary: var(--orch-blue);
   --orch-live: var(--orch-cyan);
   --orch-success: var(--orch-green);
@@ -43,7 +46,7 @@
   --orch-synced: var(--orch-live); /* cyan - shared live/synced signal */
   --orch-reference: var(--orch-muted); /* base0 - reference rail + Gallery chrome */
   /* --orch-camera intentionally omitted: camera shares --orch-synced / --orch-live. */
-  --orch-shadow: 0 1rem 2.4rem color-mix(in srgb, var(--orch-black) 36%, transparent);
+  --orch-shadow: 0 2px 8px color-mix(in srgb, var(--orch-black) 50%, transparent);
   --orch-space-2xs: 0.125rem;
   --orch-space-xs: 0.25rem;
   --orch-space-sm: 0.35rem;
@@ -58,9 +61,11 @@
   --orch-focus-ring-offset: 2px;
   --orch-focus-ring-inset-offset: -2px;
   --orch-focus-ring: var(--orch-focus-ring-width) solid var(--orch-focus);
-  --orch-radius-sm: 6px;
-  --orch-radius-md: 8px;
-  --orch-radius-lg: 10px;
+  /* G0 flat register: square panes (lg 0), 2px only on small controls and fields.
+     999px stays reserved for the circular badge/ack glyph dots; 50% for circles. */
+  --orch-radius-sm: 2px;
+  --orch-radius-md: 2px;
+  --orch-radius-lg: 0;
   --orch-control-height: 2.25rem;
   --orch-touch-target: 44px;
   --orch-tone-fill: 14%;

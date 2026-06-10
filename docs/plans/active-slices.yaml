@@ -2,6 +2,56 @@
 # Deferred (NOT in this slice): HiG #14 folder-action discoverability, #15 PresetPicker menu rebuild,
 # #16 keyboard resize separator. See docs/analysis/orchestrator_hig_ux_backlog_2026_05_30.md.
 
+- id: orchestrator-flat-chrome
+  status: in_progress
+  owner: claude
+  branch: phase-19a-flat-chrome
+  base: fix/orchestrator-banner-rail-overlap
+  worktree:
+    path: /home/steph/projects/KEA-flat-chrome
+    state: present
+  merge_order: 2
+  goal: >-
+    G0 flat register, geometry/surface half (owner-ratified 2026-06-10): square 0-2px radius
+    tokens; preset rows de-carded to flat 1px-separator list lines; structural surface/border
+    tokens flattened to opaque base03 mixes; command buttons neutral-until-state (default action
+    by size/text-strength/strong-border; role tints only on active/checked/alarm, incl. new
+    .camActive cyan for the camera toggle); --orch-shadow tightened to a 0 2px 8px hard lift.
+    Style guide radius/flat-register sections re-ratified in the same slice.
+  write_scope:
+    - src/routes/Orchestrator/views/OrchestratorView.css
+    - src/routes/Orchestrator/components/PresetTree.css
+    - src/routes/Orchestrator/components/PresetBrowser.css
+    - src/routes/Orchestrator/components/PresetPicker.css
+    - src/routes/Orchestrator/components/CodeEditor.css
+    - src/routes/Orchestrator/components/CodeEditor.tsx
+    - src/routes/Orchestrator/components/orchestratorColorAudit.test.ts
+    - src/routes/Orchestrator/components/PresetBrowser.test.ts
+    - docs/architecture/orchestrator-synthesis-ui-style-guide.md
+    - docs/plans/active-slices.yaml
+  protected_paths:
+    - src/routes/Player
+    - server
+  verification:
+    - npm test
+    - npm run typecheck
+    - npm run lint
+    - npm run slices:check
+  acceptance:
+    - color audit extended with the flat-register test (RED first) and back to green
+    - tone recipe and 14/22/55 percentages untouched on state surfaces; badge/ack circles stay circular
+    - typography register untouched (uppercase removal is phase-19b)
+    - owner eyeball is the merge gate (first look-changing slice)
+  non_goals:
+    - mixed-case/no-tracking label register (phase-19b)
+    - hover-accent hue decision (G7 slice)
+    - preset-row action economics (G1 slice)
+  notes:
+    - (A) slice — edits orchestratorColorAudit.test.ts; serialized after slice 1, before other (A) slices
+    - stacked on fix/orchestrator-banner-rail-overlap to avoid OrchestratorView.css/active-slices conflicts
+  next:
+    - review
+
 - id: orchestrator-banner-rail-overlap
   status: in_progress
   owner: claude
