@@ -41,6 +41,19 @@ describe('Orchestrator spatial model', () => {
     expect(container).not.toContain('44dvh')
   })
 
+  it('remote-banner compensation shifts the rail header, not only the docks', () => {
+    const source = readCss('src/routes/Orchestrator/views/OrchestratorView.css')
+
+    // Pin the existing dock compensation (style guide: the banner may shift docks).
+    const dockBlock = cssBlock(source, '.containerWithBanner .codeDock')
+    expect(cssDeclaration(dockBlock, 'padding-top')).toBe('var(--orch-touch-target)')
+
+    // The rail (and the mobile sheet, which shares .refPanel) must shift by the same offset,
+    // or the fixed banner covers the Library exit and the Presets/API tabs (z-banner 110 > z-dock 10).
+    const railBlock = cssBlock(source, '.containerWithBanner .refPanel')
+    expect(cssDeclaration(railBlock, 'padding-top')).toBe('var(--orch-touch-target)')
+  })
+
   it('Option A terminal — Stage frame is permanently single-preview, no Player-Output cell', async () => {
     const stageCss = readCss('src/routes/Orchestrator/components/StagePanel.css')
     const stageFrame = cssBlock(stageCss, '.stageFrame')

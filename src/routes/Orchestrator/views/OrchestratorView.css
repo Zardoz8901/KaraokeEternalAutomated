@@ -484,6 +484,12 @@
   padding-top: var(--orch-touch-target);
 }
 
+/* The banner is fixed at z-banner above z-dock chrome, so the rail (and the mobile
+   sheet, which shares .refPanel) must shift like the docks or its tab bar is covered. */
+.containerWithBanner .refPanel {
+  padding-top: var(--orch-touch-target);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .tab,
   .refPanelOpen {

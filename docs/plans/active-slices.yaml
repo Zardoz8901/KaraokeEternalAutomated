@@ -1,5 +1,43 @@
-# Gate 3 + HiG-bug closeout: remaining slices by change-type (decided 2026-05-30).
-# Deferred (NOT in this closeout): HiG #14 folder-action discoverability, #15 PresetPicker menu rebuild,
+# Orchestrator layout-refactor track (assessment: docs/analysis/orchestrator_layout_assessment_2026_06_10.md).
+# Deferred (NOT in this slice): HiG #14 folder-action discoverability, #15 PresetPicker menu rebuild,
 # #16 keyboard resize separator. See docs/analysis/orchestrator_hig_ux_backlog_2026_05_30.md.
 
-[]
+- id: orchestrator-banner-rail-overlap
+  status: in_progress
+  owner: claude
+  branch: fix/orchestrator-banner-rail-overlap
+  base: main
+  worktree:
+    path: /home/steph/projects/KEA-banner-rail
+    state: present
+  merge_order: 1
+  goal: >-
+    G3 of the 2026-06-10 layout assessment: the fixed remote-update banner covers the left-rail
+    header (Library exit + Presets/API tabs) because the containerWithBanner compensation pads only
+    the stage/code docks. Extend the same padding compensation to the rail (and the mobile sheet,
+    which shares the .refPanel class), so all chrome stays reachable while a remote update is pending.
+  write_scope:
+    - src/routes/Orchestrator/views/OrchestratorView.css
+    - src/routes/Orchestrator/views/OrchestratorView.spatial.test.tsx
+    - docs/plans/active-slices.yaml
+  protected_paths:
+    - src/routes/Orchestrator/components/orchestratorColorAudit.test.ts
+    - src/routes/Player
+    - server
+  verification:
+    - npm test
+    - npm run typecheck
+    - npm run lint
+    - npm run slices:check
+  acceptance:
+    - containerWithBanner compensation covers .refPanel with the same var(--orch-touch-target) offset as the docks
+    - spatial test pins dock AND rail banner compensation (RED first, then GREEN)
+    - full gates green; no other visual change
+  non_goals:
+    - banner height/44px mismatch audit (pre-existing nit, noted in the assessment)
+    - any G0 flat-register change (next slices)
+  notes:
+    - serial slice in its own worktree; no orchestratorColorAudit edits (not an (A) slice)
+    - owner visual check after merge-candidate; trigger a remote update and confirm Library/Presets/API stay clickable
+  next:
+    - implementation
