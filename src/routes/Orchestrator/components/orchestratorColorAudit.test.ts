@@ -70,7 +70,7 @@ function stripNeutralChromeAllowlist (file: string, source: string): string {
 
   if (file === 'PresetBrowser.css') {
     return [
-      '\\.toolbarButton:hover',
+      '\\.toolbarButton:hover,\\s*\\n\\s*\\.toolbarButtonPrimary:hover',
     ].reduce((nextSource, selector) => stripBlock(nextSource, selector), source)
   }
 
@@ -440,8 +440,7 @@ describe('Orchestrator color audit', () => {
       '.resendButton',
       '.cameraBanner',
       '.cameraBannerEnable',
-      '.sendButton',
-      '.randomButton',
+      '.camActive',
     ]) {
       expectToneRecipe(codeEditor, selector)
     }
@@ -451,11 +450,10 @@ describe('Orchestrator color audit', () => {
     for (const selector of ['.statusWaitingForPlayerMedia', '.statusUsingPlayerMp4', '.statusExternalVideoSource']) {
       expectToneRecipe(hydraPreview, selector)
     }
-    for (const selector of ['.actionPrimary', '.actionActive', '.actionDanger']) {
+    // G0 flat register: .actionPrimary (tree), .sendButton/.randomButton (editor), and the
+    // PresetPicker .toggle/.actionPrimary/.random are neutral-until-state — no resting recipe.
+    for (const selector of ['.actionActive', '.actionDanger']) {
       expectToneRecipe(presetTree, selector)
-    }
-    for (const selector of ['.toggle', '.actionPrimary', '.random']) {
-      expectToneRecipe(readComponentCss('PresetPicker.css'), selector)
     }
   })
 
@@ -465,9 +463,6 @@ describe('Orchestrator color audit', () => {
     const presetTree = readComponentCss('PresetTree.css')
 
     // cssBlock() is first-match only and sees grouped neutral blocks for these selectors.
-    expect(presetBrowser).toContain('background: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-fill), transparent);')
-    expect(presetBrowser).toContain('border-color: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-border), transparent);')
-    expect(presetBrowser).toContain('color: var(--orch-loaded);')
     expect(presetBrowser).toContain('background: color-mix(in srgb, var(--orch-warning) var(--orch-tone-fill), transparent);')
     expect(presetBrowser).toContain('border-color: color-mix(in srgb, var(--orch-warning) var(--orch-tone-border), transparent);')
     expect(presetBrowser).toContain('color: var(--orch-text);')
@@ -506,11 +501,49 @@ describe('Orchestrator color audit', () => {
       cssBlock(codeEditor, '.cameraBannerEnable'),
       cssBlock(codeEditor, '.sendButton'),
       cssBlock(codeEditor, '.randomButton'),
+      cssBlock(codeEditor, '.camActive'),
       cssBlock(readComponentCss('PresetPicker.css'), '.toggle'),
       cssBlock(readComponentCss('PresetPicker.css'), '.random'),
     ]) {
       expect(block).not.toContain('var(--orch-tone-emphasis-fill)')
     }
+  })
+
+  it('keeps the flat-register chrome (G0, ratified 2026-06-10)', () => {
+    const values = collectOrchestratorViewPropertyValues()
+
+    // Square 0–2px corners: panes square, 2px only on small controls and fields.
+    expect(values.get('--orch-radius-sm')).toBe('2px')
+    expect(values.get('--orch-radius-md')).toBe('2px')
+    expect(values.get('--orch-radius-lg')).toBe('0')
+
+    // Tight hard lift instead of a soft diffuse float (popover/modal/drag allowlist unchanged).
+    expect(values.get('--orch-shadow')).toContain('0 2px 8px')
+
+    // Opaque structural surfaces and borders: mixes resolve over base03, never alpha washes.
+    for (const token of ['--orch-surface-soft', '--orch-border', '--orch-border-subtle', '--orch-border-strong', '--orch-muted-soft']) {
+      expect(values.get(token)).toContain('var(--orch-base03)')
+      expect(values.get(token)).not.toContain('transparent')
+    }
+
+    // De-carded preset rows: flat list lines with 1px separators, no per-row card chrome.
+    const presetTree = readComponentCss('PresetTree.css')
+    const presetRow = cssBlock(presetTree, '.presetRow')
+    expect(presetRow).not.toContain('border-radius')
+    expect(presetRow).not.toMatch(/\n\s*border:/)
+    expect(presetRow).toContain('border-bottom: 1px solid')
+
+    // Neutral-until-state buttons: no resting role tints on Load/Send/Save/Random/picker chrome.
+    const codeEditor = readComponentCss('CodeEditor.css')
+    expect(cssBlock(presetTree, '.actionPrimary')).not.toMatch(/--orch-tone-fill/)
+    expect(cssBlock(codeEditor, '.sendButton')).not.toMatch(/--orch-tone-fill/)
+    expect(cssBlock(codeEditor, '.randomButton')).not.toMatch(/--orch-tone-fill/)
+    expect(readComponentCss('PresetPicker.css')).not.toContain('var(--orch-loaded)')
+    expect(readComponentCss('PresetPicker.css')).not.toContain('var(--orch-selected)')
+    expect(readComponentCss('PresetBrowser.css')).not.toContain('var(--orch-loaded)')
+
+    // The Cam toggle's ACTIVE state carries the camera role (cyan synced), not loaded blue.
+    expect(cssBlock(codeEditor, '.camActive')).toContain('var(--orch-synced)')
   })
 
   it('uses readable flat text color for violet and red tinted states', () => {

@@ -89,7 +89,7 @@
   color: var(--orch-muted);
   background: color-mix(in srgb, var(--orch-base01) 14%, transparent);
   border: 1px solid var(--orch-border-subtle);
-  border-radius: 999px;
+  border-radius: var(--orch-radius-sm);
   padding: var(--orch-space-2xs) var(--orch-space-md);
   line-height: 1.4;
 }
@@ -134,11 +134,13 @@
   cursor: not-allowed;
 }
 
+/* G0 flat register: footer commands are neutral until state — flat bordered
+   rectangles; role color appears only on an active/checked/alarm state. */
 .randomButton {
   padding: var(--orch-space-sm) var(--orch-space-xl);
-  background: color-mix(in srgb, var(--orch-selected) var(--orch-tone-fill), transparent);
-  color: var(--orch-selected);
-  border: 1px solid color-mix(in srgb, var(--orch-selected) var(--orch-tone-border), transparent);
+  background: var(--orch-surface);
+  color: var(--orch-text);
+  border: 1px solid var(--orch-border);
   font-size: var(--text-sm);
   cursor: pointer;
   font-weight: 600;
@@ -147,15 +149,17 @@
 }
 
 .randomButton:hover {
-  background: color-mix(in srgb, var(--orch-selected) var(--orch-tone-fill), transparent);
-  border-color: color-mix(in srgb, var(--orch-selected) var(--orch-tone-border), transparent);
+  background: color-mix(in srgb, var(--orch-base01) 16%, transparent);
+  border-color: var(--orch-border-strong);
+  color: var(--orch-text-strong);
 }
 
+/* Default action: distinguished by size, text strength, and the strong border. */
 .sendButton {
   padding: var(--orch-space-sm) var(--orch-space-2xl);
-  background: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-fill), transparent);
-  color: var(--orch-loaded);
-  border: 1px solid color-mix(in srgb, var(--orch-loaded) var(--orch-tone-border), transparent);
+  background: var(--orch-surface);
+  color: var(--orch-text-strong);
+  border: 1px solid var(--orch-border-strong);
   font-size: var(--text-md);
   cursor: pointer;
   font-weight: 650;
@@ -163,8 +167,15 @@
 }
 
 .sendButton:hover {
-  background: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-fill), transparent);
-  border-color: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-border), transparent);
+  background: color-mix(in srgb, var(--orch-base01) 16%, transparent);
+  border-color: var(--orch-border-strong);
+}
+
+/* Camera toggle ACTIVE state: carries the camera role (cyan synced), not loaded blue. */
+.camActive {
+  background: color-mix(in srgb, var(--orch-synced) var(--orch-tone-fill), transparent);
+  color: var(--orch-synced);
+  border-color: color-mix(in srgb, var(--orch-synced) var(--orch-tone-border), transparent);
 }
 
 .sendButton:disabled {
@@ -184,7 +195,7 @@
 .sendStatus {
   font-size: var(--text-xs);
   padding: var(--orch-space-2xs) var(--orch-space-md);
-  border-radius: 999px;
+  border-radius: var(--orch-radius-sm);
   border: 1px solid transparent;
   white-space: nowrap;
 }
@@ -207,7 +218,7 @@
   background: color-mix(in srgb, var(--orch-warning) var(--orch-tone-fill), transparent);
   border: 1px solid color-mix(in srgb, var(--orch-warning) var(--orch-tone-border), transparent);
   padding: var(--orch-space-2xs) var(--orch-space-md);
-  border-radius: 999px;
+  border-radius: var(--orch-radius-sm);
   white-space: nowrap;
 }
 
@@ -217,7 +228,7 @@
   background: color-mix(in srgb, var(--orch-loaded) var(--orch-tone-fill), transparent);
   border: 1px solid color-mix(in srgb, var(--orch-loaded) var(--orch-tone-border), transparent);
   padding: var(--orch-space-2xs) var(--orch-space-md);
-  border-radius: 999px;
+  border-radius: var(--orch-radius-sm);
   white-space: nowrap;
   max-width: min(40vw, 26rem);
   overflow: hidden;

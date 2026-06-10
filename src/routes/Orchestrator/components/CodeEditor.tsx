@@ -483,7 +483,7 @@ function CodeEditor ({
         {onCameraToggle && (
           <button
             type='button'
-            className={`${styles.randomButton} ${cameraStatus === 'active' ? styles.sendButton : ''}`}
+            className={`${styles.randomButton} ${cameraStatus === 'active' ? styles.camActive : ''}`}
             onClick={onCameraToggle}
             title={cameraStatus === 'idle' ? 'Share camera' : cameraStatus === 'connecting' ? 'Connecting...' : cameraStatus === 'active' ? 'Stop camera' : 'Camera error'}
           >
