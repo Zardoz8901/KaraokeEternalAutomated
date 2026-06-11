@@ -27,9 +27,16 @@
   --orch-surface-soft: color-mix(in srgb, var(--orch-base02) 68%, var(--orch-base03));
   --orch-surface-raised: color-mix(in srgb, var(--orch-base02) 82%, var(--orch-base03));
   --orch-surface-strong: color-mix(in srgb, var(--orch-base02) 92%, var(--orch-base03));
-  --orch-border: color-mix(in srgb, var(--orch-base01) 34%, var(--orch-base03));
-  --orch-border-subtle: color-mix(in srgb, var(--orch-base01) 18%, var(--orch-base03));
-  --orch-border-strong: color-mix(in srgb, var(--orch-base01) 52%, var(--orch-base03));
+  /* G15 figure-ground (ratified 2026-06-11): borders at honest strength — flat base01/base00
+     (WCAG-graded in the audit); subtle stays a quiet opaque mix for hairline separators. */
+  --orch-border: var(--orch-base01);
+  --orch-border-subtle: color-mix(in srgb, var(--orch-base01) 45%, var(--orch-base03));
+  --orch-border-strong: var(--orch-base00);
+  /* Raised face = interactive: control faces step a full luminance band above their ground,
+     under ONE crisp dark outline (never a two-edge bevel). Sunken --orch-bg well = input. */
+  --orch-control-face: color-mix(in srgb, var(--orch-base01) 32%, var(--orch-base02));
+  --orch-control-face-hover: color-mix(in srgb, var(--orch-base01) 44%, var(--orch-base02));
+  --orch-outline-dark: color-mix(in srgb, var(--orch-black) 60%, var(--orch-base03));
   --orch-text: var(--orch-base1);
   --orch-text-strong: var(--orch-base2);
   --orch-muted: var(--orch-base0);

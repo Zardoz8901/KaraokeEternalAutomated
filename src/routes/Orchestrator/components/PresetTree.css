@@ -199,13 +199,15 @@
   pointer-events: auto;
 }
 
+/* G15 figure-ground: row/folder commands sit on the raised control face with one crisp
+   dark outline. Icon-only management verbs keep their muted glyphs per §4.7. */
 .folderActionButton,
 .actionButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--orch-surface);
-  border: 1px solid var(--orch-border);
+  background: var(--orch-control-face);
+  border: 1px solid var(--orch-outline-dark);
   color: var(--orch-muted);
   border-radius: var(--orch-radius-sm);
   line-height: 1;
@@ -223,7 +225,7 @@
 .folderActionButton:focus-visible,
 .actionButton:hover,
 .actionButton:focus-visible {
-  background: color-mix(in srgb, var(--orch-base01) 16%, transparent);
+  background: var(--orch-control-face-hover);
   border-color: var(--orch-border-strong);
   color: var(--orch-text);
 }

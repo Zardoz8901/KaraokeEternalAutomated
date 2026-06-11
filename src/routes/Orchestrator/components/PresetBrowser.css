@@ -20,13 +20,15 @@
   white-space: nowrap;
 }
 
+/* G15 figure-ground: toolbar commands sit on the raised control face with one crisp
+   dark outline. */
 .toolbarButton,
 .toolbarButtonPrimary {
   flex: 1;
   padding: var(--orch-space-lg) var(--orch-space-xl);
   border-radius: var(--orch-radius-md);
-  border: 1px solid var(--orch-border);
-  background: var(--orch-surface-soft);
+  border: 1px solid var(--orch-outline-dark);
+  background: var(--orch-control-face);
   color: var(--orch-text);
   font-size: var(--text-sm);
   font-weight: 650;
@@ -38,7 +40,7 @@
 .toolbarButton:hover,
 .toolbarButtonPrimary:hover {
   border-color: color-mix(in srgb, var(--orch-cyan) 42%, transparent);
-  background: color-mix(in srgb, var(--orch-cyan) 10%, transparent);
+  background: var(--orch-control-face-hover);
 }
 
 /* G0 flat register: Save Preset is neutral until state — default action reads through
@@ -59,11 +61,13 @@
   position: relative;
 }
 
+/* G15 figure-ground: search reads as a sunken dark well on the lighter rail
+   (matches the PresetPicker search). */
 .searchInput {
   width: 100%;
   min-height: 2.5rem;
   padding: var(--orch-space-md) var(--orch-space-xl);
-  background: var(--orch-surface-soft);
+  background: var(--orch-bg);
   border: 1px solid var(--orch-border);
   border-radius: var(--orch-radius-md);
   color: var(--orch-text);
@@ -76,7 +80,7 @@
 .searchInput:focus {
   border-color: var(--orch-focus);
   box-shadow: 0 0 0 var(--orch-focus-ring-width) color-mix(in srgb, var(--orch-focus) 28%, transparent);
-  background: var(--orch-surface);
+  background: var(--orch-bg);
 }
 
 .searchInput::placeholder {
@@ -88,8 +92,8 @@
   top: 50%;
   right: var(--orch-space-md);
   transform: translateY(-50%);
-  border: 1px solid var(--orch-border);
-  background: var(--orch-surface);
+  border: 1px solid var(--orch-outline-dark);
+  background: var(--orch-control-face);
   color: var(--orch-text);
   border-radius: var(--orch-radius-sm);
   padding: var(--orch-space-2xs) var(--orch-space-md);

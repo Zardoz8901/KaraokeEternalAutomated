@@ -141,11 +141,13 @@
   display: none;
 }
 
+/* G15 figure-ground: buffer radios sit on the raised control face with one crisp
+   dark outline; key labels are never muted. */
 .bufferButton {
   position: relative;
-  border: 1px solid var(--orch-border);
-  background: var(--orch-surface);
-  color: var(--orch-muted);
+  border: 1px solid var(--orch-outline-dark);
+  background: var(--orch-control-face);
+  color: var(--orch-text);
   font-size: var(--text-xs);
   padding: var(--orch-space-xs) var(--orch-space-md);
   border-radius: var(--orch-radius-sm);
