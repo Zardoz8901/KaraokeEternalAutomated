@@ -1,54 +1,7 @@
 # Orchestrator layout-refactor track (assessment: docs/analysis/orchestrator_layout_assessment_2026_06_10.md;
 # handoff/continuation: docs/analysis/orchestrator_refactor_handoff_prompt_2026_06_11.md).
-# Merged so far: slice 1 banner-rail overlap (8b8f3251), slice 2 phase-19a flat-chrome (719f0e63).
-# Next after this slice: phase-19c-type-register, then the functional-flow assessment (G16+), then G1.
+# Merged so far: slice 1 banner-rail overlap (8b8f3251), slice 2 phase-19a flat-chrome (719f0e63),
+# slice 3 phase-19b figure-ground (131f2a19).
+# Next: phase-19c-type-register (mixed-case/no-tracking), the functional-flow assessment (G16+), then G1.
 
-- id: orchestrator-figure-ground
-  status: in_progress
-  owner: claude
-  branch: phase-19b-figure-ground
-  base: main
-  worktree:
-    path: /home/steph/projects/KEA-figure-ground
-    state: present
-  merge_order: 3
-  goal: >-
-    G15 hard figure-ground grammar (owner-ratified 2026-06-11 after the 19a eyeball found the
-    chrome too weak): interactive controls get a raised face (--orch-control-face) with a single
-    crisp dark outline (--orch-outline-dark, no bevels); inputs become sunken --orch-bg wells
-    (PresetBrowser search joins the picker search); border tokens go to honest strength
-    (--orch-border = full base01, --orch-border-strong = base00, subtle = 45% mix for separators);
-    command-label text never muted; the color audit gains WCAG border-contrast grading so the
-    spec's own >=3:1 border rule can never silently regress again.
-  write_scope:
-    - src/routes/Orchestrator/views/OrchestratorView.css
-    - src/routes/Orchestrator/components/CodeEditor.css
-    - src/routes/Orchestrator/components/PresetBrowser.css
-    - src/routes/Orchestrator/components/PresetTree.css
-    - src/routes/Orchestrator/components/PresetPicker.css
-    - src/routes/Orchestrator/components/StagePanel.css
-    - src/routes/Orchestrator/components/orchestratorColorAudit.test.ts
-    - docs/architecture/orchestrator-synthesis-ui-style-guide.md
-    - docs/plans/active-slices.yaml
-  protected_paths:
-    - src/routes/Player
-    - server
-  verification:
-    - npm test
-    - npm run typecheck
-    - npm run lint
-    - npm run slices:check
-  acceptance:
-    - audit WCAG-grades --orch-border (>=2.7 vs bg) and --orch-border-strong (>=3.0 vs bg), RED first
-    - listed control classes consume control-face + outline-dark; search input is a --orch-bg well
-    - state tints, tone recipe, badge circles, and 19a geometry untouched
-    - owner eyeball is the merge gate (editor footer, Presets search, buffer radios)
-  non_goals:
-    - typography register (19c)
-    - hover-accent hue decision (G7) - cyan hover borders stay for now
-    - row action economics (G1)
-  notes:
-    - (A) slice - edits orchestratorColorAudit.test.ts incl. updating 19a's border-token assertions
-    - default action (Send/Save/row-Send) differentiates via border-strong ring vs outline-dark
-  next:
-    - implementation
+[]
