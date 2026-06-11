@@ -130,6 +130,23 @@ function resolveTokenValue (token: string, values = collectOrchestratorViewPrope
   return null
 }
 
+// WCAG 2.x relative luminance + contrast for FLAT hex token pairs (color-mix values
+// cannot be computed statically — those stay on the OQ-8.1 e2e checklist).
+function relativeLuminance (hex: string): number {
+  const value = hex.replace('#', '')
+  const channels = [0, 2, 4].map((offset) => {
+    const channel = parseInt(value.slice(offset, offset + 2), 16) / 255
+    return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4
+  })
+  return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2]
+}
+
+function contrastRatio (hexA: string, hexB: string): number {
+  const a = relativeLuminance(hexA)
+  const b = relativeLuminance(hexB)
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
+}
+
 function collectDefinedOrchProperties (): Set<string> {
   const defined = new Set<string>()
 
@@ -520,8 +537,9 @@ describe('Orchestrator color audit', () => {
     // Tight hard lift instead of a soft diffuse float (popover/modal/drag allowlist unchanged).
     expect(values.get('--orch-shadow')).toContain('0 2px 8px')
 
-    // Opaque structural surfaces and borders: mixes resolve over base03, never alpha washes.
-    for (const token of ['--orch-surface-soft', '--orch-border', '--orch-border-subtle', '--orch-border-strong', '--orch-muted-soft']) {
+    // Opaque structural surfaces: mixes resolve over base03, never alpha washes.
+    // (--orch-border/--orch-border-strong graduated to flat full-strength tokens in G15.)
+    for (const token of ['--orch-surface-soft', '--orch-border-subtle', '--orch-muted-soft']) {
       expect(values.get(token)).toContain('var(--orch-base03)')
       expect(values.get(token)).not.toContain('transparent')
     }
@@ -544,6 +562,77 @@ describe('Orchestrator color audit', () => {
 
     // The Cam toggle's ACTIVE state carries the camera role (cyan synced), not loaded blue.
     expect(cssBlock(codeEditor, '.camActive')).toContain('var(--orch-synced)')
+  })
+
+  it('enforces the figure-ground control grammar (G15, ratified 2026-06-11)', () => {
+    const values = collectOrchestratorViewPropertyValues()
+
+    // Raised-face tokens: interactive faces step lighter than their ground, under ONE
+    // crisp dark outline (never a two-edge bevel — anti-skeuomorphism lock).
+    expect(values.get('--orch-control-face')).toContain('var(--orch-base01)')
+    expect(values.get('--orch-control-face')).toContain('var(--orch-base02)')
+    expect(values.get('--orch-control-face-hover')).toContain('var(--orch-base01)')
+    expect(values.get('--orch-outline-dark')).toContain('var(--orch-black)')
+
+    // Borders at honest strength: flat tokens, WCAG-graded against the shell ground.
+    // §4.2 locks ≥3:1 for control boundaries — border-strong is the compliant boundary;
+    // structural --orch-border sits just under at full base01 and is floor-graded too.
+    expect(values.get('--orch-border')).toBe('var(--orch-base01)')
+    expect(values.get('--orch-border-strong')).toBe('var(--orch-base00)')
+    const bg = resolveTokenValue('--orch-bg', values)
+    const border = resolveTokenValue('--orch-border', values)
+    const borderStrong = resolveTokenValue('--orch-border-strong', values)
+    expect(bg).toMatch(/^#/)
+    expect(border).toMatch(/^#/)
+    expect(borderStrong).toMatch(/^#/)
+    expect(contrastRatio(border!, bg!)).toBeGreaterThanOrEqual(2.7)
+    expect(contrastRatio(borderStrong!, bg!)).toBeGreaterThanOrEqual(3.0)
+
+    // Every resting command control consumes the raised face; default actions
+    // (Send/Save/row-Send) wear the bright border-strong ring instead of the dark outline.
+    const codeEditor = readComponentCss('CodeEditor.css')
+    const presetBrowser = readComponentCss('PresetBrowser.css')
+    const presetTree = readComponentCss('PresetTree.css')
+    const presetPicker = readComponentCss('PresetPicker.css')
+    const stagePanel = readComponentCss('StagePanel.css')
+
+    for (const [source, selector] of [
+      [codeEditor, '.hintToggle'],
+      [codeEditor, '.editButton'],
+      [codeEditor, '.randomButton'],
+      [codeEditor, '.sendButton'],
+      [presetBrowser, '.toolbarButtonPrimary'],
+      [presetBrowser, '.searchClear'],
+      [presetTree, '.actionButton'],
+      [presetPicker, '.toggle'],
+      [presetPicker, '.random'],
+      [presetPicker, '.action'],
+      [stagePanel, '.bufferButton'],
+    ] as const) {
+      expect(cssBlock(source, selector), `${selector} should sit on the raised control face`).toContain('var(--orch-control-face)')
+    }
+    for (const [source, selector] of [
+      [codeEditor, '.hintToggle'],
+      [codeEditor, '.editButton'],
+      [codeEditor, '.randomButton'],
+      [presetBrowser, '.toolbarButtonPrimary'],
+      [presetTree, '.actionButton'],
+      [presetPicker, '.toggle'],
+      [presetPicker, '.action'],
+      [stagePanel, '.bufferButton'],
+    ] as const) {
+      expect(cssBlock(source, selector), `${selector} should carry the crisp dark outline`).toContain('var(--orch-outline-dark)')
+    }
+    expect(cssBlock(codeEditor, '.sendButton')).toContain('var(--orch-border-strong)')
+    expect(cssBlock(presetTree, '.actionPrimary')).toContain('var(--orch-border-strong)')
+
+    // Sunken wells: search inputs read as dark --orch-bg wells on their lighter panels.
+    expect(cssBlock(presetBrowser, '.searchInput')).toContain('background: var(--orch-bg)')
+    expect(cssBlock(presetPicker, '.search')).toContain('background: var(--orch-bg)')
+
+    // Command labels are never muted; icon-only management verbs stay muted per §4.7.
+    expect(cssBlock(codeEditor, '.hintToggle')).toContain('color: var(--orch-text)')
+    expect(cssBlock(stagePanel, '.bufferButton')).toContain('color: var(--orch-text)')
   })
 
   it('uses readable flat text color for violet and red tinted states', () => {

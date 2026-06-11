@@ -169,9 +169,10 @@ column), not a rounded-chip web surface. Binding rules, graded by
 - **De-carded rows:** preset rows are flat list lines separated by 1px `--orch-border-subtle`
   lines spanning the folder — no per-row radius, full border, or own card surface. Selection
   (yellow inset rail + `--orch-surface-strong`), hover fill, and focus rings are unchanged.
-- **Opaque structural surfaces:** `--orch-surface-soft`, `--orch-border`, `--orch-border-subtle`,
-  `--orch-border-strong`, and `--orch-muted-soft` are opaque mixes over `base03` — no alpha
-  washes in structural chrome. State tints (tone recipe) and scrims/shadows keep transparency.
+- **Opaque structural surfaces:** `--orch-surface-soft`, `--orch-border-subtle`, and
+  `--orch-muted-soft` are opaque mixes over `base03` — no alpha washes in structural chrome
+  (`--orch-border`/`--orch-border-strong` graduated to flat full-strength tokens under G15
+  below). State tints (tone recipe) and scrims/shadows keep transparency.
 - **Neutral-until-state buttons:** command buttons (Load/Send/Save/Random/picker chrome) carry
   no resting role tint. The default action is distinguished by size, text strength
   (`--orch-text-strong`), and `--orch-border-strong`. Role color appears only on
@@ -179,6 +180,29 @@ column), not a rounded-chip web surface. Binding rules, graded by
   `.bufferButtonActive`) via the unchanged tone recipe.
 - **Tight lift:** `--orch-shadow` is `0 2px 8px` — a hard, close shadow on the unchanged
   popover/modal/drag-lift allowlist; never a soft diffuse float.
+
+#### Figure-ground grammar (G15, ratified 2026-06-11)
+
+Owner verdict after the G0 eyeball: flat must not mean faint — the references (Ableton, Bitwig,
+HyperCard) carry their flatness with **luminance structure**. Binding rules, graded by
+`orchestratorColorAudit.test.ts` ("enforces the figure-ground control grammar"):
+
+- **Raised face = interactive.** Every resting command control sits on
+  `--orch-control-face` (base01 32% over base02 — a full step lighter than its ground) under
+  **one** crisp dark outline `--orch-outline-dark` (black 60% over base03). Hover steps to
+  `--orch-control-face-hover`. Never a two-edge bevel (anti-skeuomorphism lock) — the single
+  dark outline is the HyperCard lesson, not an emboss.
+- **Default action = bright ring.** Send / Save / row-Send keep the face but wear
+  `--orch-border-strong` instead of the dark outline, plus `--orch-text-strong`.
+- **Sunken well = input/display.** Search fields and modal inputs read as dark `--orch-bg`
+  wells on their lighter panels; focus brightens the rim, never lightens the well.
+- **Borders at honest strength.** `--orch-border: var(--orch-base01)` (structural, ≈2.8:1 vs
+  bg), `--orch-border-strong: var(--orch-base00)` (control boundaries, ≥3:1 per the §4.2
+  matrix — now WCAG-computed in the audit), `--orch-border-subtle` (45% mix) for hairline
+  separators only.
+- **Command labels are never `--orch-muted`.** Text on control faces is `--orch-text` at rest,
+  `--orch-text-strong` on hover/default actions. Icon-only management verbs (★ 📁 ✎ ×) keep
+  muted glyphs per §4.7's quiet-management rule.
 
 Migration mapping for Gate 3d:
 

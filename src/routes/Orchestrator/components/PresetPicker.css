@@ -3,11 +3,12 @@
   display: inline-flex;
 }
 
-/* G0 flat register: picker chrome is neutral until state — no resting role tints. */
+/* G0 flat register + G15 figure-ground: picker chrome is neutral-until-state on the
+   raised control face with one crisp dark outline. */
 .toggle {
   padding: var(--orch-space-sm) var(--orch-space-xl);
-  background: var(--orch-surface-soft);
-  border: 1px solid var(--orch-border);
+  background: var(--orch-control-face);
+  border: 1px solid var(--orch-outline-dark);
   border-radius: var(--orch-radius-md);
   color: var(--orch-text);
   font-size: var(--text-sm);
@@ -17,7 +18,7 @@
 }
 
 .toggle:hover {
-  background: color-mix(in srgb, var(--orch-base01) 16%, transparent);
+  background: var(--orch-control-face-hover);
   border-color: var(--orch-border-strong);
   color: var(--orch-text-strong);
 }
@@ -69,8 +70,8 @@
 .random {
   padding: var(--orch-space-sm) var(--orch-space-md);
   border-radius: var(--orch-radius-sm);
-  border: 1px solid var(--orch-border);
-  background: var(--orch-surface);
+  border: 1px solid var(--orch-outline-dark);
+  background: var(--orch-control-face);
   color: var(--orch-text);
   font-size: 12px;
   cursor: pointer;
@@ -113,8 +114,8 @@
 .action {
   padding: var(--orch-space-xs) var(--orch-space-sm);
   border-radius: var(--orch-radius-sm);
-  border: 1px solid var(--orch-border);
-  background: var(--orch-surface);
+  border: 1px solid var(--orch-outline-dark);
+  background: var(--orch-control-face);
   color: var(--orch-text);
   font-size: var(--orch-text-meta);
   cursor: pointer;
