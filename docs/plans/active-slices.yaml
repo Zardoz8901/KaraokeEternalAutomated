@@ -1,49 +1,7 @@
 # Orchestrator layout-refactor track (assessment: docs/analysis/orchestrator_layout_assessment_2026_06_10.md;
 # flow addendum: docs/analysis/orchestrator_flow_assessment_2026_06_12.md).
-# Merged so far: slices 1-4 (banner-rail 8b8f3251, flat-chrome 719f0e63, figure-ground 131f2a19,
-# type-register 375ebfc0).
-# Next after this slice: G2 splitter, then flow slices G18 -> G16 -> G17 (all owner-ratified 2026-06-12).
+# Merged so far: slices 1-5 (banner-rail 8b8f3251, flat-chrome 719f0e63, figure-ground 131f2a19,
+# type-register 375ebfc0, row-economics c16b9a57).
+# Next: G2 Stage/Code splitter, then flow slices G18 -> G16 -> G17 (owner-ratified 2026-06-12).
 
-- id: orchestrator-row-economics
-  status: in_progress
-  owner: claude
-  branch: phase-20-row-economics
-  base: main
-  worktree:
-    path: /home/steph/projects/KEA-row-economics
-    state: present
-  merge_order: 5
-  goal: >-
-    G1 preset-row action economics, option (a) (owner-ratified): management verbs (star, move,
-    rename, delete) become quiet-persistent via .actionQuiet + --orch-quiet-opacity 0.55 on fine
-    pointers (full on row hover/focus-within, state-active verbs, and always on touch/keyboard -
-    capability queries per OQ-5.2); Delete loses its ambient 22% danger fill (muted at rest,
-    danger on hover/focus, confirm modal unchanged); .actions drops min-width: max-content so the
-    cluster wraps on narrow rails instead of crushing the preset name at the 280px default width.
-  write_scope:
-    - src/routes/Orchestrator/views/OrchestratorView.css
-    - src/routes/Orchestrator/components/PresetTree.css
-    - src/routes/Orchestrator/components/PresetTree.tsx
-    - src/routes/Orchestrator/components/orchestratorColorAudit.test.ts
-    - docs/architecture/orchestrator-synthesis-ui-style-guide.md
-    - docs/plans/active-slices.yaml
-  protected_paths:
-    - src/routes/Player
-    - server
-  verification:
-    - npm test
-    - npm run typecheck
-    - npm run lint
-    - npm run slices:check
-  acceptance:
-    - audit asserts quiet token + capability-query rule + no max-content + danger-on-hover-only (RED first)
-    - DOM order, aria-labels, disabled reasons, and the confirm modal unchanged
-    - badge lane / no-reflow contract untouched
-    - owner eyeball is the merge gate (host rows at default rail width)
-  non_goals:
-    - folder-action quiet pattern (G4 - same pattern, separate surface)
-    - Stage/Code splitter (G2, next)
-  notes:
-    - (A) slice - edits orchestratorColorAudit.test.ts (recipe loop, emphasis alarm-only, readable-text)
-  next:
-    - review
+[]
