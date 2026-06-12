@@ -1,53 +1,7 @@
 # Orchestrator layout-refactor track (assessment: docs/analysis/orchestrator_layout_assessment_2026_06_10.md;
 # flow addendum: docs/analysis/orchestrator_flow_assessment_2026_06_12.md).
-# Merged so far: slices 1-5 (banner-rail 8b8f3251, flat-chrome 719f0e63, figure-ground 131f2a19,
-# type-register 375ebfc0, row-economics c16b9a57).
-# Next after this slice: flow slices G18 -> G16 -> G17 (owner-ratified 2026-06-12).
+# Merged so far: slices 1-6 (banner-rail 8b8f3251, flat-chrome 719f0e63, figure-ground 131f2a19,
+# type-register 375ebfc0, row-economics c16b9a57, stage-code-splitter 5f20fecd).
+# Next: flow slices G18 session-restore -> G16 mobile Load-reveals-Stage -> G17 strip song line.
 
-- id: orchestrator-stage-code-splitter
-  status: in_progress
-  owner: claude
-  branch: phase-21-stage-code-splitter
-  base: main
-  worktree:
-    path: /home/steph/projects/KEA-splitter
-    state: present
-  merge_order: 6
-  goal: >-
-    G2 / HiG #16 + OQ-4.1: the Stage/Code boundary becomes a real splitter - pointer drag plus
-    the APG window-splitter keyboard pattern (Arrow/Home/End, focusable separator with
-    aria-value semantics), persisted under orchestratorCodeDockHeight as inert view-shape
-    (OQ-1.2). CSS keeps the invariants: code row = clamp(12rem, var(--code-dock-height, 30dvh),
-    50dvh) so Stage always retains at least an equal share and the 30dvh default survives when
-    no preference is stored. The rail separator gains the same keyboard pattern and value
-    semantics (it was pointer-only, tabIndex -1). Both splitters hidden on mobile.
-  write_scope:
-    - src/routes/Orchestrator/views/OrchestratorView.tsx
-    - src/routes/Orchestrator/views/OrchestratorView.css
-    - src/routes/Orchestrator/views/OrchestratorView.test.tsx
-    - src/routes/Orchestrator/views/OrchestratorView.spatial.test.tsx
-    - src/routes/Orchestrator/views/useOrchestratorWorkspace.ts
-    - src/routes/Orchestrator/views/orchestratorWorkspaceResize.ts
-    - src/routes/Orchestrator/views/orchestratorWorkspaceResize.test.ts
-    - docs/architecture/orchestrator-visual-language.md
-    - docs/plans/active-slices.yaml
-  protected_paths:
-    - src/routes/Player
-    - server
-  verification:
-    - npm test
-    - npm run typecheck
-    - npm run lint
-    - npm run slices:check
-  acceptance:
-    - pure resize fns unit-tested (RED first); spatial test pins the new bounded var-clamp
-    - render test asserts both separators are focusable APG separators with value semantics, hidden on mobile
-    - Stage >= Code invariant CSS-enforced (50dvh cap); 12rem floor preserved
-    - owner eyeball is the merge gate (drag + keyboard + reload persistence)
-  non_goals:
-    - mobile splitter (tab-switched panels have no shared boundary)
-    - flow slices G18/G16/G17 (next)
-  notes:
-    - not an (A) slice (no orchestratorColorAudit edits)
-  next:
-    - review
+[]
