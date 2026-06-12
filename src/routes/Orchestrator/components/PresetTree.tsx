@@ -430,7 +430,7 @@ function PresetTree ({
                                   {!preset.isGallery && rowUx.showManagementActions && onSetStartingPreset && (canSetStartingPreset?.(preset) ?? true) && (
                                     <button
                                       type='button'
-                                      className={clsx(styles.actionButton, isStarting && styles.actionActive)}
+                                      className={clsx(styles.actionButton, styles.actionQuiet, isStarting && styles.actionActive)}
                                       aria-label={isStarting ? 'Clear starting visual' : 'Set as starting visual'}
                                       title={isStarting ? 'Clear starting visual' : 'Set as starting visual'}
                                       onClick={(e) => {
@@ -444,7 +444,7 @@ function PresetTree ({
                                   {!preset.isGallery && onMoveToFolder && presetManageAllowed && (
                                     <button
                                       type='button'
-                                      className={styles.actionButton}
+                                      className={clsx(styles.actionButton, styles.actionQuiet)}
                                       aria-label='Move to folder'
                                       title='Move to folder'
                                       onClick={(e) => {
@@ -458,7 +458,7 @@ function PresetTree ({
                                   {!preset.isGallery && onRenamePreset && presetManageAllowed && (
                                     <button
                                       type='button'
-                                      className={styles.actionButton}
+                                      className={clsx(styles.actionButton, styles.actionQuiet)}
                                       aria-label='Rename preset'
                                       title='Rename preset'
                                       onClick={(e) => {
@@ -486,7 +486,7 @@ function PresetTree ({
                                   {!preset.isGallery && rowUx.showManagementActions && onDeletePreset && (canDeletePreset?.(preset) ?? true) && (
                                     <button
                                       type='button'
-                                      className={clsx(styles.actionButton, styles.actionDanger)}
+                                      className={clsx(styles.actionButton, styles.actionQuiet, styles.actionDanger)}
                                       aria-label='Delete preset'
                                       title='Delete preset'
                                       onClick={(e) => {

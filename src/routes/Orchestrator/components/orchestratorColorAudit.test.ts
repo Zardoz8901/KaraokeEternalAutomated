@@ -469,7 +469,9 @@ describe('Orchestrator color audit', () => {
     }
     // G0 flat register: .actionPrimary (tree), .sendButton/.randomButton (editor), and the
     // PresetPicker .toggle/.actionPrimary/.random are neutral-until-state — no resting recipe.
-    for (const selector of ['.actionActive', '.actionDanger']) {
+    // G1 row economics: .actionDanger is quiet at rest too — its danger recipe moved to
+    // hover/focus (asserted in the emphasis test below).
+    for (const selector of ['.actionActive']) {
       expectToneRecipe(presetTree, selector)
     }
   })
@@ -497,8 +499,16 @@ describe('Orchestrator color audit', () => {
     expect(cssBlock(statusStrip, '.toneDanger')).toContain('var(--orch-tone-emphasis-fill)')
     expect(cssBlock(codeEditor, '.sendStatusError')).toContain('var(--orch-tone-emphasis-fill)')
     expect(cssBlock(presetTree, '.sendAckError')).toContain('var(--orch-tone-emphasis-fill)')
-    expect(cssBlock(presetTree, '.actionDanger')).toContain('var(--orch-tone-emphasis-fill)')
     expect(cssBlock(codeEditor, '.resendButton')).toContain('var(--orch-tone-emphasis-fill)')
+
+    // G1 row economics: Delete is quiet muted chrome at rest (no ambient alarm on every row);
+    // the danger emphasis appears only on hover/focus — alarm is EARNED by pointing at it.
+    const dangerResting = cssBlock(presetTree, '.actionDanger')
+    expect(dangerResting).not.toContain('var(--orch-tone-emphasis-fill)')
+    expect(dangerResting).toContain('color: var(--orch-muted)')
+    const dangerHover = cssBlock(presetTree, '.actionDanger:hover,\n.actionDanger:focus-visible')
+    expect(dangerHover).toContain('var(--orch-tone-emphasis-fill)')
+    expect(dangerHover).toContain('color: var(--orch-text)')
     expect(presetTree).toMatch(/@keyframes sendAckConfirm[\s\S]*?from[\s\S]*?var\(--orch-tone-emphasis-fill\)/)
 
     for (const block of [
@@ -663,9 +673,26 @@ describe('Orchestrator color audit', () => {
     expect(cssBlock(statusStrip, '.toneDanger')).toContain('--orch-status-color: var(--orch-text)')
     expect(cssBlock(codeEditor, '.sendStatusError')).toContain('color: var(--orch-text)')
     expect(cssBlock(presetTree, '.sendAckError')).toContain('color: var(--orch-text)')
-    expect(cssBlock(presetTree, '.actionDanger')).toContain('color: var(--orch-text)')
+    // .actionDanger's red tint is hover/focus-only since G1 — its readable-text rule is
+    // asserted on the hover block in the emphasis test.
     expect(cssBlock(codeEditor, '.resendButton')).toContain('color: var(--orch-text)')
     // Full composited color-mix WCAG remains an e2e / OQ-8.1 checklist item.
+  })
+
+  it('keeps host preset-row management verbs quiet-persistent and lets the action cluster wrap (G1, option a)', () => {
+    const values = collectOrchestratorViewPropertyValues()
+    const presetTree = readComponentCss('PresetTree.css')
+
+    // The OQ-5.2 quiet token: visible-but-quiet at rest on fine pointers, full strength on
+    // touch and keyboard — capability queries, never width.
+    expect(values.get('--orch-quiet-opacity')).toBe('0.55')
+    expect(presetTree).toMatch(/@media \(hover: hover\) and \(pointer: fine\)[\s\S]*?\.actionQuiet[\s\S]*?opacity: var\(--orch-quiet-opacity\)/)
+    expect(presetTree).toMatch(/\.presetRow:hover \.actionQuiet,[\s\S]*?\.presetRow:focus-within \.actionQuiet[\s\S]*?opacity: 1/)
+
+    // The actions cluster must be able to wrap on narrow rails: min-width: max-content made
+    // flex-wrap unreachable and crushed the preset name at the default rail width.
+    expect(cssBlock(presetTree, '.actions')).not.toContain('min-width: max-content')
+    expect(cssBlock(presetTree, '.actions')).toContain('flex-wrap: wrap')
   })
 
   it('routes ApiReference rail accents through the reference role', () => {

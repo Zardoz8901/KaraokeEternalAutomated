@@ -369,13 +369,14 @@
   line-height: 1.3;
 }
 
+/* G1 row economics: no min-width: max-content — the cluster genuinely wraps on narrow
+   rails instead of crushing the preset name. */
 .actions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--orch-space-sm);
   align-items: center;
   justify-content: end;
-  min-width: max-content;
 }
 
 .actionButton {
@@ -410,16 +411,36 @@
   color: var(--orch-selected);
 }
 
+/* G1 row economics: Delete is quiet muted chrome at rest — alarm is earned on
+   hover/focus, never ambient on every row. Confirm modal unchanged. */
 .actionDanger {
-  background: color-mix(in srgb, var(--orch-danger) var(--orch-tone-emphasis-fill), transparent);
-  border-color: color-mix(in srgb, var(--orch-danger) var(--orch-tone-border), transparent);
-  color: var(--orch-text);
+  color: var(--orch-muted);
+}
+
+/* OQ-5.2 quiet layer: management verbs visible-but-quiet on fine pointers, full
+   strength when the row is engaged — and ALWAYS full on touch/keyboard (the media
+   query never matches coarse pointers; state-active verbs stay full too). */
+@media (hover: hover) and (pointer: fine) {
+  .actionQuiet {
+    opacity: var(--orch-quiet-opacity);
+    transition: opacity var(--orch-motion-fast) var(--orch-ease-standard);
+  }
+
+  .presetRow:hover .actionQuiet,
+  .presetRow:focus-within .actionQuiet {
+    opacity: 1;
+  }
+
+  .actionQuiet.actionActive {
+    opacity: 1;
+  }
 }
 
 .actionDanger:hover,
 .actionDanger:focus-visible {
   background: color-mix(in srgb, var(--orch-danger) var(--orch-tone-emphasis-fill), transparent);
   border-color: color-mix(in srgb, var(--orch-danger) var(--orch-tone-border), transparent);
+  color: var(--orch-text);
 }
 
 @media (max-width: 979px) {

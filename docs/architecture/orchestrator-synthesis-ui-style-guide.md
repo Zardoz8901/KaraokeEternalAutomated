@@ -184,6 +184,14 @@ column), not a rounded-chip web surface. Binding rules, graded by
   case — no `text-transform: uppercase`, no `letter-spacing` anywhere in Orchestrator CSS
   (audit-graded). Emphasis is by weight per §4.1, never case or tracking. Buffer keys show
   their code-truth names (`Auto`, `o0`–`o3`).
+- **Quiet management verbs (G1, option a — shipped phase-20):** the preset-row management
+  verbs (★ / move / rename / delete) carry `.actionQuiet`: `opacity: var(--orch-quiet-opacity)`
+  (0.55) at rest on fine pointers, full strength on row hover/`:focus-within`, on state-active
+  verbs, and ALWAYS on coarse pointers/keyboard (`@media (hover: hover) and (pointer: fine)` —
+  capability queries, never width; OQ-5.2's pattern). Delete is muted chrome at rest; its
+  danger emphasis appears only on hover/focus — alarm is earned, never ambient. The action
+  cluster has no `min-width: max-content` so it wraps on narrow rails instead of crushing the
+  preset name. Load/Send stay full-strength always.
 
 #### Figure-ground grammar (G15, ratified 2026-06-11)
 
