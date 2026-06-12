@@ -1,49 +1,7 @@
 # Orchestrator layout-refactor track (assessment: docs/analysis/orchestrator_layout_assessment_2026_06_10.md;
 # handoff/continuation: docs/analysis/orchestrator_refactor_handoff_prompt_2026_06_11.md).
 # Merged so far: slice 1 banner-rail overlap (8b8f3251), slice 2 phase-19a flat-chrome (719f0e63),
-# slice 3 phase-19b figure-ground (131f2a19).
+# slice 3 phase-19b figure-ground (131f2a19), slice 4 phase-19c type-register (375ebfc0).
 # Next: the functional-flow assessment (G16+), then G1 preset-row action economics.
 
-- id: orchestrator-type-register
-  status: in_progress
-  owner: claude
-  branch: phase-19c-type-register
-  base: main
-  worktree:
-    path: /home/steph/projects/KEA-type-register
-    state: present
-  merge_order: 4
-  goal: >-
-    G0 typography half (owner-ratified 2026-06-10): mixed-case labels, no tracking. Remove every
-    text-transform/letter-spacing declaration from Orchestrator CSS (Stage title, folder names,
-    buffer keys, camera chip, mobile tabs, ApiReference headings, editButton micro-tracking) so
-    labels render in their written case; emphasis stays weight-based per visual-language 4.1.
-    Audit gains a file-wide no-uppercase/no-tracking grep (RED first).
-  write_scope:
-    - src/routes/Orchestrator/views/OrchestratorView.css
-    - src/routes/Orchestrator/components/StagePanel.css
-    - src/routes/Orchestrator/components/CodeEditor.css
-    - src/routes/Orchestrator/components/PresetTree.css
-    - src/routes/Orchestrator/components/ApiReference.css
-    - src/routes/Orchestrator/components/orchestratorColorAudit.test.ts
-    - docs/architecture/orchestrator-synthesis-ui-style-guide.md
-    - docs/plans/active-slices.yaml
-  protected_paths:
-    - src/routes/Player
-    - server
-  verification:
-    - npm test
-    - npm run typecheck
-    - npm run lint
-    - npm run slices:check
-  acceptance:
-    - audit file-wide grep finds zero text-transform/letter-spacing lines (RED first, then GREEN)
-    - no TSX label strings changed (buffer labels were already mixed-case; CSS was shouting them)
-    - owner eyeball is the merge gate
-  non_goals:
-    - ApiReference off-ramp font sizes / gradient / aria-selected (G9)
-    - functional-flow assessment (next deliverable)
-  notes:
-    - (A) slice - edits orchestratorColorAudit.test.ts; serialized (no other (A) slice in flight)
-  next:
-    - review
+[]
