@@ -7,6 +7,13 @@ import CodeEditor from '../components/CodeEditor'
 import StagePanel from '../components/StagePanel'
 import OrchestratorStatusStrip from '../components/OrchestratorStatusStrip'
 import { REMOTE_UPDATE_BANNER_LABEL } from '../components/orchestratorPresentationModel'
+import {
+  getCodeDockMaxHeight,
+  ORCHESTRATOR_CODE_DOCK_DEFAULT_VIEWPORT_FRACTION,
+  ORCHESTRATOR_CODE_DOCK_MIN_HEIGHT,
+  ORCHESTRATOR_REF_PANEL_MAX_WIDTH,
+  ORCHESTRATOR_REF_PANEL_MIN_WIDTH,
+} from './orchestratorWorkspaceResize'
 import { useOrchestratorWorkspace } from './useOrchestratorWorkspace'
 import styles from './OrchestratorView.css'
 
@@ -29,6 +36,12 @@ function OrchestratorView () {
     isRefOpen,
     isResizingPanel,
     startRefPanelResize,
+    refPanelWidth,
+    handleRefPanelResizeKeyDown,
+    codeDockHeight,
+    isResizingCodeDock,
+    startCodeDockResize,
+    handleCodeDockResizeKeyDown,
     pendingRemoteCode,
     pendingRemoteCount,
     handleApplyRemote,
@@ -45,9 +58,18 @@ function OrchestratorView () {
     styles.container,
     shellModel.desktopLayout === 'operatorStageExpanded' ? styles.containerOperatorStageExpanded : '',
     isResizingPanel ? styles.containerResizing : '',
+    isResizingCodeDock ? styles.containerResizingRow : '',
     pendingRemoteCode ? styles.containerWithBanner : '',
     isKeyboardOpen ? styles.containerKeyboardOpen : '',
   ].filter(Boolean).join(' ')
+
+  const codeDockMaxHeight = typeof window !== 'undefined'
+    ? getCodeDockMaxHeight(window.innerHeight)
+    : ORCHESTRATOR_CODE_DOCK_MIN_HEIGHT
+  const codeDockValueNow = codeDockHeight
+    ?? (typeof window !== 'undefined'
+      ? Math.round(window.innerHeight * ORCHESTRATOR_CODE_DOCK_DEFAULT_VIEWPORT_FRACTION)
+      : ORCHESTRATOR_CODE_DOCK_MIN_HEIGHT)
 
   const tabContent = activeDesktopPanel === 'presets'
     ? <PresetBrowser {...presetBrowserProps} />
@@ -95,10 +117,14 @@ function OrchestratorView () {
           <div
             className={styles.refPanelResize}
             onPointerDown={startRefPanelResize}
+            onKeyDown={handleRefPanelResizeKeyDown}
             role='separator'
             aria-orientation='vertical'
             aria-label='Resize presets panel'
-            tabIndex={-1}
+            aria-valuemin={ORCHESTRATOR_REF_PANEL_MIN_WIDTH}
+            aria-valuemax={ORCHESTRATOR_REF_PANEL_MAX_WIDTH}
+            aria-valuenow={refPanelWidth}
+            tabIndex={0}
           />
         )}
       </div>
@@ -132,6 +158,20 @@ function OrchestratorView () {
       )}
       {workspaceModel.canShowCodePanel && (!isMobile || activeMobilePanel === 'code') && (
         <div className={styles.codeDock}>
+          {!isMobile && (
+            <div
+              className={styles.codeDockResize}
+              onPointerDown={startCodeDockResize}
+              onKeyDown={handleCodeDockResizeKeyDown}
+              role='separator'
+              aria-orientation='horizontal'
+              aria-label='Resize code editor'
+              aria-valuemin={ORCHESTRATOR_CODE_DOCK_MIN_HEIGHT}
+              aria-valuemax={codeDockMaxHeight}
+              aria-valuenow={codeDockValueNow}
+              tabIndex={0}
+            />
+          )}
           <CodeEditor {...codeEditorProps} />
         </div>
       )}

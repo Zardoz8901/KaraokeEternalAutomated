@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type RefObject } from 'react'
 import combinedReducer from 'store/reducers'
 import { useAppDispatch, useAppSelector } from 'store/hooks'
 import { fetchCurrentRoom } from 'store/modules/rooms'
@@ -44,10 +44,19 @@ import {
 import { type OrchestratorDesktopPanel, type OrchestratorMobileTab } from './orchestratorShellModel'
 import { NARROW_BREAKPOINT } from './orchestratorLayout'
 import {
+  clampCodeDockHeight,
+  getPointerCodeDockHeight,
   getPointerRefPanelWidth,
+  getStoredCodeDockHeight,
   getStoredRefPanelWidth,
+  ORCHESTRATOR_CODE_DOCK_DEFAULT_VIEWPORT_FRACTION,
+  ORCHESTRATOR_CODE_DOCK_STORAGE_KEY,
+  ORCHESTRATOR_REF_PANEL_MAX_WIDTH,
+  ORCHESTRATOR_REF_PANEL_MIN_WIDTH,
   ORCHESTRATOR_REF_PANEL_STORAGE_KEY,
   serializeRefPanelWidth,
+  stepCodeDockHeight,
+  stepRefPanelWidth,
 } from './orchestratorWorkspaceResize'
 
 export interface WorkspacePresetBrowserProps {
@@ -111,6 +120,12 @@ export interface UseOrchestratorWorkspaceResult {
   isRefOpen: boolean
   isResizingPanel: boolean
   startRefPanelResize: () => void
+  refPanelWidth: number
+  handleRefPanelResizeKeyDown: (event: ReactKeyboardEvent<HTMLDivElement>) => void
+  codeDockHeight: number | null
+  isResizingCodeDock: boolean
+  startCodeDockResize: () => void
+  handleCodeDockResizeKeyDown: (event: ReactKeyboardEvent<HTMLDivElement>) => void
   pendingRemoteCode: string | null
   pendingRemoteCount: number
   handleApplyRemote: () => void
@@ -137,6 +152,20 @@ function getInitialRefPanelWidth (): number {
   return getStoredRefPanelWidth(window.localStorage.getItem(ORCHESTRATOR_REF_PANEL_STORAGE_KEY))
 }
 
+function getInitialCodeDockHeight (): number | null {
+  if (typeof window === 'undefined') return null
+  return getStoredCodeDockHeight(
+    window.localStorage.getItem(ORCHESTRATOR_CODE_DOCK_STORAGE_KEY),
+    window.innerHeight,
+  )
+}
+
+function getEffectiveCodeDockHeight (codeDockHeight: number | null): number {
+  if (codeDockHeight !== null) return codeDockHeight
+  if (typeof window === 'undefined') return 0
+  return Math.round(window.innerHeight * ORCHESTRATOR_CODE_DOCK_DEFAULT_VIEWPORT_FRACTION)
+}
+
 export function useOrchestratorWorkspace (): UseOrchestratorWorkspaceResult {
   const dispatch = useAppDispatch()
   const camera = useCameraSender()
@@ -159,6 +188,8 @@ export function useOrchestratorWorkspace (): UseOrchestratorWorkspaceResult {
   const [activeMobileTab, setActiveMobileTab] = useState<OrchestratorMobileTab>('stage')
   const [refPanelWidth, setRefPanelWidth] = useState<number>(getInitialRefPanelWidth)
   const [isResizingPanel, setIsResizingPanel] = useState(false)
+  const [codeDockHeight, setCodeDockHeight] = useState<number | null>(getInitialCodeDockHeight)
+  const [isResizingCodeDock, setIsResizingCodeDock] = useState(false)
 
   if (!playerVisualizer) {
     combinedReducer.inject({ reducerPath: 'playerVisualizer', reducer: playerVisualizerReducer })
@@ -402,6 +433,85 @@ export function useOrchestratorWorkspace (): UseOrchestratorWorkspaceResult {
   }, [isResizingPanel])
 
   useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (codeDockHeight === null) {
+      window.localStorage.removeItem(ORCHESTRATOR_CODE_DOCK_STORAGE_KEY)
+      return
+    }
+    window.localStorage.setItem(ORCHESTRATOR_CODE_DOCK_STORAGE_KEY, String(codeDockHeight))
+  }, [codeDockHeight])
+
+  useEffect(() => {
+    if (!isResizingCodeDock) return
+    const handleMove = (event: PointerEvent) => {
+      const rect = containerRef.current?.getBoundingClientRect()
+      if (!rect) return
+      setCodeDockHeight(getPointerCodeDockHeight({
+        containerBottom: rect.bottom,
+        pointerClientY: event.clientY,
+        viewportHeight: window.innerHeight,
+      }))
+    }
+    const handleUp = () => {
+      setIsResizingCodeDock(false)
+    }
+    window.addEventListener('pointermove', handleMove)
+    window.addEventListener('pointerup', handleUp)
+    document.body.style.cursor = 'row-resize'
+    document.body.style.userSelect = 'none'
+    return () => {
+      window.removeEventListener('pointermove', handleMove)
+      window.removeEventListener('pointerup', handleUp)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+  }, [isResizingCodeDock])
+
+  // APG window-splitter keyboard pattern (HiG #16) for both separators.
+  const handleRefPanelResizeKeyDown = useCallback((event: ReactKeyboardEvent<HTMLDivElement>) => {
+    switch (event.key) {
+      case 'ArrowLeft':
+        setRefPanelWidth(current => stepRefPanelWidth(current, -1))
+        break
+      case 'ArrowRight':
+        setRefPanelWidth(current => stepRefPanelWidth(current, 1))
+        break
+      case 'Home':
+        setRefPanelWidth(ORCHESTRATOR_REF_PANEL_MIN_WIDTH)
+        break
+      case 'End':
+        setRefPanelWidth(ORCHESTRATOR_REF_PANEL_MAX_WIDTH)
+        break
+      default:
+        return
+    }
+    event.preventDefault()
+  }, [])
+
+  const handleCodeDockResizeKeyDown = useCallback((event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (typeof window === 'undefined') return
+    const viewportHeight = window.innerHeight
+    switch (event.key) {
+      // The splitter sits above the code dock: Up moves it up (code grows), Down shrinks.
+      case 'ArrowUp':
+        setCodeDockHeight(current => stepCodeDockHeight(getEffectiveCodeDockHeight(current), 1, viewportHeight))
+        break
+      case 'ArrowDown':
+        setCodeDockHeight(current => stepCodeDockHeight(getEffectiveCodeDockHeight(current), -1, viewportHeight))
+        break
+      case 'Home':
+        setCodeDockHeight(clampCodeDockHeight(0, viewportHeight))
+        break
+      case 'End':
+        setCodeDockHeight(clampCodeDockHeight(Number.MAX_SAFE_INTEGER, viewportHeight))
+        break
+      default:
+        return
+    }
+    event.preventDefault()
+  }, [])
+
+  useEffect(() => {
     if (remoteState.userHasEdited) return
     if (!hydraSnapshot.remoteHydraCode || hydraSnapshot.remoteHydraCode.trim() === '') return
     if (hydraSnapshot.remoteHydraCode === remoteState.localCode) return
@@ -501,7 +611,8 @@ export function useOrchestratorWorkspace (): UseOrchestratorWorkspaceResult {
 
   const containerStyle = useMemo(() => ({
     ['--ref-panel-width' as string]: `${refPanelWidth}px`,
-  }) as CSSProperties, [refPanelWidth])
+    ...(codeDockHeight !== null ? { ['--code-dock-height' as string]: `${codeDockHeight}px` } : {}),
+  }) as CSSProperties, [codeDockHeight, refPanelWidth])
   const presetSendStatus: OrchestratorSendStatus = sendingPresetKey === null ? 'idle' : sendState.status
   const showPresetSendMobileDot = sendingPresetKey !== null
     && (sendState.status === 'sending' || sendState.status === 'error')
@@ -559,6 +670,12 @@ export function useOrchestratorWorkspace (): UseOrchestratorWorkspaceResult {
     isRefOpen: workspaceModel.isMobile && workspaceModel.activeMobilePanel === 'ref',
     isResizingPanel,
     startRefPanelResize: () => setIsResizingPanel(true),
+    refPanelWidth,
+    handleRefPanelResizeKeyDown,
+    codeDockHeight,
+    isResizingCodeDock,
+    startCodeDockResize: () => setIsResizingCodeDock(true),
+    handleCodeDockResizeKeyDown,
     pendingRemoteCode: remoteState.pendingRemoteCode,
     pendingRemoteCount: remoteState.pendingRemoteCount,
     handleApplyRemote,
