@@ -89,6 +89,12 @@ const mocks = vi.hoisted(() => {
       isRefOpen: true,
       isResizingPanel: false,
       startRefPanelResize: noop,
+      refPanelWidth: 280,
+      handleRefPanelResizeKeyDown: noop,
+      codeDockHeight: null as number | null,
+      isResizingCodeDock: false,
+      startCodeDockResize: noop,
+      handleCodeDockResizeKeyDown: noop,
       pendingRemoteCode: 'remote-code',
       pendingRemoteCount: 2,
       handleApplyRemote: noop,
@@ -167,6 +173,50 @@ async function renderOrchestratorView () {
 
   return { container, root }
 }
+
+describe('OrchestratorView resizable separators (G2 / HiG #16)', () => {
+  beforeEach(() => {
+    mocks.workspace.workspaceModel.isMobile = false
+    mocks.workspace.isMobile = false
+  })
+
+  it('exposes both splitters as focusable APG separators with value semantics', async () => {
+    const { container, root } = await renderOrchestratorView()
+
+    const separators = Array.from(container.querySelectorAll('[role="separator"]'))
+    expect(separators).toHaveLength(2)
+
+    const rail = container.querySelector('[aria-label="Resize presets panel"]')
+    expect(rail?.getAttribute('tabindex')).toBe('0')
+    expect(rail?.getAttribute('aria-orientation')).toBe('vertical')
+    expect(rail?.getAttribute('aria-valuemin')).toBe('240')
+    expect(rail?.getAttribute('aria-valuemax')).toBe('520')
+    expect(rail?.getAttribute('aria-valuenow')).toBe('280')
+
+    const codeDock = container.querySelector('[aria-label="Resize code editor"]')
+    expect(codeDock?.getAttribute('tabindex')).toBe('0')
+    expect(codeDock?.getAttribute('aria-orientation')).toBe('horizontal')
+    expect(codeDock?.getAttribute('aria-valuemin')).toBe('192')
+    expect(Number(codeDock?.getAttribute('aria-valuemax'))).toBeGreaterThanOrEqual(192)
+    expect(Number(codeDock?.getAttribute('aria-valuenow'))).toBeGreaterThanOrEqual(0)
+
+    await act(async () => {
+      root.unmount()
+    })
+  })
+
+  it('hides both splitters on mobile', async () => {
+    mocks.workspace.workspaceModel.isMobile = true
+    mocks.workspace.isMobile = true
+    const { container, root } = await renderOrchestratorView()
+
+    expect(container.querySelectorAll('[role="separator"]')).toHaveLength(0)
+
+    await act(async () => {
+      root.unmount()
+    })
+  })
+})
 
 describe('OrchestratorView remote-update ownership', () => {
   beforeEach(() => {

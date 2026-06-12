@@ -37,8 +37,20 @@ describe('Orchestrator spatial model', () => {
     const source = readCss('src/routes/Orchestrator/views/OrchestratorView.css')
     const container = cssBlock(source, '.container')
 
-    expect(cssDeclaration(container, 'grid-template-rows')).toBe('minmax(0, 1fr) clamp(12rem, 30dvh, 22rem)')
+    // G2 splitter: the code row is operator-resizable via --code-dock-height, but stays
+    // CSS-bounded — 12rem floor, 50dvh ceiling (Stage >= Code invariant), 30dvh default.
+    expect(cssDeclaration(container, 'grid-template-rows')).toBe('minmax(0, 1fr) clamp(12rem, var(--code-dock-height, 30dvh), 50dvh)')
     expect(container).not.toContain('44dvh')
+  })
+
+  it('renders the Stage/Code splitter as a focusable APG separator with a row-resize affordance', () => {
+    const source = readCss('src/routes/Orchestrator/views/OrchestratorView.css')
+    const resize = cssBlock(source, '.codeDockResize')
+
+    expect(resize).toContain('cursor: row-resize')
+    expect(resize).toContain('z-index: var(--orch-z-resize)')
+    expect(source).toMatch(/\.codeDockResize:focus-visible[\s\S]*?outline: var\(--orch-focus-ring\)/)
+    expect(source).toMatch(/\.refPanelResize:focus-visible[\s\S]*?outline: var\(--orch-focus-ring\)/)
   })
 
   it('remote-banner compensation shifts the rail header, not only the docks', () => {

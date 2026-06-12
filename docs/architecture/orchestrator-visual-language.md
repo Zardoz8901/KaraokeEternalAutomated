@@ -173,18 +173,22 @@ Today `OrchestratorView.css:78` is `grid-template-rows: minmax(320px, 44dvh) min
 growth share goes to **Code** and Stage is capped at 44dvh, inverting the locked Stage-first hierarchy.
 Operator/Browse already give Stage the full column, so Host is the lone violator.
 
-**Decision (OQ-4.1 option b):** for `hostSplit`, set
+**Decision (OQ-4.1 — option c SHIPPED 2026-06-12, superseding the option-b static clamp):** for
+`hostSplit`, set
 
 ```css
-grid-template-rows: minmax(0, 1fr) clamp(12rem, 30dvh, 22rem);
+grid-template-rows: minmax(0, 1fr) clamp(12rem, var(--code-dock-height, 30dvh), 50dvh);
 ```
 
-Stage row takes the `minmax(0,1fr)` growth share; Code row is a bounded `clamp(12rem, 30dvh, 22rem)`. This
-guarantees **Stage row ≥ Code row at every desktop height ≥ the documented 320px Stage minimum** (above
-~73dvh Code pins to 22rem while Stage keeps growing; below that 30dvh < 70dvh of Stage). A keyboard-operable
-vertical splitter (option c) is **deferred** — it adds persisted geometry + roving focus + a new interaction
-tier the static clamp does not need. **Static check:** render-test asserts host grid track 1 = `minmax(0,1fr)`
-and track 2 = a bounded clamp, never `1fr`.
+Stage row takes the `minmax(0,1fr)` growth share; the Code row is operator-resizable through
+`--code-dock-height` but stays CSS-bounded: 12rem floor, **50dvh ceiling so Stage ≥ Code at every
+desktop height**, and the 30dvh default applies when no preference is stored. The splitter
+(`.codeDockResize`, phase-21) is a focusable APG window-splitter — pointer drag plus
+Arrow/Home/End with `aria-value*` semantics — and its height persists under
+`orchestratorCodeDockHeight` as OQ-1.2 inert view-shape. The rail separator carries the same
+keyboard pattern. Both splitters are absent on mobile (tab-switched panels share no boundary).
+**Static check:** render-test asserts host grid track 1 = `minmax(0,1fr)` and track 2 = a bounded
+var-clamp, never `1fr`; render test asserts both separators are focusable with value semantics.
 
 ### Stage is permanently single-preview (OQ-2.1, Option A)
 
@@ -251,7 +255,7 @@ review — see §1).
 | **OQ-3.1** | Dense row + reserved fixed-height badge lane, NOT a card/split-lane; Gallery painted on-row; no thumbnail. | Constant lane geometry → no mid-set reflow; thumbnail would imply output truth (`PresetTree.css:2,266-273`). | high | hard | **HONORED** |
 | **OQ-3.2** | Single-click = Select; explicit Load button = Load (local only, never broadcasts); Space = Send; **Enter = Select** (not Load). | State Truth Model forbids collapsing Selected/Loaded; `PresetTree.tsx:317,339-368`; Enter→Select is the tested binding (`PresetTree.test.tsx:143`). | high | moderate | **HONORED** |
 | **OQ-3.3** | `Applied on Player` badge is strictly binary — present iff derived key == row key, drops instantly on mismatch; no decay/timer. Superseded messaging stays on the strip Remote-update pill. | Honest-by-construction (`presetOperatorUx.ts:48-67`, `PresetTree.tsx:278`); a decaying tint reads as a competing Player claim. | high | easy | RATIFIED |
-| **OQ-4.1** | `hostSplit` rows = `minmax(0,1fr) clamp(12rem,30dvh,22rem)` (Stage growth, Code bounded); defer splitter. | Stage ≥ Code at every desktop height; pure-static clamp (§2). | high | easy | RESOLVED |
+| **OQ-4.1** | `hostSplit` rows = `minmax(0,1fr) clamp(12rem, var(--code-dock-height, 30dvh), 50dvh)`; splitter SHIPPED 2026-06-12 (phase-21: drag + APG keyboard, persisted, bounded). | Stage ≥ Code at every desktop height via the 50dvh ceiling (§2). | high | easy | RESOLVED (option c shipped) |
 | **OQ-4.2** | Mobile tab-away with unsent edits shows ONLY the non-textual Presets/Code-tab dot (warning tone), no count, no `Local edits` wording; strip pill stays sole text owner. | One-owner-per-label; a count is quasi-textual duplication (`OrchestratorView.css:229`, operator-journey §3). | high | easy | RESOLVED |
 | **OQ-5.1** | Buffer selector = full APG radiogroup (roving tabindex, arrow selection-follows-focus, Home/End) + a non-color active cue: `.bufferButtonActive::after { content: '●' }`. | DOM announces radiogroup but ships tab-per-button today; active state is cyan-fill-only — breaches color-never-sole-signal (`StagePanel.tsx:108-121`, `StagePanel.css:176-180`). | high | easy | RESOLVED |
 | **OQ-5.2 + OQ-9.3** | Quiet-by-default on fine-pointer (`opacity: var(--orch-quiet-opacity, 0.55)` + `pointer-events:auto`), intensify on hover/`:focus-within`; **always full-opacity on coarse-pointer/touch and keyboard**, gated by `@media (hover/pointer)` capability queries, NOT width. No kebab/overflow. | Today's `opacity:0; pointer-events:none` (`PresetTree.css:104-106`) makes folder Delete/Set-player unreachable on touch at desktop width; width-gated mobile rule (`:367-371`) strands touch laptops. | high | easy | RESOLVED |
