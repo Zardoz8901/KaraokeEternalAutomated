@@ -111,7 +111,6 @@
   border: 1px solid var(--orch-outline-dark);
   font-size: var(--text-sm);
   font-weight: 650;
-  letter-spacing: 0.02em;
   cursor: pointer;
   min-height: 36px;
   transition:

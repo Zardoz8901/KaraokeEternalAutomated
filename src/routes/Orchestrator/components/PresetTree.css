@@ -50,8 +50,6 @@
 
 .folderName {
   flex: 1;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 
 /* Collapsed state badge: a fixed lane-height glyph circle (reuses the .sendAck box) — never wraps, never reflows. */

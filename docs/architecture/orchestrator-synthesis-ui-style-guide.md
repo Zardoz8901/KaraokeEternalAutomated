@@ -180,6 +180,10 @@ column), not a rounded-chip web surface. Binding rules, graded by
   `.bufferButtonActive`) via the unchanged tone recipe.
 - **Tight lift:** `--orch-shadow` is `0 2px 8px` — a hard, close shadow on the unchanged
   popover/modal/drag-lift allowlist; never a soft diffuse float.
+- **Mixed-case, no tracking (typography half, shipped 19c):** labels render in their written
+  case — no `text-transform: uppercase`, no `letter-spacing` anywhere in Orchestrator CSS
+  (audit-graded). Emphasis is by weight per §4.1, never case or tracking. Buffer keys show
+  their code-truth names (`Auto`, `o0`–`o3`).
 
 #### Figure-ground grammar (G15, ratified 2026-06-11)
 
