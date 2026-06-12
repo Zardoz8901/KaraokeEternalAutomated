@@ -635,6 +635,23 @@ describe('Orchestrator color audit', () => {
     expect(cssBlock(stagePanel, '.bufferButton')).toContain('color: var(--orch-text)')
   })
 
+  it('keeps the mixed-case type register — no uppercase transforms, no tracking (G0 typography, ratified 2026-06-10)', () => {
+    // Labels render in their written case (Ableton/early-Apple register; §4.1 emphasis is
+    // by weight, never case or tracking). Mobile already dropped the uppercase — this makes
+    // the whole surface agree.
+    const cssFiles = auditedFiles.filter(file => file.endsWith('.css'))
+    const offenders = cssFiles.flatMap((file) => {
+      const source = readAuditedFile(file)
+      return source
+        .split('\n')
+        .map((line, index) => ({ line, lineNumber: index + 1 }))
+        .filter(({ line }) => /text-transform:|letter-spacing:/.test(line))
+        .map(({ line, lineNumber }) => `${file}:${lineNumber}: ${line.trim()}`)
+    })
+
+    expect(offenders).toEqual([])
+  })
+
   it('uses readable flat text color for violet and red tinted states', () => {
     const presetTree = readComponentCss('PresetTree.css')
     const hydraPreview = readComponentCss('HydraPreview.css')

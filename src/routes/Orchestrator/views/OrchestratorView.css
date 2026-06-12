@@ -332,8 +332,6 @@
   border: none;
   color: var(--orch-muted-soft);
   font-size: var(--text-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
   cursor: pointer;
   min-height: var(--orch-touch-target);
 }
@@ -474,8 +472,6 @@
 
   .mobileTab {
     font-size: var(--text-sm);
-    letter-spacing: 0;
-    text-transform: none;
   }
 }
 
