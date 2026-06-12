@@ -68,6 +68,9 @@
   --orch-focus-ring-offset: 2px;
   --orch-focus-ring-inset-offset: -2px;
   --orch-focus-ring: var(--orch-focus-ring-width) solid var(--orch-focus);
+  /* OQ-5.2/G1 quiet layer: visible-but-quiet management verbs on fine pointers;
+     full strength on touch and keyboard (capability queries, never width). */
+  --orch-quiet-opacity: 0.55;
   /* G0 flat register: square panes (lg 0), 2px only on small controls and fields.
      999px stays reserved for the circular badge/ack glyph dots; 50% for circles. */
   --orch-radius-sm: 2px;
